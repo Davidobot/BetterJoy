@@ -9,9 +9,12 @@ Currently at version 1. Only for 64-bit systems for now.
 2.5. If the controller paired correctly, the first LED should light up.
 3. Start Cemu and ensure CemuHook has the controller selected.
 4. Enable "Also use for buttons/axes"
+5. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
 
 # Problems
 If the controller does not work after restarting the exe too many times - shut down the exe, disconnect your pro controller and connect it again.
+
+If you get weird lag/stuttering - restart your computer; or try running the program multiple times, closing it properly (by pressing enter) each time.
 
 # Connecting the Controller
 Hold down the small button on the top of the controller for 5 seconds - this puts the controller into broadcasting mode.
