@@ -93,6 +93,11 @@ namespace BetterJoyForCemu {
 		private Int16[] gyr_neutral = { 0, 0, 0 };
 		private Int16[] gyr_sensiti = { 0, 0, 0 };
 		private Vector3 gyr_g;
+
+		private Int16[] pro_hor_offset	 = { -710, 0, 0 };
+		private Int16[] left_hor_offset  = { 0, 0, 0 };
+		private Int16[] right_hor_offset = { 0, 0, 0 };
+
 		private bool do_localize;
 		private float filterweight;
 		private const uint report_len = 49;
@@ -100,10 +105,12 @@ namespace BetterJoyForCemu {
 			byte[] r;
 			System.DateTime t;
 			public ulong ts;
+
+			// To-do: get timestamp from report (0th byte); send to server for every 5ms
 			public Report(byte[] report, System.DateTime time, ulong timestamp) {
 				r = report;
 				t = time;
-				ts = timestamp;
+				ts = (ulong) ((timestamp / (double)Stopwatch.Frequency) * 1000000); // meant to be in microseconds
 			}
 			public System.DateTime GetTime() {
 				return t;
@@ -264,7 +271,8 @@ namespace BetterJoyForCemu {
 			state = state_.ATTACHED;
 			byte[] a = { 0x0 };
 			// Input report mode
-			Subcommand(0x3, new byte[] { 0x3f }, 1, false);
+			Subcommand(0x3, new byte[] { 0x30 }, 1, false);
+			Subcommand(0x3, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
 			a[0] = 0x1;
 			dump_calibration_data();
 			// Connect
@@ -290,10 +298,10 @@ namespace BetterJoyForCemu {
 			PrintArray(max, format: "Max {0:S}", d: DebugType.IMU);
 			PrintArray(sum, format: "Sum {0:S}", d: DebugType.IMU);
 			if (state > state_.NO_JOYCONS) {
-				Subcommand(0x30, new byte[] { 0x0 }, 1);
+				//Subcommand(0x30, new byte[] { 0x0 }, 1); // Turn off LEDS after pair
 				Subcommand(0x40, new byte[] { 0x0 }, 1);
 				Subcommand(0x48, new byte[] { 0x0 }, 1);
-				Subcommand(0x3, new byte[] { 0x3f }, 1);
+				//Subcommand(0x3, new byte[] { 0x3f }, 1); // Turn on basic HID mode - not needed
 			}
 			if (state > state_.DROPPED) {
 				HIDapi.hid_close(handle);
@@ -358,6 +366,18 @@ namespace BetterJoyForCemu {
 							ProcessIMU(report_buf);
 						} else {
 							ExtractIMUValues(report_buf, 0);
+							// 3 values for 5ms precision instead of 15ms
+							/*for (int n = 0; n < 3; n++) {
+								ExtractIMUValues(report_buf, n);
+
+								Timestamp = rep.ts + (ulong) n * 5000; // 5ms difference
+
+								if (n == 0)
+									ProcessButtonsAndStick(report_buf);
+
+								packetCounter++;
+								Program.server.NewReportIncoming(this);
+							}*/
 						}
 					}
 					if (ts_de == report_buf[1]) {
@@ -367,10 +387,13 @@ namespace BetterJoyForCemu {
 					DebugPrint(String.Format("Dequeue. Queue length: {0}. Packet ID: {1}. Timestamp: {2}. Lag to dequeue: {3}. Lag between packets (expect 15ms): {4}", reports.Count, report_buf[0], report_buf[1], System.DateTime.Now.Subtract(rep.GetTime()), rep.GetTime().Subtract(ts_prev)), DebugType.THREADING);
 					ts_prev = rep.GetTime();
 
-					// set timestamp and packet count for server
+					// Sending values at 5ms is not reliable
 					Timestamp = rep.ts;
+					ProcessButtonsAndStick(report_buf);
+					packetCounter++;
+					Program.server.NewReportIncoming(this);
 				}
-				ProcessButtonsAndStick(report_buf);
+				
 				if (rumble_obj.timed_rumble) {
 					if (rumble_obj.t < 0) {
 						rumble_obj.set_vals(160, 320, 0, 0);
@@ -378,9 +401,6 @@ namespace BetterJoyForCemu {
 						rumble_obj.t -= (1 / timing);
 					}
 				}
-
-				packetCounter++;
-				Program.server.NewReportIncoming(this);
 			}
 		}
 		private int ProcessButtonsAndStick(byte[] report_buf) {
@@ -454,29 +474,34 @@ namespace BetterJoyForCemu {
 			acc_r[0] = (Int16)(report_buf[13 + n * 12] | ((report_buf[14 + n * 12] << 8) & 0xff00));
 			acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
 			acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
+
+			Int16[] offset;
+			if (isPro)
+				offset = pro_hor_offset;
+			else if (isLeft)
+				offset = left_hor_offset;
+			else
+				offset = right_hor_offset;
+
+			//Console.WriteLine("{0} {1} {2}", gyr_r[0], gyr_r[1], gyr_r[2]);
+
 			for (int i = 0; i < 3; ++i) {
 				switch (i) {
 					case 0:
-						acc_g.X = acc_r[i] * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						//gyr_g.X = (gyr_r[i] - gyr_neutral[i]) * 0.00122187695f;
-						gyr_g.X = gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i])) * 0.5f; // Neutrals may be read wrong
-						if (Math.Abs(acc_g.X) > Math.Abs(max[i]))
-							max[i] = acc_g.X;
+						acc_g.X = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+						gyr_g.X = gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+
 						break;
 					case 1:
-						acc_g.Y = acc_r[i] * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						//gyr_g.Y = (gyr_r[i] - gyr_neutral[i]) * 0.00122187695f;
-						gyr_g.Y = -gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i])) * 0.5f;
-						if (Math.Abs(acc_g.Y) > Math.Abs(max[i]))
-							max[i] = acc_g.Y;
+						acc_g.Y = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+						gyr_g.Y = -gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+
 						break;
 					case 2:
-						acc_g.Z = acc_r[i] * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						//gyr_g.Z = (gyr_r[i] - gyr_neutral[i]) * 0.00122187695f;
-						gyr_g.Z = -gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i])) * 0.5f;
-						if (Math.Abs(acc_g.Z) > Math.Abs(max[i]))
-							max[i] = acc_g.Z;
-					break;
+						acc_g.Z = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+						gyr_g.Z = -gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+
+						break;
 				}
 			}
 		}

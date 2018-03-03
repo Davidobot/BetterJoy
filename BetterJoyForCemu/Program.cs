@@ -16,7 +16,7 @@ namespace BetterJoyForCemu {
 	public class JoyconManager {
 		// Settings accessible via Unity
 		public bool EnableIMU = true;
-		public bool EnableLocalize = true;
+		public bool EnableLocalize = false;
 
 		// Different operating systems either do or don't like the trailing zero
 		private const ushort vendor_id = 0x57e;
@@ -91,20 +91,17 @@ namespace BetterJoyForCemu {
 			}
 		}
 
-		public bool shouldUpdate = true;
-		public void Update(object sender, ElapsedEventArgs e) {
-			//while (shouldUpdate) {
-				for (int i = 0; i < j.Count; ++i) {
-					j[i].Update();
+		public void Update() {
+			for (int i = 0; i < j.Count; ++i) {
+				j[i].Update();
 
-					/*if (j.Count > 0) {
-						Joycon jj = j[i];
+				/*if (j.Count > 0) {
+					Joycon jj = j[i];
 
-						if (jj.GetButtonDown(Joycon.Button.DPAD_DOWN))
-							jj.SetRumble(160, 320, 0.6f, 200);
-					}*/
-				}
-			//}
+					if (jj.GetButtonDown(Joycon.Button.DPAD_DOWN))
+						jj.SetRumble(160, 320, 0.6f, 200);
+				}*/
+			}
 		}
 
 		public void OnApplicationQuit() {
@@ -114,9 +111,47 @@ namespace BetterJoyForCemu {
 		}
 	}
 
+	// Custom timer class because system timers have a limit of 15.6ms
+	class HighResTimer {
+		double interval = 0;
+		double frequency = 0;
+
+		Thread thread;
+
+		public delegate void ActionDelegate();
+		ActionDelegate func;
+
+		bool run = false;
+
+		public HighResTimer(double f, ActionDelegate a) {
+			frequency = f;
+			interval = 1.0 / f;
+
+			func = a;
+		}
+
+		public void Start() {
+			run = true;
+			thread = new Thread(new ThreadStart(Run));
+			thread.Start();
+		}
+
+		void Run() {
+			while (run) {
+				func();
+				int timeToSleep = (int)(interval * 1000);
+				Thread.Sleep(timeToSleep);
+			}
+		}
+
+		public void Stop() {
+			run = false;
+		}
+	}
+
 	class Program {
 		public static UdpServer server;
-		static float pollsPerSecond = 60.0f;
+		static double pollsPerSecond = 120.0;
 
 		static void Main(string[] args) {
 			JoyconManager mgr = new JoyconManager();
@@ -129,23 +164,15 @@ namespace BetterJoyForCemu {
 			//updateThread.Start();
 
 			server.Start(26760);
-			System.Timers.Timer timer = new System.Timers.Timer((int)(1000 / pollsPerSecond));
-			timer.Elapsed += mgr.Update;
-			timer.Elapsed += printt;
+			HighResTimer timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
 			timer.Start();
 
 			Console.Write("Press enter to quit.");
 			Console.ReadLine();
 
 			server.Stop();
-			mgr.shouldUpdate = false;
 			timer.Stop();
-			timer.Dispose();
 			mgr.OnApplicationQuit();
-		}
-
-		static void printt(object sender, ElapsedEventArgs e) {
-			//Console.Write('.');
 		}
 	}
 }

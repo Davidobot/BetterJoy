@@ -384,7 +384,7 @@ namespace BetterJoyForCemu {
 					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(-accel.Z), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
+					//Array.Copy(BitConverter.GetBytes((float)-1), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(accel.X), 0, outputData, outIdx, 4);
 					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
