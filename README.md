@@ -1,8 +1,8 @@
-# BetterJoyForCemu v1.5
+# BetterJoyForCemu v1.51
 Allows the Nintendo Switch Pro Controller to be used with the Cemu Emulator
 
 # Changelog
-### v1.5
+### v1.51
 * Added USB support
 * Eliminated gyro shaking
 * Improved bluetooth support
@@ -10,6 +10,9 @@ Allows the Nintendo Switch Pro Controller to be used with the Cemu Emulator
     * Pro controller reconnects to computer normally now
 * Added 32-bit release (untested)
 * Cleaned up code
+* __v1.51__
+   * More gyro fixes (runs at max UDP now - as precise as one can get)
+   * Especially noticeable in USB mode
 ### v1
 * Initial release
 
