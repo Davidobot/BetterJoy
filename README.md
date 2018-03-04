@@ -29,6 +29,14 @@ If the controller does not work after restarting the exe too many times - shut d
 
 If you get weird lag/stuttering - restart your computer; or try running the program multiple times, closing it properly (by pressing enter) each time.
 
+## No joycons detected
+If using Bluetooth - see the "How to properly disconnect the controller" section and follow the steps listed there. Then, reconnect the controller.
+
+If using USB - try unplugging the controller and then plugging it back in, making sure to let Windows set it up before launching the program.
+
+## Getting stuck at "Using USB" or "Using factory.."
+Close the program and then start it again. If it doesn't work, see the "No joycons detected" section and try that.
+
 Feel free to open a new issue if you have any comments or questions.
 
 # Connecting and Disconnecting the Controller
