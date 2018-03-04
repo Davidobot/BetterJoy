@@ -1,5 +1,5 @@
 # BetterJoyForCemu v1.5
-Allows the Pro Controller to be used with the Cemu Emulator
+Allows the Nintendo Switch Pro Controller to be used with the Cemu Emulator
 
 # Changelog
 ### v1.5
