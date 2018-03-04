@@ -1,27 +1,43 @@
-# BetterJoyForCemu
-Allows the Pro Controller to be used with the Cemu Emulator
+# BetterJoyForCemu v1.5
+Allows the Nintendo Switch Pro Controller to be used with the Cemu Emulator
 
-Currently at version 1. Only for 64-bit systems for now.
+# Changelog
+### v1.5
+* Added USB support
+* Eliminated gyro shaking
+* Improved bluetooth support
+    * It's no longer necessary to completely remove and then reconnect the pro controller from your bluetooth devices when you turn it off
+    * Pro controller reconnects to computer normally now
+* Added 32-bit release (untested)
+* Cleaned up code
+### v1
+* Initial release
 
 # How to use
-1. Connect pro controller via bluetooth
-2. Run BetterJoyForCemu.exe (please don't run this without a pro controller connected)
-2.5. If the controller paired correctly, the first LED should light up.
-3. Start Cemu and ensure CemuHook has the controller selected.
-4. Enable "Also use for buttons/axes"
-5. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
+1. Connect pro controller via bluetooth/usb
+1. Run BetterJoyForCemu.exe
+    1. If the controller recongised, the first LED should light up.
+1. Start Cemu and ensure CemuHook has the controller selected.
+1. Enable "Also use for buttons/axes"
+1. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
 
 # Problems
 If the controller does not work after restarting the exe too many times - shut down the exe, disconnect your pro controller and connect it again.
 
 If you get weird lag/stuttering - restart your computer; or try running the program multiple times, closing it properly (by pressing enter) each time.
 
-# Connecting the Controller
+Feel free to open a new issue if you have any comments or questions.
+
+# Connecting and Disconnecting the Controller
+## Bluetooth Mode
 Hold down the small button on the top of the controller for 5 seconds - this puts the controller into broadcasting mode.
 
 Search for it in your bluetooth settings and pair normally.
 
-To disconnect the controller - hold down the button once again. You'll have to remove the controller from your saved devices when you want to reconnect it.
+To disconnect the controller - press down the button once. To reconnect - press any button on your controller.
+
+## USB Mode
+Plug the controller into your computer.
 
 # Acknowledgements
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
