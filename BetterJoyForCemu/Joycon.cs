@@ -216,7 +216,7 @@ namespace BetterJoyForCemu {
 		public int connection = 3;
 
 		public PhysicalAddress PadMacAddress = new PhysicalAddress(new byte[] { 01, 02, 03, 04, 05, 06 });
-		public ulong Timestamp = (ulong)Stopwatch.GetTimestamp();
+		public ulong Timestamp = 0;
 		public int packetCounter = 0;
 		//
 
@@ -311,8 +311,7 @@ namespace BetterJoyForCemu {
 			Subcommand(0x3, new byte[] { 0x30 }, 1, true);
 			Subcommand(0x48, new byte[] { 0x1 }, 1, true);
 			
-			if (!isUSB)
-				Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
+			Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
 
 			DebugPrint("Done with init.", DebugType.COMMS);
 
@@ -327,8 +326,7 @@ namespace BetterJoyForCemu {
 
 		public void Detach() {
 			stop_polling = true;
-			PrintArray(max, format: "Max {0:S}", d: DebugType.IMU);
-			PrintArray(sum, format: "Sum {0:S}", d: DebugType.IMU);
+
 			if (state > state_.NO_JOYCONS) {
 				//Subcommand(0x30, new byte[] { 0x0 }, 1); // Turn off LEDS after pair
 				Subcommand(0x40, new byte[] { 0x0 }, 1);
@@ -349,18 +347,29 @@ namespace BetterJoyForCemu {
 		}
 
 		private byte ts_en;
-		private byte ts_de;
-		private System.DateTime ts_prev;
 		private int ReceiveRaw() {
 			if (handle == IntPtr.Zero) return -2;
 			HIDapi.hid_set_nonblocking(handle, 0);
 			byte[] raw_buf = new byte[report_len];
 			int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
 			if (ret > 0) {
-				lock (reports) {
-					reports.Enqueue(new Report(raw_buf, System.DateTime.Now, (ulong)Stopwatch.GetTimestamp()));
+				// Process packets as soon as they come
+				for (int n = 0; n < 3; n++) {
+					ExtractIMUValues(raw_buf, n);
+
+					byte lag = (byte) Math.Max(0, raw_buf[1] - ts_en - 3);
+					if (n == 0) {
+						Timestamp += (ulong)lag * 5000; // add lag once
+						ProcessButtonsAndStick(raw_buf);
+					}
+					Timestamp += (ulong)(2 - n) * 5000; // 5ms difference
+
+					packetCounter++;
+					Program.server.NewReportIncoming(this);
 				}
+
 				if (ts_en == raw_buf[1]) {
+					Console.WriteLine("Duplicate timestamp enqueued.");
 					DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
 				}
 				ts_en = raw_buf[1];
@@ -391,46 +400,9 @@ namespace BetterJoyForCemu {
 			}
 			DebugPrint("End poll loop.", DebugType.THREADING);
 		}
-		float[] max = { 0, 0, 0 };
-		float[] sum = { 0, 0, 0 };
+
 		public void Update() {
-			if (state > state_.NO_JOYCONS) {
-				byte[] report_buf = new byte[report_len];
-				while (reports.Count > 0) {
-					Report rep;
-					lock (reports) {
-						rep = reports.Dequeue();
-						rep.CopyBuffer(report_buf);
-					}
-					if (imu_enabled) {
-						ExtractIMUValues(report_buf, 0);
-						// 3 values for 5ms precision instead of 15ms
-						/*for (int n = 0; n < 3; n++) {
-							ExtractIMUValues(report_buf, n);
-
-							Timestamp = rep.ts + (ulong) n * 5000; // 5ms difference
-
-							if (n == 0)
-								ProcessButtonsAndStick(report_buf);
-
-							packetCounter++;
-							Program.server.NewReportIncoming(this);
-						}*/
-					}
-					if (ts_de == report_buf[1]) {
-						DebugPrint(string.Format("Duplicate timestamp dequeued. TS: {0:X2}", ts_de), DebugType.THREADING);
-					}
-					ts_de = report_buf[1];
-					DebugPrint(String.Format("Dequeue. Queue length: {0}. Packet ID: {1}. Timestamp: {2}. Lag to dequeue: {3}. Lag between packets (expect 15ms): {4}", reports.Count, report_buf[0], report_buf[1], System.DateTime.Now.Subtract(rep.GetTime()), rep.GetTime().Subtract(ts_prev)), DebugType.THREADING);
-					ts_prev = rep.GetTime();
-
-					// Sending values at 5ms is not reliable
-					Timestamp = rep.ts;
-					ProcessButtonsAndStick(report_buf);
-					packetCounter++;
-					Program.server.NewReportIncoming(this);
-				}
-				
+			if (state > state_.NO_JOYCONS) {	
 				if (rumble_obj.timed_rumble) {
 					if (rumble_obj.t < 0) {
 						rumble_obj.set_vals(160, 320, 0, 0);
