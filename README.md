@@ -42,6 +42,13 @@ To disconnect the controller - press down the button once. To reconnect - press 
 ## USB Mode
 Plug the controller into your computer.
 
+## How to properly disconnect the controller
+### Windows 10
+1. Go into "Bluetooth and other devices settings"
+1. Under the first category "Mouse, keyboard, & pen", there should be the pro controller.
+1. Click on it and a "Remove" button will be revealed.
+1. Press the "Remove" button
+
 # Acknowledgements
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
 
