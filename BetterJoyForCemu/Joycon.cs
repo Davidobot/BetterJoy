@@ -13,6 +13,7 @@ namespace BetterJoyForCemu {
 		float timing = 60.0f;
 
 		bool isPro = false;
+		bool isUSB = false;
 
 		public enum DebugType : int {
 			NONE,
@@ -219,7 +220,7 @@ namespace BetterJoyForCemu {
 		public int packetCounter = 0;
 		//
 
-		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, int id = 0, bool isPro=false) {
+		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, int id = 0, bool isPro=false, bool usb = false) {
 			handle = handle_;
 			imu_enabled = imu;
 			do_localize = localize;
@@ -229,6 +230,7 @@ namespace BetterJoyForCemu {
 
 			PadId = id;
 			this.isPro = isPro;
+			isUSB = usb;
 		}
 		public void DebugPrint(String s, DebugType d) {
 			if (debug_type == DebugType.NONE) return;
@@ -257,42 +259,72 @@ namespace BetterJoyForCemu {
 		public Vector3 GetAccel() {
 			return acc_g;
 		}
-		public Quaternion GetVector() {
-			Vector3 v1 = new Vector3(j_b.X, i_b.X, k_b.X);
-			Vector3 v2 = -(new Vector3(j_b.Z, i_b.Z, k_b.Z));
-			if (v2 != Vector3.Zero) {
-				MyQuaternion temp = MyQuaternion.LookRotation(v1, v2);
-				return new Quaternion(temp.eulerAngles, temp.Length);
-			} else {
-				return Quaternion.Identity;
-			}
-		}
 		public int Attach(byte leds_ = 0x0) {
 			state = state_.ATTACHED;
+			
+			// Make sure command is received
+			HIDapi.hid_set_nonblocking(handle, 0);
+
 			byte[] a = { 0x0 };
-			// Input report mode
-			Subcommand(0x3, new byte[] { 0x30 }, 1, false);
-			Subcommand(0x3, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
-			a[0] = 0x1;
-			dump_calibration_data();
+
 			// Connect
-			a[0] = 0x01;
-			Subcommand(0x1, a, 1);
-			a[0] = 0x02;
-			Subcommand(0x1, a, 1);
-			a[0] = 0x03;
-			Subcommand(0x1, a, 1);
+			if (!isUSB) {
+				// Input report mode
+				Subcommand(0x03, new byte[] { 0x30 }, 1, false);
+				a[0] = 0x1;
+				dump_calibration_data();
+			} else {
+				Subcommand(0x03, new byte[] { 0x3f }, 1, false);
+
+				a = Enumerable.Repeat((byte)0, 64).ToArray();
+				Console.WriteLine("Using USB.");
+
+				a[0] = 0x80;
+				a[1] = 0x01;
+				HIDapi.hid_write(handle, a, new UIntPtr(2));
+				HIDapi.hid_read(handle, a, new UIntPtr(64));
+
+				if (a[2] != 0x3) {
+					PadMacAddress = new PhysicalAddress(new byte[] { a[9], a[8], a[7], a[6], a[5], a[4] });
+				}
+
+				// USB Pairing
+				a = Enumerable.Repeat((byte)0, 64).ToArray();
+				a[0] = 0x80; a[1] = 0x02; // Handshake
+				HIDapi.hid_write(handle, a, new UIntPtr(2));
+
+				a[0] = 0x80; a[1] = 0x03; // 3Mbit baud rate
+				HIDapi.hid_write(handle, a, new UIntPtr(2));
+
+				a[0] = 0x80; a[1] = 0x02; // Handshake at new baud rate
+				HIDapi.hid_write(handle, a, new UIntPtr(2));
+
+				a[0] = 0x80; a[1] = 0x04; // Prevent HID timeout
+				HIDapi.hid_write(handle, a, new UIntPtr(2));
+
+				dump_calibration_data();
+			}
+
 			a[0] = leds_;
 			Subcommand(0x30, a, 1);
 			Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1, true);
 			Subcommand(0x3, new byte[] { 0x30 }, 1, true);
 			Subcommand(0x48, new byte[] { 0x1 }, 1, true);
+			
+			if (!isUSB)
+				Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
+
 			DebugPrint("Done with init.", DebugType.COMMS);
+
+			HIDapi.hid_set_nonblocking(handle, 1);
+
 			return 0;
 		}
+
 		public void SetFilterCoeff(float a) {
 			filterweight = a;
 		}
+
 		public void Detach() {
 			stop_polling = true;
 			PrintArray(max, format: "Max {0:S}", d: DebugType.IMU);
@@ -301,6 +333,13 @@ namespace BetterJoyForCemu {
 				//Subcommand(0x30, new byte[] { 0x0 }, 1); // Turn off LEDS after pair
 				Subcommand(0x40, new byte[] { 0x0 }, 1);
 				Subcommand(0x48, new byte[] { 0x0 }, 1);
+
+				if (isUSB) {
+					byte[] a = Enumerable.Repeat((byte)0, 64).ToArray();
+					a[0] = 0x80; a[1] = 0x05; // Allow device to talk to BT again
+					HIDapi.hid_write(handle, a, new UIntPtr(2));
+				}
+
 				//Subcommand(0x3, new byte[] { 0x3f }, 1); // Turn on basic HID mode - not needed
 			}
 			if (state > state_.DROPPED) {
@@ -308,6 +347,7 @@ namespace BetterJoyForCemu {
 			}
 			state = state_.NOT_ATTACHED;
 		}
+
 		private byte ts_en;
 		private byte ts_de;
 		private System.DateTime ts_prev;
@@ -328,6 +368,7 @@ namespace BetterJoyForCemu {
 			}
 			return ret;
 		}
+
 		private Thread PollThreadObj;
 		private void Poll() {
 			int attempts = 0;
@@ -362,23 +403,19 @@ namespace BetterJoyForCemu {
 						rep.CopyBuffer(report_buf);
 					}
 					if (imu_enabled) {
-						if (do_localize) {
-							ProcessIMU(report_buf);
-						} else {
-							ExtractIMUValues(report_buf, 0);
-							// 3 values for 5ms precision instead of 15ms
-							/*for (int n = 0; n < 3; n++) {
-								ExtractIMUValues(report_buf, n);
+						ExtractIMUValues(report_buf, 0);
+						// 3 values for 5ms precision instead of 15ms
+						/*for (int n = 0; n < 3; n++) {
+							ExtractIMUValues(report_buf, n);
 
-								Timestamp = rep.ts + (ulong) n * 5000; // 5ms difference
+							Timestamp = rep.ts + (ulong) n * 5000; // 5ms difference
 
-								if (n == 0)
-									ProcessButtonsAndStick(report_buf);
+							if (n == 0)
+								ProcessButtonsAndStick(report_buf);
 
-								packetCounter++;
-								Program.server.NewReportIncoming(this);
-							}*/
-						}
+							packetCounter++;
+							Program.server.NewReportIncoming(this);
+						}*/
 					}
 					if (ts_de == report_buf[1]) {
 						DebugPrint(string.Format("Duplicate timestamp dequeued. TS: {0:X2}", ts_de), DebugType.THREADING);
@@ -483,90 +520,27 @@ namespace BetterJoyForCemu {
 			else
 				offset = right_hor_offset;
 
-			//Console.WriteLine("{0} {1} {2}", gyr_r[0], gyr_r[1], gyr_r[2]);
-
 			for (int i = 0; i < 3; ++i) {
 				switch (i) {
 					case 0:
 						acc_g.X = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.X = gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+						gyr_g.X = (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
 						break;
 					case 1:
 						acc_g.Y = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.Y = -gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+						gyr_g.Y = -(gyr_r[i] - gyr_neutral[i] * 0.5f) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
 						break;
 					case 2:
 						acc_g.Z = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.Z = -gyr_r[i] * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+						gyr_g.Z = -(gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
 						break;
 				}
 			}
 		}
 
-		private float err;
-		public Vector3 i_b, j_b, k_b, k_acc;
-		private Vector3 d_theta;
-		private Vector3 i_b_;
-		private Vector3 w_a, w_g;
-		private Quaternion vec;
-
-		private int ProcessIMU(byte[] report_buf) {
-
-			// Direction Cosine Matrix method
-			// http://www.starlino.com/dcm_tutorial.html
-
-			if (!imu_enabled | state < state_.IMU_DATA_OK)
-				return -1;
-
-			if (report_buf[0] != 0x30) return -1; // no gyro data
-
-			// read raw IMU values
-			int dt = (report_buf[1] - timestamp);
-			if (report_buf[1] < timestamp) dt += 0x100;
-
-			for (int n = 0; n < 3; ++n) {
-				ExtractIMUValues(report_buf, n);
-
-				float dt_sec = 0.005f * dt;
-				sum[0] += gyr_g.X * dt_sec;
-				sum[1] += gyr_g.Y * dt_sec;
-				sum[2] += gyr_g.Z * dt_sec;
-
-				if (isLeft && !isPro) { // not sure about this
-					gyr_g.Y *= -1;
-					gyr_g.Z *= -1;
-					acc_g.Y *= -1;
-					acc_g.Z *= -1;
-				}
-
-				if (first_imu_packet) {
-					i_b = new Vector3(1, 0, 0);
-					j_b = new Vector3(0, 1, 0);
-					k_b = new Vector3(0, 0, 1);
-					first_imu_packet = false;
-				} else {
-					k_acc = -Vector3.Normalize(acc_g);
-					w_a = Vector3.Cross(k_b, k_acc);
-					w_g = -gyr_g * dt_sec;
-					d_theta = (filterweight * w_a + w_g) / (1f + filterweight);
-					k_b += Vector3.Cross(d_theta, k_b);
-					i_b += Vector3.Cross(d_theta, i_b);
-					j_b += Vector3.Cross(d_theta, j_b);
-					//Correction, ensure new axes are orthogonal
-					err = Vector3.Dot(i_b, j_b) * 0.5f;
-					i_b_ = Vector3.Normalize(i_b - err * j_b);
-					j_b = Vector3.Normalize(j_b - err * i_b);
-					i_b = i_b_;
-					k_b = Vector3.Cross(i_b, j_b);
-				}
-				dt = 1;
-			}
-			timestamp = report_buf[1] + 2;
-			return 0;
-		}
 		public void Begin() {
 			if (PollThreadObj == null) {
 				PollThreadObj = new Thread(new ThreadStart(Poll));
@@ -575,10 +549,12 @@ namespace BetterJoyForCemu {
 				Console.WriteLine("Starting poll thread.");
 			}
 		}
+
 		public void Recenter() {
 			first_imu_packet = true;
 		}
-		private float[] CenterSticks(UInt16[] vals, bool special=false) {
+
+		private float[] CenterSticks(UInt16[] vals, bool special = false) {
 			ushort[] t = stick_cal;
 
 			if (special)
@@ -597,12 +573,14 @@ namespace BetterJoyForCemu {
 			}
 			return s;
 		}
+
 		public void SetRumble(float low_freq, float high_freq, float amp, int time = 0) {
 			if (state <= Joycon.state_.ATTACHED) return;
 			if (rumble_obj.timed_rumble == false || rumble_obj.t < 0) {
 				rumble_obj = new Rumble(low_freq, high_freq, amp, time);
 			}
 		}
+
 		private void SendRumble(byte[] buf) {
 			byte[] buf_ = new byte[report_len];
 			buf_[0] = 0x10;
@@ -613,6 +591,7 @@ namespace BetterJoyForCemu {
 			PrintArray(buf_, DebugType.RUMBLE, format: "Rumble data sent: {0:S}");
 			HIDapi.hid_write(handle, buf_, new UIntPtr(report_len));
 		}
+
 		private byte[] Subcommand(byte sc, byte[] buf, uint len, bool print = true) {
 			byte[] buf_ = new byte[report_len];
 			byte[] response = new byte[report_len];
@@ -630,6 +609,7 @@ namespace BetterJoyForCemu {
 			else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
 			return response;
 		}
+
 		private void dump_calibration_data() {
 			byte[] buf_ = ReadSPI(0x80, (isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
 			bool found = false;
@@ -730,6 +710,7 @@ namespace BetterJoyForCemu {
 				PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "Factory gyro neutral position: {0:S}");
 			}
 		}
+
 		private byte[] ReadSPI(byte addr1, byte addr2, uint len, bool print = false) {
 			byte[] buf = { addr2, addr1, 0x00, 0x00, (byte)len };
 			byte[] read_buf = new byte[len];
@@ -745,6 +726,7 @@ namespace BetterJoyForCemu {
 			if (print) PrintArray(read_buf, DebugType.COMMS, len);
 			return read_buf;
 		}
+
 		private void PrintArray<T>(T[] arr, DebugType d = DebugType.NONE, uint len = 0, uint start = 0, string format = "{0:S}") {
 			if (d != debug_type && debug_type != DebugType.ALL) return;
 			if (len == 0) len = (uint)arr.Length;

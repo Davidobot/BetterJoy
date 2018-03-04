@@ -18,6 +18,8 @@ namespace BetterJoyForCemu {
 		public bool EnableIMU = true;
 		public bool EnableLocalize = false;
 
+		
+
 		// Different operating systems either do or don't like the trailing zero
 		private const ushort vendor_id = 0x57e;
 		private const ushort vendor_id_ = 0x057e;
@@ -72,7 +74,14 @@ namespace BetterJoyForCemu {
 
 					IntPtr handle = HIDapi.hid_open_path(enumerate.path);
 					HIDapi.hid_set_nonblocking(handle, 1);
-					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, j.Count, enumerate.product_id == product_pro));
+
+					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
+
+					byte[] mac = new byte[6];
+					for (int n = 0; n < 6; n++)
+						mac[n] = byte.Parse(enumerate.serial_number.Substring(n * 2, 2), System.Globalization.NumberStyles.HexNumber);
+					j[j.Count - 1].PadMacAddress = new PhysicalAddress(mac);		
+
 					++i;
 				}
 				ptr = enumerate.next;
@@ -150,10 +159,20 @@ namespace BetterJoyForCemu {
 	}
 
 	class Program {
+		public static PhysicalAddress btMAC = new PhysicalAddress(new byte[] { 0, 0, 0, 0, 0, 0 });
 		public static UdpServer server;
 		static double pollsPerSecond = 120.0;
 
 		static void Main(string[] args) {
+			foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces()) {
+				// Get local BT host MAC
+				if (nic.NetworkInterfaceType != NetworkInterfaceType.FastEthernetFx && nic.NetworkInterfaceType != NetworkInterfaceType.Wireless80211) {
+					if (nic.Name.Split()[0] == "Bluetooth") {
+						btMAC = nic.GetPhysicalAddress();
+					}
+				}
+			}
+
 			JoyconManager mgr = new JoyconManager();
 			mgr.Awake();
 			mgr.Start();
