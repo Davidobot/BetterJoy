@@ -1,9 +1,8 @@
-# BetterJoyForCemu
+# BetterJoyForCemu v1.5
 Allows the Pro Controller to be used with the Cemu Emulator
 
-Current version: 1.5
-
-# Changelog (v1 -> v1.5)
+# Changelog
+### v1.5
 * Added USB support
 * Eliminated gyro shaking
 * Improved bluetooth support
@@ -11,6 +10,8 @@ Current version: 1.5
     * Pro controller reconnects to computer normally now
 * Added 32-bit release (untested)
 * Cleaned up code
+### v1
+* Initial release
 
 # How to use
 1. Connect pro controller via bluetooth/usb
