@@ -17,9 +17,12 @@ Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](ht
 * Initial release
 
 # How to use
+1. Make sure CEMU has at least one input profile set up already (so that CemuHook can feed data into it)
+    1. If you don't, go into _Input settings_ (under _Options_) on Cemu and set the first controller to be a Wii U Gamepad, you can leave the rest of the settings blank (or set the device to your keyboard)
 1. Connect pro controller via bluetooth/usb
 1. Run BetterJoyForCemu.exe
     1. If the controller recongised, the first LED should light up.
+    1. If not, see the __Problems__ section.
 1. Start Cemu and ensure CemuHook has the controller selected.
 1. Enable "Also use for buttons/axes"
 1. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
