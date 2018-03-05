@@ -292,7 +292,8 @@ namespace BetterJoyForCemu {
 				udpSock.Close();
 				udpSock = null;
 
-				throw ex;
+				Console.WriteLine("Could not start server. Make sure that only one instance of the program is running at a time and no other CemuHook applications are running.");
+				return;
 			}
 
 			byte[] randomBuf = new byte[4];
@@ -315,27 +316,29 @@ namespace BetterJoyForCemu {
 		private bool ReportToBuffer(Joycon hidReport, byte[] outputData, ref int outIdx) {
 			outputData[outIdx] = 0;
 
-			if (hidReport.GetButton(Joycon.Button.DPAD_LEFT))	outputData[outIdx] |= 0x80;
-			if (hidReport.GetButton(Joycon.Button.DPAD_DOWN))	outputData[outIdx] |= 0x40;
-			if (hidReport.GetButton(Joycon.Button.DPAD_RIGHT))	outputData[outIdx] |= 0x20;
-			if (hidReport.GetButton(Joycon.Button.DPAD_UP))		outputData[outIdx] |= 0x10;
+			bool isLeft = hidReport.isLeft;
 
-			if (hidReport.GetButton(Joycon.Button.PLUS))		outputData[outIdx] |= 0x08;
-			if (hidReport.GetButton(Joycon.Button.STICK2))		outputData[outIdx] |= 0x04;
-			if (hidReport.GetButton(Joycon.Button.STICK))		outputData[outIdx] |= 0x02;
-			if (hidReport.GetButton(Joycon.Button.MINUS))		outputData[outIdx] |= 0x01;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_LEFT : Joycon.Button.A))	outputData[outIdx] |= 0x80;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_DOWN : Joycon.Button.B))	outputData[outIdx] |= 0x40;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_RIGHT : Joycon.Button.Y))	outputData[outIdx] |= 0x20;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_UP : Joycon.Button.X))	outputData[outIdx] |= 0x10;
+
+			if (hidReport.GetButton(Joycon.Button.PLUS))									outputData[outIdx] |= 0x08;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.STICK2 : Joycon.Button.STICK))	outputData[outIdx] |= 0x04;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.STICK : Joycon.Button.STICK2))	outputData[outIdx] |= 0x02;
+			if (hidReport.GetButton(Joycon.Button.MINUS))									outputData[outIdx] |= 0x01;
 
 			outputData[++outIdx] = 0;
 
-			if (hidReport.GetButton(Joycon.Button.Y)) outputData[outIdx] |= 0x80;
-			if (hidReport.GetButton(Joycon.Button.B)) outputData[outIdx] |= 0x40;
-			if (hidReport.GetButton(Joycon.Button.A)) outputData[outIdx] |= 0x20;
-			if (hidReport.GetButton(Joycon.Button.X)) outputData[outIdx] |= 0x10;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.Y : Joycon.Button.DPAD_LEFT))	outputData[outIdx] |= 0x80;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.B : Joycon.Button.DPAD_DOWN))	outputData[outIdx] |= 0x40;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.A : Joycon.Button.DPAD_RIGHT)) outputData[outIdx] |= 0x20;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.X : Joycon.Button.DPAD_UP))	outputData[outIdx] |= 0x10;
 
-			if (hidReport.GetButton(Joycon.Button.SHOULDER2_1))		outputData[outIdx] |= 0x08;
-			if (hidReport.GetButton(Joycon.Button.SHOULDER_1))		outputData[outIdx] |= 0x04;
-			if (hidReport.GetButton(Joycon.Button.SHOULDER2_2))		outputData[outIdx] |= 0x02;
-			if (hidReport.GetButton(Joycon.Button.SHOULDER_2))		outputData[outIdx] |= 0x01;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER2_1 : Joycon.Button.SHOULDER_1))	outputData[outIdx] |= 0x08;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER_1 : Joycon.Button.SHOULDER2_1))	outputData[outIdx] |= 0x04;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER2_2 : Joycon.Button.SHOULDER_2))	outputData[outIdx] |= 0x02;
+			if (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER_2 : Joycon.Button.SHOULDER2_2))	outputData[outIdx] |= 0x01;
 
 			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.HOME)) ? (byte)1 : (byte)0;
 			outputData[++outIdx] = 0; // no touch pad
@@ -349,21 +352,21 @@ namespace BetterJoyForCemu {
 			outputData[++outIdx] = (byte)(Math.Max(0, Math.Min(255, 127 + rightStick[1] * 127)));
 
 			//we don't have analog buttons so just use the Button enums (which give either 0 or 0xFF)
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.DPAD_LEFT)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.DPAD_DOWN)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.DPAD_RIGHT)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.DPAD_UP)) ? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_LEFT : Joycon.Button.A))	? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_DOWN : Joycon.Button.B))	? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_RIGHT : Joycon.Button.Y))	? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_UP : Joycon.Button.X))		? (byte)0xFF : (byte)0;
 
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.Y)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.B)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.A)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.X)) ? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.Y : Joycon.Button.DPAD_LEFT))	? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.B : Joycon.Button.DPAD_DOWN))	? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.A : Joycon.Button.DPAD_RIGHT))	? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.X : Joycon.Button.DPAD_UP))		? (byte)0xFF : (byte)0;
 
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.SHOULDER2_1)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.SHOULDER_1)) ? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER2_1 : Joycon.Button.SHOULDER_1)) ? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER_1 : Joycon.Button.SHOULDER2_1)) ? (byte)0xFF : (byte)0;
 
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.SHOULDER2_2)) ? (byte)0xFF : (byte)0;
-			outputData[++outIdx] = (hidReport.GetButton(Joycon.Button.SHOULDER_2)) ? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER2_2 : Joycon.Button.SHOULDER_2)) ? (byte)0xFF : (byte)0;
+			outputData[++outIdx] = (hidReport.GetButton(isLeft ? Joycon.Button.SHOULDER_2 : Joycon.Button.SHOULDER2_2)) ? (byte)0xFF : (byte)0;
 
 			outIdx++;
 
@@ -384,7 +387,7 @@ namespace BetterJoyForCemu {
 					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(-accel.Z), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)-1), 0, outputData, outIdx, 4);
+					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(accel.X), 0, outputData, outIdx, 4);
 					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);

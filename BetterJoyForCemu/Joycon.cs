@@ -10,10 +10,13 @@ using System.Threading.Tasks;
 
 namespace BetterJoyForCemu {
 	public class Joycon {
-		float timing = 60.0f;
+		float timing = 120.0f;
 
-		bool isPro = false;
+		public bool isPro = false;
 		bool isUSB = false;
+		public Joycon other;
+
+		public bool send = true;
 
 		public enum DebugType : int {
 			NONE,
@@ -210,7 +213,7 @@ namespace BetterJoyForCemu {
 
 		// For UdpServer
 		public int PadId = 0;
-		public int battery = 2;
+		public int battery = 4;
 		public int model = 2;
 		public int constate = 2;
 		public int connection = 3;
@@ -261,9 +264,6 @@ namespace BetterJoyForCemu {
 		}
 		public int Attach(byte leds_ = 0x0) {
 			state = state_.ATTACHED;
-			
-			// Make sure command is received
-			HIDapi.hid_set_nonblocking(handle, 0);
 
 			byte[] a = { 0x0 };
 
@@ -315,8 +315,6 @@ namespace BetterJoyForCemu {
 
 			DebugPrint("Done with init.", DebugType.COMMS);
 
-			HIDapi.hid_set_nonblocking(handle, 1);
-
 			return 0;
 		}
 
@@ -349,10 +347,10 @@ namespace BetterJoyForCemu {
 		private byte ts_en;
 		private int ReceiveRaw() {
 			if (handle == IntPtr.Zero) return -2;
-			HIDapi.hid_set_nonblocking(handle, 0);
+			HIDapi.hid_set_nonblocking(handle, 1);
 			byte[] raw_buf = new byte[report_len];
 			int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
-			if (ret > 0) {
+			if (ret > 0 && Program.server != null) {
 				// Process packets as soon as they come
 				for (int n = 0; n < 3; n++) {
 					ExtractIMUValues(raw_buf, n);
@@ -362,7 +360,7 @@ namespace BetterJoyForCemu {
 						Timestamp += (ulong)lag * 5000; // add lag once
 						ProcessButtonsAndStick(raw_buf);
 					}
-					Timestamp += (ulong)(2 - n) * 5000; // 5ms difference
+					Timestamp += 5000; // 5ms difference
 
 					packetCounter++;
 					Program.server.NewReportIncoming(this);
@@ -382,19 +380,19 @@ namespace BetterJoyForCemu {
 		private void Poll() {
 			int attempts = 0;
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-				SendRumble(rumble_obj.GetData());
+				//SendRumble(rumble_obj.GetData());
 				int a = ReceiveRaw();
 				//a = ReceiveRaw();
 				if (a > 0) {
 					state = state_.IMU_DATA_OK;
 					attempts = 0;
-				} else if (attempts > 1000) {
+				} else if (attempts > 10000) {
 					state = state_.DROPPED;
 					DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
 					break;
 				} else {
 					DebugPrint("Pause 5ms", DebugType.THREADING);
-					Thread.Sleep((Int32)5);
+					Thread.Sleep((Int32)(!isPro ? 1 : 5));
 				}
 				++attempts;
 			}
@@ -412,6 +410,9 @@ namespace BetterJoyForCemu {
 				}
 			}
 		}
+
+		public float[] otherStick = { 0, 0 };
+
 		private int ProcessButtonsAndStick(byte[] report_buf) {
 			if (report_buf[0] == 0x00) return -1;
 
@@ -427,13 +428,26 @@ namespace BetterJoyForCemu {
 
 			stick_precal[0] = (UInt16)(stick_raw[0] | ((stick_raw[1] & 0xf) << 8));
 			stick_precal[1] = (UInt16)((stick_raw[1] >> 4) | (stick_raw[2] << 4));
-			stick = CenterSticks(stick_precal);
+			stick = CenterSticks(stick_precal, stick_cal, deadzone);
 
 			if (isPro) {
 				stick2_precal[0] = (UInt16)(stick2_raw[0] | ((stick2_raw[1] & 0xf) << 8));
 				stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
-				stick2 = CenterSticks(stick2_precal, true);
+				stick2 = CenterSticks(stick2_precal, stick2_cal, deadzone2);
 			}
+
+			// Read other Joycon's sticks
+			if (isLeft && other != null) {
+				stick2 = otherStick;
+				other.otherStick = stick;
+			}
+
+			if (!isLeft && other != null) {
+				Array.Copy(stick, stick2, 2);
+				stick = otherStick;
+				other.otherStick = stick2;
+			}
+			//
 
 			lock (buttons) {
 				lock (down_) {
@@ -463,6 +477,33 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.STICK2] = ((report_buf[4] & (!isLeft ? 0x08 : 0x04)) != 0);
 					buttons[(int)Button.SHOULDER2_1] = (report_buf[3 + (!isLeft ? 2 : 0)] & 0x40) != 0;
 					buttons[(int)Button.SHOULDER2_2] = (report_buf[3 + (!isLeft ? 2 : 0)] & 0x80) != 0;
+				}
+
+				if (isLeft && other != null) {
+					buttons[(int)Button.B] = other.buttons[(int)Button.DPAD_DOWN];
+					buttons[(int)Button.A] = other.buttons[(int)Button.DPAD_RIGHT];
+					buttons[(int)Button.X] = other.buttons[(int)Button.DPAD_UP];
+					buttons[(int)Button.Y] = other.buttons[(int)Button.DPAD_LEFT];
+
+					buttons[(int)Button.STICK2] = other.buttons[(int)Button.STICK];
+					buttons[(int)Button.SHOULDER2_1] = other.buttons[(int)Button.SHOULDER_1];
+					buttons[(int)Button.SHOULDER2_2] = other.buttons[(int)Button.SHOULDER_2];
+
+					buttons[(int)Button.HOME] = other.buttons[(int)Button.HOME];
+					buttons[(int)Button.PLUS] = other.buttons[(int)Button.PLUS];
+				}
+
+				if (!isLeft && other != null) {
+					buttons[(int)Button.B] = other.buttons[(int)Button.DPAD_DOWN];
+					buttons[(int)Button.A] = other.buttons[(int)Button.DPAD_RIGHT];
+					buttons[(int)Button.X] = other.buttons[(int)Button.DPAD_UP];
+					buttons[(int)Button.Y] = other.buttons[(int)Button.DPAD_LEFT];
+
+					buttons[(int)Button.STICK2] = other.buttons[(int)Button.STICK];
+					buttons[(int)Button.SHOULDER2_1] = other.buttons[(int)Button.SHOULDER_1];
+					buttons[(int)Button.SHOULDER2_2] = other.buttons[(int)Button.SHOULDER_2];
+
+					buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
 				}
 
 				lock (buttons_up) {
@@ -500,13 +541,13 @@ namespace BetterJoyForCemu {
 
 						break;
 					case 1:
-						acc_g.Y = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.Y = -(gyr_r[i] - gyr_neutral[i] * 0.5f) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+						acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+						gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i] * 0.5f) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
 						break;
 					case 2:
-						acc_g.Z = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.Z = -(gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+						acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+						gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i] * 0.5f) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
 						break;
 				}
@@ -526,16 +567,13 @@ namespace BetterJoyForCemu {
 			first_imu_packet = true;
 		}
 
-		private float[] CenterSticks(UInt16[] vals, bool special = false) {
-			ushort[] t = stick_cal;
-
-			if (special)
-				t = stick2_cal;
+		private float[] CenterSticks(UInt16[] vals, ushort[] cal, ushort dz) {
+			ushort[] t = cal;
 
 			float[] s = { 0, 0 };
 			for (uint i = 0; i < 2; ++i) {
 				float diff = vals[i] - t[2 + i];
-				if (Math.Abs(diff) < deadzone) vals[i] = 0;
+				if (Math.Abs(diff) < dz) vals[i] = 0;
 				else if (diff > 0) // if axis is above center
 				{
 					s[i] = diff / t[i];

@@ -18,9 +18,6 @@ namespace BetterJoyForCemu {
 		public bool EnableIMU = true;
 		public bool EnableLocalize = false;
 
-		
-
-		// Different operating systems either do or don't like the trailing zero
 		private const ushort vendor_id = 0x57e;
 		private const ushort vendor_id_ = 0x057e;
 		private const ushort product_l = 0x2006;
@@ -53,7 +50,6 @@ namespace BetterJoyForCemu {
 				}
 			}
 
-			string path = "";
 			hid_device_info enumerate;
 			while (ptr != IntPtr.Zero) {
 				enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
@@ -73,7 +69,12 @@ namespace BetterJoyForCemu {
 					}
 
 					IntPtr handle = HIDapi.hid_open_path(enumerate.path);
-					HIDapi.hid_set_nonblocking(handle, 1);
+					try {
+						HIDapi.hid_set_nonblocking(handle, 1);
+					} catch (Exception e) {
+						Console.WriteLine("Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?");
+						break;
+					}
 
 					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
 
@@ -86,6 +87,39 @@ namespace BetterJoyForCemu {
 				}
 				ptr = enumerate.next;
 			}
+
+			int found = 0;
+			foreach (Joycon v in j) {
+				if (v.isLeft && !v.isPro)
+					found++;
+				if (!v.isLeft && !v.isPro)
+					found++;
+			}
+
+			if (found == 2) {
+				Console.WriteLine("Both joycons successfully found.");
+				Joycon temp = null;
+				foreach (Joycon v in j) {
+					if (v.isLeft && !v.isPro) {
+						if (temp == null)
+							temp = v;
+						else {
+							temp.other = v;
+							v.other = temp;
+						}
+					}
+
+					if (!v.isLeft && !v.isPro) {
+						if (temp == null)
+							temp = v;
+						else {
+							temp.other = v;
+							v.other = temp;
+						}
+					}
+				} // Join up the two joycons
+			} else if (found != 0)
+				Console.WriteLine("Only one joycon found. Please connect both and then restart the program.");
 
 			HIDapi.hid_free_enumeration(top_ptr);
 		}
