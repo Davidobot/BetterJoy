@@ -1,7 +1,14 @@
-# BetterJoyForCemu v1.51
+# BetterJoyForCemu v2.0
 Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](http://cemu.info/) and [Cemuhook](https://sshnuke.net/cemuhook/).
 
 # Changelog
+### v2
+* Added Joycon support
+   * Exposes two CemuHook controllers - both have all the buttons, selecting one or the other will just pick whether to use the right or left Joycon for the motion controls
+   * Make sure both controllers are connected beforehand
+* Further gyro fixes
+* Code cleanup
+
 ### v1.51
 * Added USB support
 * Eliminated gyro shaking
@@ -24,6 +31,7 @@ Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](ht
     1. If the controller recongised, the first LED should light up.
     1. If not, see the __Problems__ section.
 1. Start Cemu and ensure CemuHook has the controller selected.
+    1. If using Joycons, the program will show two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
 1. Enable "Also use for buttons/axes"
 1. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
 
@@ -32,7 +40,7 @@ If the controller does not work after restarting the exe too many times - shut d
 
 If you get weird lag/stuttering - restart your computer; or try running the program multiple times, closing it properly (by pressing enter) each time.
 
-## No joycons detected
+## No Joycons detected
 If using Bluetooth - see the "How to properly disconnect the controller" section and follow the steps listed there. Then, reconnect the controller.
 
 If using USB - try unplugging the controller and then plugging it back in, making sure to let Windows set it up before launching the program.
