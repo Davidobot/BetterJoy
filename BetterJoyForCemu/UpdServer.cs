@@ -384,13 +384,10 @@ namespace BetterJoyForCemu {
 				var accel = hidReport.GetAccel();
 				if (accel != null) {
 					Array.Copy(BitConverter.GetBytes(accel.Y), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(-accel.Z), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(accel.X), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 				} else {
 					outIdx += 12;
@@ -403,13 +400,10 @@ namespace BetterJoyForCemu {
 				var gyro = hidReport.GetGyro();
 				if (gyro != null) {
 					Array.Copy(BitConverter.GetBytes(gyro.Y), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(gyro.Z), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 					Array.Copy(BitConverter.GetBytes(gyro.X), 0, outputData, outIdx, 4);
-					//Array.Copy(BitConverter.GetBytes((float)0), 0, outputData, outIdx, 4);
 					outIdx += 4;
 				} else {
 					outIdx += 12;
@@ -423,8 +417,6 @@ namespace BetterJoyForCemu {
 		public void NewReportIncoming(Joycon hidReport) {
 			if (!running)
 				return;
-
-			//Console.WriteLine("New report!");
 
 			var clientsList = new List<IPEndPoint>();
 			var now = DateTime.UtcNow;
@@ -482,10 +474,10 @@ namespace BetterJoyForCemu {
 			Array.Copy(BitConverter.GetBytes((uint)MessageType.DSUS_PadDataRsp), 0, outputData, outIdx, 4);
 			outIdx += 4;
 
-			outputData[outIdx++] = (byte)hidReport.PadId; //(byte)hidReport.PadId;
-			outputData[outIdx++] = (byte)hidReport.constate; //(byte)hidReport.PadState;
-			outputData[outIdx++] = (byte)hidReport.model; //(byte)hidReport.Model;
-			outputData[outIdx++] = (byte)hidReport.connection; //(byte)hidReport.ConnectionType;
+			outputData[outIdx++] = (byte)hidReport.PadId;
+			outputData[outIdx++] = (byte)hidReport.constate;
+			outputData[outIdx++] = (byte)hidReport.model;
+			outputData[outIdx++] = (byte)hidReport.connection;
 			{
 				byte[] padMac = hidReport.PadMacAddress.GetAddressBytes();
 				outputData[outIdx++] = padMac[0];
@@ -496,10 +488,9 @@ namespace BetterJoyForCemu {
 				outputData[outIdx++] = padMac[5];
 			}
 
-			outputData[outIdx++] = (byte)hidReport.battery;//(byte)hidReport.BatteryStatus;
-			outputData[outIdx++] = 1;// hidReport.IsPadActive ? (byte)1 : (byte)0;
+			outputData[outIdx++] = (byte)hidReport.battery;
+			outputData[outIdx++] = 1;
 
-			// (uint)hidReport.PacketCounter
 			Array.Copy(BitConverter.GetBytes(hidReport.packetCounter), 0, outputData, outIdx, 4);
 			outIdx += 4;
 

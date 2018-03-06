@@ -14,7 +14,6 @@ using System.Diagnostics;
 
 namespace BetterJoyForCemu {
 	public class JoyconManager {
-		// Settings accessible via Unity
 		public bool EnableIMU = true;
 		public bool EnableLocalize = false;
 
@@ -81,7 +80,7 @@ namespace BetterJoyForCemu {
 					byte[] mac = new byte[6];
 					for (int n = 0; n < 6; n++)
 						mac[n] = byte.Parse(enumerate.serial_number.Substring(n * 2, 2), System.Globalization.NumberStyles.HexNumber);
-					j[j.Count - 1].PadMacAddress = new PhysicalAddress(mac);		
+					j[j.Count - 1].PadMacAddress = new PhysicalAddress(mac);
 
 					++i;
 				}
@@ -135,16 +134,8 @@ namespace BetterJoyForCemu {
 		}
 
 		public void Update() {
-			for (int i = 0; i < j.Count; ++i) {
+			for (int i = 0; i < j.Count; ++i)
 				j[i].Update();
-
-				/*if (j.Count > 0) {
-					Joycon jj = j[i];
-
-					if (jj.GetButtonDown(Joycon.Button.DPAD_DOWN))
-						jj.SetRumble(160, 320, 0.6f, 200);
-				}*/
-			}
 		}
 
 		public void OnApplicationQuit() {

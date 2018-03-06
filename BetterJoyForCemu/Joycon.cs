@@ -105,26 +105,7 @@ namespace BetterJoyForCemu {
 		private bool do_localize;
 		private float filterweight;
 		private const uint report_len = 49;
-		private struct Report {
-			byte[] r;
-			System.DateTime t;
-			public ulong ts;
 
-			// To-do: get timestamp from report (0th byte); send to server for every 5ms
-			public Report(byte[] report, System.DateTime time, ulong timestamp) {
-				r = report;
-				t = time;
-				ts = (ulong) ((timestamp / (double)Stopwatch.Frequency) * 1000000); // meant to be in microseconds
-			}
-			public System.DateTime GetTime() {
-				return t;
-			}
-			public void CopyBuffer(byte[] b) {
-				for (int i = 0; i < report_len; ++i) {
-					b[i] = r[i];
-				}
-			}
-		};
 		private struct Rumble {
 			private float h_f, amp, l_f;
 			public float t;
@@ -196,16 +177,11 @@ namespace BetterJoyForCemu {
 				for (int i = 0; i < 4; ++i) {
 					rumble_data[4 + i] = rumble_data[i];
 				}
-				//Debug.Log(string.Format("Encoded hex freq: {0:X2}", encoded_hex_freq));
-				//Debug.Log(string.Format("lf_amp: {0:X4}", lf_amp));
-				//Debug.Log(string.Format("hf_amp: {0:X2}", hf_amp));
-				//Debug.Log(string.Format("l_f: {0:F}", l_f));
-				//Debug.Log(string.Format("hf: {0:X4}", hf));
-				//Debug.Log(string.Format("lf: {0:X2}", lf));
+
 				return rumble_data;
 			}
 		}
-		private Queue<Report> reports = new Queue<Report>();
+
 		private Rumble rumble_obj;
 
 		private byte global_count = 0;
@@ -265,6 +241,9 @@ namespace BetterJoyForCemu {
 		public int Attach(byte leds_ = 0x0) {
 			state = state_.ATTACHED;
 
+			// Make sure command is received
+			HIDapi.hid_set_nonblocking(handle, 0);
+
 			byte[] a = { 0x0 };
 
 			// Connect
@@ -315,6 +294,8 @@ namespace BetterJoyForCemu {
 
 			DebugPrint("Done with init.", DebugType.COMMS);
 
+			HIDapi.hid_set_nonblocking(handle, 1);
+
 			return 0;
 		}
 
@@ -326,7 +307,6 @@ namespace BetterJoyForCemu {
 			stop_polling = true;
 
 			if (state > state_.NO_JOYCONS) {
-				//Subcommand(0x30, new byte[] { 0x0 }, 1); // Turn off LEDS after pair
 				Subcommand(0x40, new byte[] { 0x0 }, 1);
 				Subcommand(0x48, new byte[] { 0x0 }, 1);
 
@@ -335,8 +315,6 @@ namespace BetterJoyForCemu {
 					a[0] = 0x80; a[1] = 0x05; // Allow device to talk to BT again
 					HIDapi.hid_write(handle, a, new UIntPtr(2));
 				}
-
-				//Subcommand(0x3, new byte[] { 0x3f }, 1); // Turn on basic HID mode - not needed
 			}
 			if (state > state_.DROPPED) {
 				HIDapi.hid_close(handle);
@@ -347,10 +325,10 @@ namespace BetterJoyForCemu {
 		private byte ts_en;
 		private int ReceiveRaw() {
 			if (handle == IntPtr.Zero) return -2;
-			HIDapi.hid_set_nonblocking(handle, 1);
+			HIDapi.hid_set_nonblocking(handle, 0);
 			byte[] raw_buf = new byte[report_len];
 			int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
-			if (ret > 0 && Program.server != null) {
+			if (ret > 0) {
 				// Process packets as soon as they come
 				for (int n = 0; n < 3; n++) {
 					ExtractIMUValues(raw_buf, n);
@@ -363,7 +341,8 @@ namespace BetterJoyForCemu {
 					Timestamp += 5000; // 5ms difference
 
 					packetCounter++;
-					Program.server.NewReportIncoming(this);
+					if (Program.server != null)
+						Program.server.NewReportIncoming(this);
 				}
 
 				if (ts_en == raw_buf[1]) {
@@ -380,19 +359,20 @@ namespace BetterJoyForCemu {
 		private void Poll() {
 			int attempts = 0;
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-				//SendRumble(rumble_obj.GetData());
+				SendRumble(rumble_obj.GetData()); // Needed for USB to not time out
 				int a = ReceiveRaw();
 				//a = ReceiveRaw();
 				if (a > 0) {
 					state = state_.IMU_DATA_OK;
 					attempts = 0;
-				} else if (attempts > 10000) {
+				} else if (attempts > 1000) {
 					state = state_.DROPPED;
+					Console.WriteLine("Dropped");
 					DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
 					break;
 				} else {
 					DebugPrint("Pause 5ms", DebugType.THREADING);
-					Thread.Sleep((Int32)(!isPro ? 1 : 5));
+					Thread.Sleep((Int32)5);
 				}
 				++attempts;
 			}
