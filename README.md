@@ -40,6 +40,8 @@ If the controller does not work after restarting the exe too many times - shut d
 
 If you get weird lag/stuttering - restart your computer; or try running the program multiple times, closing it properly (by pressing enter) each time.
 
+If something isn't working but it looks like it should be - try running the program as administrator.
+
 __Note that for Joycons to work properly, you need a decent Bluetooth adapter that is comfortable with handling 3/4 connections at a time__
 
 ## No Joycons detected
