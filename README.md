@@ -52,6 +52,14 @@ If using USB - try unplugging the controller and then plugging it back in, makin
 ## Getting stuck at "Using USB" or "Using factory.."
 Close the program and then start it again. If it doesn't work, see the "No joycons detected" section and try that.
 
+## CemuHook not recognising the controller
+Make sure that CemuHook settings are at their default state, which are -
+
+```
+serverIP = 127.0.0.1
+serverPort = 26761
+```
+
 Feel free to open a new issue if you have any comments or questions.
 
 # Connecting and Disconnecting the Controller
