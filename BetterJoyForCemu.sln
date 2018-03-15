@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterJoyForCemu", "BetterJoyForCemu\BetterJoyForCemu.csproj", "{1BF709E9-C133-41DF-933A-C9FF3F664C7B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ViGEmClient", "..\..\..\Downloads\ViGEm-master\ViGEm-master\NET\ViGEmClient\ViGEmClient.csproj", "{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{1BF709E9-C133-41DF-933A-C9FF3F664C7B}.Release|x64.Build.0 = Release|x64
 		{1BF709E9-C133-41DF-933A-C9FF3F664C7B}.Release|x86.ActiveCfg = Release|x86
 		{1BF709E9-C133-41DF-933A-C9FF3F664C7B}.Release|x86.Build.0 = Release|x86
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Debug|x64.Build.0 = Debug|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Debug|x86.Build.0 = Debug|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Release|x64.ActiveCfg = Release|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Release|x64.Build.0 = Release|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Release|x86.ActiveCfg = Release|Any CPU
+		{AA18EBCF-7E9D-4BC5-8760-E8C6E9A773E5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

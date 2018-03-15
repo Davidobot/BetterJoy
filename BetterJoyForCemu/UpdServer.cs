@@ -278,7 +278,7 @@ namespace BetterJoyForCemu {
 			}
 		}
 
-		public void Start(int port=26760) {
+		public void Start(IPAddress ip, int port=26760) {
 			if (running) {
 				if (udpSock != null) {
 					udpSock.Close();
@@ -288,7 +288,7 @@ namespace BetterJoyForCemu {
 			}
 
 			udpSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-			try { udpSock.Bind(new IPEndPoint(IPAddress.Loopback, port)); } catch (SocketException ex) {
+			try { udpSock.Bind(new IPEndPoint(ip, port)); } catch (SocketException ex) {
 				udpSock.Close();
 				udpSock = null;
 
@@ -301,7 +301,7 @@ namespace BetterJoyForCemu {
 			serverId = BitConverter.ToUInt32(randomBuf, 0);
 
 			running = true;
-			Console.WriteLine("Starting server.");
+			Console.WriteLine("Starting server on {0}:{1}", ip.ToString(), port);
 			StartReceive();
 		}
 

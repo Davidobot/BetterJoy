@@ -101,5 +101,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Downloads\ViGEm-master\ViGEm-master\NET\ViGEmClient\ViGEmClient.csproj">
+      <Project>{aa18ebcf-7e9d-4bc5-8760-e8c6e9a773e5}</Project>
+      <Name>ViGEmClient</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

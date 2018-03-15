@@ -8,9 +8,15 @@ using System.Numerics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Timers;
-using static BetterJoyForCemu.HIDapi;
+
 using System.Net.NetworkInformation;
 using System.Diagnostics;
+
+using static BetterJoyForCemu.HIDapi;
+using Nefarius.ViGEm.Client;
+using Nefarius.ViGEm.Client.Targets;
+using System.Net;
+using System.Configuration;
 
 namespace BetterJoyForCemu {
 	public class JoyconManager {
@@ -126,6 +132,10 @@ namespace BetterJoyForCemu {
 		public void Start() {
 			for (int i = 0; i < j.Count; ++i) {
 				Joycon jc = j[i];
+
+				if (jc.xin != null)
+					jc.xin.Connect();
+
 				byte LEDs = 0x0;
 				LEDs |= (byte)(0x1 << i);
 				jc.Attach(leds_: LEDs);
@@ -141,6 +151,11 @@ namespace BetterJoyForCemu {
 		public void OnApplicationQuit() {
 			for (int i = 0; i < j.Count; ++i) {
 				j[i].Detach();
+
+				if (j[i].xin != null) {
+					j[i].xin.Disconnect();
+					j[i].xin.Dispose();
+				}
 			}
 		}
 	}
@@ -188,7 +203,11 @@ namespace BetterJoyForCemu {
 		public static UdpServer server;
 		static double pollsPerSecond = 120.0;
 
+		public static ViGEmClient emClient;
+
 		static void Main(string[] args) {
+			emClient = new ViGEmClient(); // Manages emulated XInput
+
 			foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces()) {
 				// Get local BT host MAC
 				if (nic.NetworkInterfaceType != NetworkInterfaceType.FastEthernetFx && nic.NetworkInterfaceType != NetworkInterfaceType.Wireless80211) {
@@ -204,10 +223,7 @@ namespace BetterJoyForCemu {
 
 			server = new UdpServer(mgr.j);
 
-			//updateThread = new Thread(new ThreadStart(mgr.Update));
-			//updateThread.Start();
-
-			server.Start(26760);
+			server.Start(IPAddress.Parse(ConfigurationSettings.AppSettings["IP"]), Int32.Parse(ConfigurationSettings.AppSettings["Port"]));
 			HighResTimer timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
 			timer.Start();
 
