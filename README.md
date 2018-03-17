@@ -11,6 +11,11 @@ __Note that this program allows the Pro Controller and Joycons to be used system
    * Requires ViGEm driver (provided in release)
 * Rumble support
 * Ability to rebind keys
+* __v3a__
+   * Added more app settings
+      * Ability to disable rumble
+      * Option to swap A-B and X-Y (on request of Paul)
+   * CemuHook gets fed correct data about the kind of connection the controller is on
 
 ### v2
 * Added Joycon support
@@ -48,6 +53,19 @@ __Note that this program allows the Pro Controller and Joycons to be used system
 1. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
 
 * As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam!
+
+# App Settings
+Feel free to edit *BetterJoyForCemu.exe.config* before running the program to configure it to your liking.
+
+Current settings are:
+* IP address of CemuHook motion server  *(default: 127.0.0.1)*
+* Port number of CemuHook motion server *(default: 26760)*
+* Rumble Period of motor in ms          *(default: 100)*
+* Frequency of low rumble in Hz         *(default: 160)*
+* Frequency of high rumble in Hz        *(default: 320)*
+* Rumble - en/disables rumble           *(default: true)*
+* Swap buttons                          *(default: false)*
+  * Swaps the A-B and X-Y buttons to mimick the Xbox layout by button name, rather than physical layout 
 
 # Problems
 __Make sure you installed the ViGEm drivers!!__
