@@ -1,7 +1,17 @@
-# BetterJoyForCemu v2.0c
+# BetterJoyForCemu v3.0
 Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](http://cemu.info/) and [Cemuhook](https://sshnuke.net/cemuhook/).
 
+__Note that this program allows the Pro Controller and Joycons to be used system-wide without installation of Cemu - just follow the *How to Use* instructions until point 3__
+
 # Changelog
+### v3
+* Added XInput Support using ViGEm.
+   * No longer need to use "Also use for axes/buttons"
+   * System-wide compatibility (use your Joycons with Steam, or something)
+   * Requires ViGEm driver (provided in release)
+* Rumble support
+* Ability to rebind keys
+
 ### v2
 * Added Joycon support
    * Exposes two CemuHook controllers - both have all the buttons, selecting one or the other will just pick whether to use the right or left Joycon for the motion controls
@@ -24,25 +34,33 @@ Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](ht
 * Initial release
 
 # How to use
-1. Make sure CEMU has at least one input profile set up already (so that CemuHook can feed data into it)
-    1. If you don't, go into _Input settings_ (under _Options_) on Cemu and set the first controller to be a Wii U Gamepad, you can leave the rest of the settings blank (or set the device to your keyboard)
 1. Connect pro controller via bluetooth/usb
+1. Install ViGEm drivers
+    1. Run *! Install ViGEm Driver (Run as Admin).bat*
 1. Run BetterJoyForCemu.exe
     1. If the controller recongised, the first LED should light up.
     1. If not, see the __Problems__ section.
 1. Start Cemu and ensure CemuHook has the controller selected.
-    1. If using Joycons, the program will show two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
-1. Enable "Also use for buttons/axes"
+    1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
+1. Go into *Input Settings*, choose XInput as a source and assign buttons normally.
+    1. If you don't want to do this for some reason, just have one input profile set up with *Wii U Gamepad* as the controller and enable "Also use for buttons/axes" under *GamePad motion source*. **This is no longer required as of version 3**
+    1. Turn rumble up to 70-80% if you want rumble.
 1. Please press enter in the console box once you're done with the program - closing it by clicking "x" does not stop the services correctly.
 
+* As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam!
+
 # Problems
+__Make sure you installed the ViGEm drivers!!__
+
 If the controller does not work after restarting the exe too many times - shut down the exe, disconnect your pro controller and connect it again.
 
 If you get weird lag/stuttering - restart your computer; or try running the program multiple times, closing it properly (by pressing enter) each time.
 
 If something isn't working but it looks like it should be - try running the program as administrator.
 
-__Note that for Joycons to work properly, you need a decent Bluetooth adapter that is comfortable with handling 3/4 connections at a time__
+__Note that for Joycons to work properly, you need a decent Bluetooth adapter that is comfortable with handling 3/4 connections at a time.__
+
+__If while using a pro controller in USB mode, the program hangs on *Using USB*, just close the console window and open it again.__
 
 ## No Joycons detected
 If using Bluetooth - see the "How to properly disconnect the controller" section and follow the steps listed there. Then, reconnect the controller.
@@ -84,5 +102,7 @@ Plug the controller into your computer.
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
 
 Also I am very grateful to [mfosse](https://github.com/mfosse/JoyCon-Driver) for pointing me in the right direction and to [Looking-Glass](https://github.com/Looking-Glass/JoyconLib) without whom I would not be able to figure anything out. (being honest here - the joycon code is his)
+
+Many thanks to [nefarius](https://github.com/nefarius/ViGEm) for his ViGEm project! Apologies and appreciation go out to [epigramx](https://github.com/epigramx), creator of *WiimoteHook*, for giving me the driver idea and for letting me keep using his installation batch script even though I took it without permission.
 
 A last thanks goes out to [dekuNukem](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering) for his documentation, especially on the SPI calibration data and the IMU sensor notes!
