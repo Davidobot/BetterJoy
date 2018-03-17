@@ -1,4 +1,4 @@
-# BetterJoyForCemu v3.0
+# BetterJoyForCemu v3.0a
 Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](http://cemu.info/) and [Cemuhook](https://sshnuke.net/cemuhook/).
 
 __Note that this program allows the Pro Controller and Joycons to be used system-wide without installation of Cemu - just follow the *How to Use* instructions until point 3__
