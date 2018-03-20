@@ -509,10 +509,10 @@ namespace BetterJoyForCemu {
 				}
 
 				if (other != null) {
-					buttons[(int)(!swapButtons ? Button.B : Button.A)] = other.buttons[(int)Button.DPAD_DOWN];
-					buttons[(int)(!swapButtons ? Button.A : Button.B)] = other.buttons[(int)Button.DPAD_RIGHT];
-					buttons[(int)(!swapButtons ? Button.X : Button.Y)] = other.buttons[(int)Button.DPAD_UP];
-					buttons[(int)(!swapButtons ? Button.Y : Button.X)] = other.buttons[(int)Button.DPAD_LEFT];
+					buttons[(int)(Button.B)] = other.buttons[(int)Button.DPAD_DOWN];
+					buttons[(int)(Button.A)] = other.buttons[(int)Button.DPAD_RIGHT];
+					buttons[(int)(Button.X)] = other.buttons[(int)Button.DPAD_UP];
+					buttons[(int)(Button.Y)] = other.buttons[(int)Button.DPAD_LEFT];
 
 					buttons[(int)Button.STICK2] = other.buttons[(int)Button.STICK];
 					buttons[(int)Button.SHOULDER2_1] = other.buttons[(int)Button.SHOULDER_1];
