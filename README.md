@@ -95,7 +95,7 @@ Make sure that CemuHook settings are at their default state, which are -
 
 ```
 serverIP = 127.0.0.1
-serverPort = 26761
+serverPort = 26760
 ```
 
 Feel free to open a new issue if you have any comments or questions.
