@@ -17,6 +17,11 @@ using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using System.Net;
 using System.Configuration;
+using System.Net.Http;
+using System.IO;
+using System.Windows.Forms;
+
+using System.ServiceProcess;
 
 namespace BetterJoyForCemu {
 	public class JoyconManager {
@@ -31,6 +36,8 @@ namespace BetterJoyForCemu {
 
 		public List<Joycon> j; // Array of all connected Joy-Cons
 		static JoyconManager instance;
+
+		public MainForm form;
 
 		public static JoyconManager Instance {
 			get { return instance; }
@@ -51,7 +58,7 @@ namespace BetterJoyForCemu {
 				ptr = HIDapi.hid_enumerate(vendor_id_, 0x0);
 				if (ptr == IntPtr.Zero) {
 					HIDapi.hid_free_enumeration(ptr);
-					Console.WriteLine("No Joy-Cons found!");
+					form.console.Text += "No Joy-Cons found!\r\n";
 				}
 			}
 
@@ -62,26 +69,48 @@ namespace BetterJoyForCemu {
 				if (enumerate.product_id == product_l || enumerate.product_id == product_r || enumerate.product_id == product_pro) {
 					if (enumerate.product_id == product_l) {
 						isLeft = true;
-						Console.WriteLine("Left Joy-Con connected.");
+						form.console.Text += "Left Joy-Con connected.\r\n";
 					} else if (enumerate.product_id == product_r) {
 						isLeft = false;
-						Console.WriteLine("Right Joy-Con connected.");
+						form.console.Text += "Right Joy-Con connected.\r\n";
 					} else if (enumerate.product_id == product_pro) {
 						isLeft = true;
-						Console.WriteLine("Pro controller connected.");
+						form.console.Text += "Pro controller connected.\r\n";
 					} else {
-						Console.WriteLine("Non Joy-Con input device skipped.");
+						form.console.Text += "Non Joy-Con input device skipped.\r\n";
 					}
+
+					// Add controller to block-list for HidGuardian
+					HttpWebRequest request = (HttpWebRequest)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/add/");
+					string postData = @"hwids=HID\" + enumerate.path.Split('#')[1].ToUpper();
+					var data = Encoding.UTF8.GetBytes(postData);
+
+					request.Method = "POST";
+					request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+					request.ContentLength = data.Length;
+				
+					using (var stream = request.GetRequestStream())
+						stream.Write(data, 0, data.Length);
+
+					try {
+						var response = (HttpWebResponse)request.GetResponse();
+						var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+					} catch (Exception e) {
+						form.console.Text += "Unable to add controller to block-list.\r\n";
+					}
+					// -------------------- //
 
 					IntPtr handle = HIDapi.hid_open_path(enumerate.path);
 					try {
 						HIDapi.hid_set_nonblocking(handle, 1);
 					} catch (Exception e) {
-						Console.WriteLine("Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?");
+						form.console.Text += "Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?\r\n";
 						break;
 					}
 
 					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
+
+					j.Last().form = form;
 
 					byte[] mac = new byte[6];
 					for (int n = 0; n < 6; n++)
@@ -102,7 +131,7 @@ namespace BetterJoyForCemu {
 			}
 
 			if (found == 2) {
-				Console.WriteLine("Both joycons successfully found.");
+				form.console.Text += "Both joycons successfully found.\r\n";
 				Joycon temp = null;
 				foreach (Joycon v in j) {
 					if (v.isLeft && !v.isPro) {
@@ -124,7 +153,7 @@ namespace BetterJoyForCemu {
 					}
 				} // Join up the two joycons
 			} else if (found != 0)
-				Console.WriteLine("Only one joycon found. Please connect both and then restart the program.");
+				form.console.Text += "Only one joycon found. Please connect both and then restart the program.\r\n";
 
 			HIDapi.hid_free_enumeration(top_ptr);
 		}
@@ -205,7 +234,43 @@ namespace BetterJoyForCemu {
 
 		public static ViGEmClient emClient;
 
-		static void Main(string[] args) {
+		private static readonly HttpClient client = new HttpClient();
+
+		static JoyconManager mgr;
+		static HighResTimer timer;
+		static string pid;
+
+		static MainForm form;
+
+		public static void Start() {
+			pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
+
+			var HidCerberusService = new ServiceController("HidCerberus Service");
+			if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
+				form.console.Text += "HidGuardian was stopped. Starting...\r\n";
+
+				try {
+					HidCerberusService.Start();
+				} catch (Exception e) {
+					form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n";
+				}
+			}
+
+			HttpWebResponse response;
+			if (Boolean.Parse(ConfigurationSettings.AppSettings["PurgeWhitelist"])) {
+				try {
+					response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
+				} catch (Exception e) {
+					form.console.Text += "Unable to purge whitelist.\r\n";
+				}
+			}
+
+			try {
+				response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/add/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
+			} catch (Exception e) {
+				form.console.Text += "Unable to add program to whitelist.\r\n";
+			}
+
 			emClient = new ViGEmClient(); // Manages emulated XInput
 
 			foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces()) {
@@ -217,22 +282,38 @@ namespace BetterJoyForCemu {
 				}
 			}
 
-			JoyconManager mgr = new JoyconManager();
+			mgr = new JoyconManager();
+			mgr.form = form;
 			mgr.Awake();
 			mgr.Start();
 
 			server = new UdpServer(mgr.j);
+			server.form = form;
 
 			server.Start(IPAddress.Parse(ConfigurationSettings.AppSettings["IP"]), Int32.Parse(ConfigurationSettings.AppSettings["Port"]));
-			HighResTimer timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
+			timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
 			timer.Start();
 
-			Console.Write("Press enter to quit.");
-			Console.ReadLine();
+			form.console.Text += "All systems go\r\n";
+		}
+
+		public static void Stop() {
+			try { 
+				HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
+			} catch (Exception e) {
+				form.console.Text += "Unable to remove program from whitelist.\r\n";
+			}
 
 			server.Stop();
 			timer.Stop();
 			mgr.OnApplicationQuit();
+		}
+
+		static void Main(string[] args) {
+			Application.EnableVisualStyles();
+			Application.SetCompatibleTextRenderingDefault(false);
+			form = new MainForm();
+			Application.Run(form);
 		}
 	}
 }

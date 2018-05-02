@@ -211,6 +211,8 @@ namespace BetterJoyForCemu {
 
 		bool toRumble = Boolean.Parse(ConfigurationSettings.AppSettings["EnableRumble"]);
 
+		public MainForm form;
+
 		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, int id = 0, bool isPro=false, bool usb = false) {
 			handle = handle_;
 			imu_enabled = imu;
@@ -243,7 +245,7 @@ namespace BetterJoyForCemu {
 		public void DebugPrint(String s, DebugType d) {
 			if (debug_type == DebugType.NONE) return;
 			if (d == DebugType.ALL || d == debug_type || debug_type == DebugType.ALL) {
-				Console.WriteLine(s);
+				form.console.Text += s + "\r\n";
 			}
 		}
 		public bool GetButtonDown(Button b) {
@@ -285,7 +287,7 @@ namespace BetterJoyForCemu {
 				Subcommand(0x03, new byte[] { 0x3f }, 1, false);
 
 				a = Enumerable.Repeat((byte)0, 64).ToArray();
-				Console.WriteLine("Using USB.");
+				form.console.Text += "Using USB.\r\n";
 
 				a[0] = 0x80;
 				a[1] = 0x01;
@@ -378,7 +380,7 @@ namespace BetterJoyForCemu {
 				}
 
 				if (ts_en == raw_buf[1]) {
-					Console.WriteLine("Duplicate timestamp enqueued.");
+					form.console.Text += "Duplicate timestamp enqueued.\r\n";
 					DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
 				}
 				ts_en = raw_buf[1];
@@ -399,7 +401,7 @@ namespace BetterJoyForCemu {
 					attempts = 0;
 				} else if (attempts > 1000) {
 					state = state_.DROPPED;
-					Console.WriteLine("Dropped");
+					//form.console.Text += "Dropped\r\n";
 					DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
 					break;
 				} else {
@@ -609,7 +611,7 @@ namespace BetterJoyForCemu {
 				PollThreadObj = new Thread(new ThreadStart(Poll));
 				PollThreadObj.Start();
 
-				Console.WriteLine("Starting poll thread.");
+				form.console.Text += "Starting poll thread.\r\n";
 			}
 		}
 
@@ -675,13 +677,13 @@ namespace BetterJoyForCemu {
 			bool found = false;
 			for (int i = 0; i < 9; ++i) {
 				if (buf_[i] != 0xff) {
-					Console.WriteLine("Using user stick calibration data.");
+					form.console.Text += "Using user stick calibration data.\r\n";
 					found = true;
 					break;
 				}
 			}
 			if (!found) {
-				Console.WriteLine("Using factory stick calibration data.");
+				form.console.Text += "Using factory stick calibration data.\r\n";
 				buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
 			}
 			stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
@@ -698,13 +700,13 @@ namespace BetterJoyForCemu {
 				found = false;
 				for (int i = 0; i < 9; ++i) {
 					if (buf_[i] != 0xff) {
-						Console.WriteLine("Using user stick calibration data.");
+						form.console.Text += "Using user stick calibration data.\r\n";
 						found = true;
 						break;
 					}
 				}
 				if (!found) {
-					Console.WriteLine("Using factory stick calibration data.");
+					form.console.Text += "Using factory stick calibration data.\r\n";
 					buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
 				}
 				stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center

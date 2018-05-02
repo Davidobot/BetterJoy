@@ -19,6 +19,8 @@ namespace BetterJoyForCemu {
 
 		List<Joycon> controllers;
 
+		public MainForm form;
+
 		public UdpServer(List<Joycon> p) {
 			controllers = p;
 		}
@@ -293,7 +295,7 @@ namespace BetterJoyForCemu {
 				udpSock.Close();
 				udpSock = null;
 
-				Console.WriteLine("Could not start server. Make sure that only one instance of the program is running at a time and no other CemuHook applications are running.");
+				form.console.Text += "Could not start server. Make sure that only one instance of the program is running at a time and no other CemuHook applications are running.\r\n";
 				return;
 			}
 
@@ -302,7 +304,7 @@ namespace BetterJoyForCemu {
 			serverId = BitConverter.ToUInt32(randomBuf, 0);
 
 			running = true;
-			Console.WriteLine("Starting server on {0}:{1}", ip.ToString(), port);
+			form.console.Text += String.Format("Starting server on {0}:{1}\r\n", ip.ToString(), port);
 			StartReceive();
 		}
 
