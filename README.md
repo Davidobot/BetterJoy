@@ -1,9 +1,17 @@
-# BetterJoyForCemu v3.0b
+# BetterJoyForCemu v4
 Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](http://cemu.info/) and [Cemuhook](https://sshnuke.net/cemuhook/).
 
 __Note that this program allows the Pro Controller and Joycons to be used system-wide without installation of Cemu - just follow the *How to Use* instructions until point 3__
 
 # Changelog
+### v4
+ * Implemented a GUI
+ * Added application icon
+ * Added HidGuardian support.
+    * Weird jittering / Windows / steam glitching shouldn't happen anymore
+    * Streamlined driver install process
+    * Installs HidGuardian as a Windows process - don't move the BetterJoyForCemu folder after installation without uninstalling first.
+
 ### v3
 * Added XInput Support using ViGEm.
    * No longer need to use "Also use for axes/buttons"
@@ -42,11 +50,13 @@ __Note that this program allows the Pro Controller and Joycons to be used system
 
 # How to use
 1. Connect pro controller via bluetooth/usb
-1. Install ViGEm drivers
-    1. Run *! Install ViGEm Driver (Run as Admin).bat*
+1. Install drivers
+    1. Run *! Driver Install (Run as Admin).bat*
 1. Run BetterJoyForCemu.exe
     1. If the controller recongised, the first LED should light up.
+    1. If running for the first time, things might glitch out - just close BetterJoyForCemu normally and restart your computer for the drivers to take effect.
     1. If not, see the __Problems__ section.
+1. Minimise BetterJoyForCemu.
 1. Start Cemu and ensure CemuHook has the controller selected.
     1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
 1. Go into *Input Settings*, choose XInput as a source and assign buttons normally.
@@ -68,9 +78,11 @@ Current settings are:
 * Rumble - en/disables rumble           *(default: true)*
 * Swap buttons                          *(default: false)*
   * Swaps the A-B and X-Y buttons to mimick the Xbox layout by button name, rather than physical layout 
+* PurgeWhitelist                        *(default: true)*
+  * Determines whether or not HidGuardian's process whitelist is purged on start-up
 
 # Problems
-__Make sure you installed the ViGEm drivers!!__
+__Make sure you installed the drivers!!__
 
 If the controller does not work after restarting the exe too many times - shut down the exe, disconnect your pro controller and connect it again.
 
@@ -81,6 +93,11 @@ If something isn't working but it looks like it should be - try running the prog
 __Note that for Joycons to work properly, you need a decent Bluetooth adapter that is comfortable with handling 3/4 connections at a time.__
 
 __If while using a pro controller in USB mode, the program hangs on *Using USB*, just close the console window and open it again.__
+
+## Make pro controller or Joycons visible to other programs again without uninstalled HidGuardian
+BetterJoyForCemu automatically adds Joycons and Pro Controllers to HidGuardian's blacklist upon start-up.
+
+However, to manually remove the devices from the blacklist, one can navigate to this page: http://localhost:26762/
 
 ## No Joycons detected
 If using Bluetooth - see the "How to properly disconnect the controller" section and follow the steps listed there. Then, reconnect the controller.
@@ -123,6 +140,6 @@ A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for puttin
 
 Also I am very grateful to [mfosse](https://github.com/mfosse/JoyCon-Driver) for pointing me in the right direction and to [Looking-Glass](https://github.com/Looking-Glass/JoyconLib) without whom I would not be able to figure anything out. (being honest here - the joycon code is his)
 
-Many thanks to [nefarius](https://github.com/nefarius/ViGEm) for his ViGEm project! Apologies and appreciation go out to [epigramx](https://github.com/epigramx), creator of *WiimoteHook*, for giving me the driver idea and for letting me keep using his installation batch script even though I took it without permission.
+Many thanks to [nefarius](https://github.com/nefarius/ViGEm) for his ViGEm project! Apologies and appreciation go out to [epigramx](https://github.com/epigramx), creator of *WiimoteHook*, for giving me the driver idea and for letting me keep using his installation batch script even though I took it without permission. Thanks go out to [MTCKC](https://github.com/MTCKC/ProconXInput) for inspiration and batch files.
 
 A last thanks goes out to [dekuNukem](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering) for his documentation, especially on the SPI calibration data and the IMU sensor notes!
