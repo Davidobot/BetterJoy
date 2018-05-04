@@ -143,3 +143,5 @@ Also I am very grateful to [mfosse](https://github.com/mfosse/JoyCon-Driver) for
 Many thanks to [nefarius](https://github.com/nefarius/ViGEm) for his ViGEm project! Apologies and appreciation go out to [epigramx](https://github.com/epigramx), creator of *WiimoteHook*, for giving me the driver idea and for letting me keep using his installation batch script even though I took it without permission. Thanks go out to [MTCKC](https://github.com/MTCKC/ProconXInput) for inspiration and batch files.
 
 A last thanks goes out to [dekuNukem](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering) for his documentation, especially on the SPI calibration data and the IMU sensor notes!
+
+Icon (modified): "[Switch Pro Controller](https://thenounproject.com/term/nintendo-switch/930119/)" icon by Chad Remsing from [the Noun Project](http://thenounproject.com/).
