@@ -99,6 +99,9 @@ BetterJoyForCemu automatically adds Joycons and Pro Controllers to HidGuardian's
 
 However, to manually remove the devices from the blacklist, one can navigate to this page: http://localhost:26762/
 
+## Calibration Issues (ex: sticks don't have full range)
+Check your controller calibration by connecting it to a Switch and calibrating the defaults from there. They would then save on the controller itself. BetterJoyForCemu reads those values and uses them for the default calibration, so those could be off if you never calibrated your controller.
+
 ## No Joycons detected
 If using Bluetooth - see the "How to properly disconnect the controller" section and follow the steps listed there. Then, reconnect the controller.
 
