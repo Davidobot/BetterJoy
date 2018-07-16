@@ -36,12 +36,17 @@ namespace BetterJoyForCemu {
 		}
 
 		private void MainForm_FormClosing(object sender, FormClosingEventArgs e) {
-			Program.Stop();
-		}
+            Program.Stop();
+        }
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
 			Program.Stop();
 			Application.Exit();
 		}
-	}
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
+            linkLabel1.LinkVisited = true;
+            System.Diagnostics.Process.Start("http://paypal.me/DavidKhachaturov/5");
+        }
+    }
 }
