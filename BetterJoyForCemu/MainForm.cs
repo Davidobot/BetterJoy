@@ -36,12 +36,19 @@ namespace BetterJoyForCemu {
 		}
 
 		private void MainForm_FormClosing(object sender, FormClosingEventArgs e) {
-            Program.Stop();
+            try {
+                Program.Stop();
+                System.Threading.Thread.Sleep(1000);
+                Application.Exit();
+            } catch { }
         }
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
-			Program.Stop();
-			Application.Exit();
+            try {
+                Program.Stop();
+                System.Threading.Thread.Sleep(1000);
+                Application.Exit();
+            } catch { }
 		}
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {

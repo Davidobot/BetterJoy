@@ -13,207 +13,209 @@ using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace BetterJoyForCemu {
-	public class Joycon {
-		float timing = 60.0f;
+    public class Joycon {
+        float timing = 60.0f;
 
-		public bool isPro = false;
-		bool isUSB = false;
-		public Joycon other;
+        public bool isPro = false;
+        bool isUSB = false;
+        public Joycon other;
 
-		public bool send = true;
+        public bool send = true;
 
-		public enum DebugType : int {
-			NONE,
-			ALL,
-			COMMS,
-			THREADING,
-			IMU,
-			RUMBLE,
-		};
-		public DebugType debug_type = DebugType.NONE;
-		public bool isLeft;
-		public enum state_ : uint {
-			NOT_ATTACHED,
-			DROPPED,
-			NO_JOYCONS,
-			ATTACHED,
-			INPUT_MODE_0x30,
-			IMU_DATA_OK,
-		};
-		public state_ state;
-		public enum Button : int {
-			DPAD_DOWN = 0,
-			DPAD_RIGHT = 1,
-			DPAD_LEFT = 2,
-			DPAD_UP = 3,
-			SL = 4,
-			SR = 5,
-			MINUS = 6,
-			HOME = 7,
-			PLUS = 8,
-			CAPTURE = 9,
-			STICK = 10,
-			SHOULDER_1 = 11,
-			SHOULDER_2 = 12,
+        public enum DebugType : int {
+            NONE,
+            ALL,
+            COMMS,
+            THREADING,
+            IMU,
+            RUMBLE,
+        };
+        public DebugType debug_type = DebugType.NONE;
+        public bool isLeft;
+        public enum state_ : uint {
+            NOT_ATTACHED,
+            DROPPED,
+            NO_JOYCONS,
+            ATTACHED,
+            INPUT_MODE_0x30,
+            IMU_DATA_OK,
+        };
+        public state_ state;
+        public enum Button : int {
+            DPAD_DOWN = 0,
+            DPAD_RIGHT = 1,
+            DPAD_LEFT = 2,
+            DPAD_UP = 3,
+            SL = 4,
+            SR = 5,
+            MINUS = 6,
+            HOME = 7,
+            PLUS = 8,
+            CAPTURE = 9,
+            STICK = 10,
+            SHOULDER_1 = 11,
+            SHOULDER_2 = 12,
 
-			// For pro controller
-			B = 13,
-			A = 14,
-			Y = 15,
-			X = 16,
-			STICK2 = 17,
-			SHOULDER2_1 = 18,
-			SHOULDER2_2 = 19,
-		};
-		private bool[] buttons_down = new bool[20];
-		private bool[] buttons_up = new bool[20];
-		private bool[] buttons = new bool[20];
-		private bool[] down_ = new bool[20];
+            // For pro controller
+            B = 13,
+            A = 14,
+            Y = 15,
+            X = 16,
+            STICK2 = 17,
+            SHOULDER2_1 = 18,
+            SHOULDER2_2 = 19,
+        };
+        private bool[] buttons_down = new bool[20];
+        private bool[] buttons_up = new bool[20];
+        private bool[] buttons = new bool[20];
+        private bool[] down_ = new bool[20];
 
-		private float[] stick = { 0, 0 };
-		private float[] stick2 = { 0, 0 };
+        private float[] stick = { 0, 0 };
+        private float[] stick2 = { 0, 0 };
 
-		private
-		IntPtr handle;
+        private
+        IntPtr handle;
 
-		byte[] default_buf = { 0x0, 0x1, 0x40, 0x40, 0x0, 0x1, 0x40, 0x40 };
+        byte[] default_buf = { 0x0, 0x1, 0x40, 0x40, 0x0, 0x1, 0x40, 0x40 };
 
-		private byte[] stick_raw = { 0, 0, 0 };
-		private UInt16[] stick_cal = { 0, 0, 0, 0, 0, 0 };
-		private UInt16 deadzone;
-		private UInt16[] stick_precal = { 0, 0 };
+        private byte[] stick_raw = { 0, 0, 0 };
+        private UInt16[] stick_cal = { 0, 0, 0, 0, 0, 0 };
+        private UInt16 deadzone;
+        private UInt16[] stick_precal = { 0, 0 };
 
-		private byte[] stick2_raw = { 0, 0, 0 };
-		private UInt16[] stick2_cal = { 0, 0, 0, 0, 0, 0 };
-		private UInt16 deadzone2;
-		private UInt16[] stick2_precal = { 0, 0 };
+        private byte[] stick2_raw = { 0, 0, 0 };
+        private UInt16[] stick2_cal = { 0, 0, 0, 0, 0, 0 };
+        private UInt16 deadzone2;
+        private UInt16[] stick2_precal = { 0, 0 };
 
-		private bool stop_polling = false;
-		private int timestamp;
-		private bool first_imu_packet = true;
-		private bool imu_enabled = false;
-		private Int16[] acc_r = { 0, 0, 0 };
-		private Int16[] acc_neutral = { 0, 0, 0 };
-		private Int16[] acc_sensiti = { 0, 0, 0 };
-		private Vector3 acc_g;
+        private bool stop_polling = false;
+        private int timestamp;
+        private bool first_imu_packet = true;
+        private bool imu_enabled = false;
+        private Int16[] acc_r = { 0, 0, 0 };
+        private Int16[] acc_neutral = { 0, 0, 0 };
+        private Int16[] acc_sensiti = { 0, 0, 0 };
+        private Vector3 acc_g;
 
-		private Int16[] gyr_r = { 0, 0, 0 };
-		private Int16[] gyr_neutral = { 0, 0, 0 };
-		private Int16[] gyr_sensiti = { 0, 0, 0 };
-		private Vector3 gyr_g;
+        private Int16[] gyr_r = { 0, 0, 0 };
+        private Int16[] gyr_neutral = { 0, 0, 0 };
+        private Int16[] gyr_sensiti = { 0, 0, 0 };
+        private Vector3 gyr_g;
 
-		private Int16[] pro_hor_offset	 = { -710, 0, 0 };
-		private Int16[] left_hor_offset  = { 0, 0, 0 };
-		private Int16[] right_hor_offset = { 0, 0, 0 };
+        private Int16[] pro_hor_offset = { -710, 0, 0 };
+        private Int16[] left_hor_offset = { 0, 0, 0 };
+        private Int16[] right_hor_offset = { 0, 0, 0 };
 
-		private bool do_localize;
-		private float filterweight;
-		private const uint report_len = 49;
+        private bool do_localize;
+        private float filterweight;
+        private const uint report_len = 49;
 
-		private struct Rumble {
-			private float h_f, l_f;
-			public float t, amp, fullamp;
-			public bool timed_rumble;
+        private struct Rumble {
+            private float h_f, l_f;
+            public float t, amp, fullamp;
+            public bool timed_rumble;
 
-			public void set_vals(float low_freq, float high_freq, float amplitude, int time = 0) {
-				h_f = high_freq;
-				amp = amplitude;
+            public void set_vals(float low_freq, float high_freq, float amplitude, int time = 0) {
+                h_f = high_freq;
+                amp = amplitude;
                 fullamp = amplitude;
-				l_f = low_freq;
-				timed_rumble = false;
-				t = 0;
-				if (time != 0) {
-					t = time / 1000f;
-					timed_rumble = true;
-				}
-			}
-			public Rumble(float low_freq, float high_freq, float amplitude, int time = 0) {
-				h_f = high_freq;
-				amp = amplitude;
+                l_f = low_freq;
+                timed_rumble = false;
+                t = 0;
+                if (time != 0) {
+                    t = time / 1000f;
+                    timed_rumble = true;
+                }
+            }
+            public Rumble(float low_freq, float high_freq, float amplitude, int time = 0) {
+                h_f = high_freq;
+                amp = amplitude;
                 fullamp = amplitude;
-				l_f = low_freq;
-				timed_rumble = false;
-				t = 0;
-				if (time != 0) {
-					t = time / 1000f;
-					timed_rumble = true;
-				}
-			}
-			private float clamp(float x, float min, float max) {
-				if (x < min) return min;
-				if (x > max) return max;
-				return x;
-			}
-			public byte[] GetData() {
-				byte[] rumble_data = new byte[8];
-				if (amp == 0.0f) {
-					rumble_data[0] = 0x0;
-					rumble_data[1] = 0x1;
-					rumble_data[2] = 0x40;
-					rumble_data[3] = 0x40;
-				} else {
-					l_f = clamp(l_f, 40.875885f, 626.286133f);
-					amp = clamp(amp, 0.0f, 1.0f);
-					h_f = clamp(h_f, 81.75177f, 1252.572266f);
-					UInt16 hf = (UInt16)((Math.Round(32f * Math.Log(h_f * 0.1f, 2)) - 0x60) * 4);
-					byte lf = (byte)(Math.Round(32f * Math.Log(l_f * 0.1f, 2)) - 0x40);
-					byte hf_amp;
-					if (amp == 0) hf_amp = 0;
-					else if (amp < 0.117) hf_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) / (5 - Math.Pow(amp, 2)) - 1);
-					else if (amp < 0.23) hf_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) - 0x5c);
-					else hf_amp = (byte)((((Math.Log(amp * 1000, 2) * 32) - 0x60) * 2) - 0xf6);
+                l_f = low_freq;
+                timed_rumble = false;
+                t = 0;
+                if (time != 0) {
+                    t = time / 1000f;
+                    timed_rumble = true;
+                }
+            }
+            private float clamp(float x, float min, float max) {
+                if (x < min) return min;
+                if (x > max) return max;
+                return x;
+            }
+            public byte[] GetData() {
+                byte[] rumble_data = new byte[8];
+                if (amp == 0.0f) {
+                    rumble_data[0] = 0x0;
+                    rumble_data[1] = 0x1;
+                    rumble_data[2] = 0x40;
+                    rumble_data[3] = 0x40;
+                } else {
+                    l_f = clamp(l_f, 40.875885f, 626.286133f);
+                    amp = clamp(amp, 0.0f, 1.0f);
+                    h_f = clamp(h_f, 81.75177f, 1252.572266f);
+                    UInt16 hf = (UInt16)((Math.Round(32f * Math.Log(h_f * 0.1f, 2)) - 0x60) * 4);
+                    byte lf = (byte)(Math.Round(32f * Math.Log(l_f * 0.1f, 2)) - 0x40);
+                    byte hf_amp;
+                    if (amp == 0) hf_amp = 0;
+                    else if (amp < 0.117) hf_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) / (5 - Math.Pow(amp, 2)) - 1);
+                    else if (amp < 0.23) hf_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) - 0x5c);
+                    else hf_amp = (byte)((((Math.Log(amp * 1000, 2) * 32) - 0x60) * 2) - 0xf6);
 
-					UInt16 lf_amp = (UInt16)(Math.Round((double)hf_amp) * .5);
-					byte parity = (byte)(lf_amp % 2);
-					if (parity > 0) {
-						--lf_amp;
-					}
+                    UInt16 lf_amp = (UInt16)(Math.Round((double)hf_amp) * .5);
+                    byte parity = (byte)(lf_amp % 2);
+                    if (parity > 0) {
+                        --lf_amp;
+                    }
 
-					lf_amp = (UInt16)(lf_amp >> 1);
-					lf_amp += 0x40;
-					if (parity > 0) lf_amp |= 0x8000;
-					rumble_data = new byte[8];
-					rumble_data[0] = (byte)(hf & 0xff);
-					rumble_data[1] = (byte)((hf >> 8) & 0xff);
-					rumble_data[2] = lf;
-					rumble_data[1] += hf_amp;
-					rumble_data[2] += (byte)((lf_amp >> 8) & 0xff);
-					rumble_data[3] += (byte)(lf_amp & 0xff);
-				}
-				for (int i = 0; i < 4; ++i) {
-					rumble_data[4 + i] = rumble_data[i];
-				}
+                    lf_amp = (UInt16)(lf_amp >> 1);
+                    lf_amp += 0x40;
+                    if (parity > 0) lf_amp |= 0x8000;
+                    rumble_data = new byte[8];
+                    rumble_data[0] = (byte)(hf & 0xff);
+                    rumble_data[1] = (byte)((hf >> 8) & 0xff);
+                    rumble_data[2] = lf;
+                    rumble_data[1] += hf_amp;
+                    rumble_data[2] += (byte)((lf_amp >> 8) & 0xff);
+                    rumble_data[3] += (byte)(lf_amp & 0xff);
+                }
+                for (int i = 0; i < 4; ++i) {
+                    rumble_data[4 + i] = rumble_data[i];
+                }
 
-				return rumble_data;
-			}
-		}
+                return rumble_data;
+            }
+        }
 
-		private Rumble rumble_obj;
+        private Rumble rumble_obj;
 
-		private byte global_count = 0;
-		private string debug_str;
+        private byte global_count = 0;
+        private string debug_str;
 
-		// For UdpServer
-		public int PadId = 0;
-		public int battery = 4;
-		public int model = 2;
-		public int constate = 2;
-		public int connection = 3;
+        // For UdpServer
+        public int PadId = 0;
+        public int battery = 4;
+        public int model = 2;
+        public int constate = 2;
+        public int connection = 3;
 
-		public PhysicalAddress PadMacAddress = new PhysicalAddress(new byte[] { 01, 02, 03, 04, 05, 06 });
-		public ulong Timestamp = 0;
-		public int packetCounter = 0;
-        // For XInput
-        public Xbox360Controller xin = new Xbox360Controller(Program.emClient);
-		Xbox360Report report;
+        public PhysicalAddress PadMacAddress = new PhysicalAddress(new byte[] { 01, 02, 03, 04, 05, 06 });
+        public ulong Timestamp = 0;
+        public int packetCounter = 0;
 
-		int rumblePeriod = Int32.Parse(ConfigurationSettings.AppSettings["RumblePeriod"]);
-		int lowFreq = Int32.Parse(ConfigurationSettings.AppSettings["LowFreqRumble"]);
-		int highFreq = Int32.Parse(ConfigurationSettings.AppSettings["HighFreqRumble"]);
+        public Xbox360Controller xin;
+        Xbox360Report report;
 
-		bool toRumble = Boolean.Parse(ConfigurationSettings.AppSettings["EnableRumble"]);
+        int rumblePeriod = Int32.Parse(ConfigurationSettings.AppSettings["RumblePeriod"]);
+        int lowFreq = Int32.Parse(ConfigurationSettings.AppSettings["LowFreqRumble"]);
+        int highFreq = Int32.Parse(ConfigurationSettings.AppSettings["HighFreqRumble"]);
 
-		public MainForm form;
+        bool toRumble = Boolean.Parse(ConfigurationSettings.AppSettings["EnableRumble"]);
+
+        bool showAsXInput = Boolean.Parse(ConfigurationSettings.AppSettings["ShowAsXInput"]);
+
+        public MainForm form;
 
         public byte LED = 0x0;
 
@@ -231,13 +233,13 @@ namespace BetterJoyForCemu {
 
 			connection = isUSB ? 0x01 : 0x02;
 
-			//if (isLeft || isPro) {
-                //xin = new Xbox360Controller(Program.emClient);
-                //xin.Connect();
-				if (toRumble)
-					xin.FeedbackReceived += ReceiveRumble;
-				report = new Xbox360Report();
-			//}
+            if (showAsXInput) {
+                xin = new Xbox360Controller(Program.emClient);
+
+                if (toRumble)
+                    xin.FeedbackReceived += ReceiveRumble;
+                report = new Xbox360Report();
+            }
 		}
 
 		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
@@ -501,7 +503,7 @@ namespace BetterJoyForCemu {
 				buttons[(int)Button.SR] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x10) != 0;
 				buttons[(int)Button.SL] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x20) != 0;
 
-				if (isPro) {
+				if (isPro && xin != null) {
 					buttons[(int)Button.B] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x01 : 0x04)) != 0;
 					buttons[(int)Button.A] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x04 : 0x08)) != 0;
 					buttons[(int)Button.X] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x02 : 0x02)) != 0;

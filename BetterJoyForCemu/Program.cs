@@ -39,6 +39,8 @@ namespace BetterJoyForCemu {
 
         public MainForm form;
 
+        bool useHIDG = Boolean.Parse(ConfigurationSettings.AppSettings["UseHIDG"]);
+
         public static JoyconManager Instance {
             get { return instance; }
         }
@@ -81,22 +83,24 @@ namespace BetterJoyForCemu {
                     }
 
                     // Add controller to block-list for HidGuardian
-                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/add/");
-                    string postData = @"hwids=HID\" + enumerate.path.Split('#')[1].ToUpper();
-                    var data = Encoding.UTF8.GetBytes(postData);
+                    if (useHIDG) {
+                        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/add/");
+                        string postData = @"hwids=HID\" + enumerate.path.Split('#')[1].ToUpper();
+                        var data = Encoding.UTF8.GetBytes(postData);
 
-                    request.Method = "POST";
-                    request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-                    request.ContentLength = data.Length;
+                        request.Method = "POST";
+                        request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+                        request.ContentLength = data.Length;
 
-                    using (var stream = request.GetRequestStream())
-                        stream.Write(data, 0, data.Length);
+                        using (var stream = request.GetRequestStream())
+                            stream.Write(data, 0, data.Length);
 
-                    try {
-                        var response = (HttpWebResponse)request.GetResponse();
-                        var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                    } catch (Exception e) {
-                        form.console.Text += "Unable to add controller to block-list.\r\n";
+                        try {
+                            var response = (HttpWebResponse)request.GetResponse();
+                            var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                        } catch (Exception e) {
+                            form.console.Text += "Unable to add controller to block-list.\r\n";
+                        }
                     }
                     // -------------------- //
 
@@ -128,6 +132,8 @@ namespace BetterJoyForCemu {
                 if (!v.isPro) {
                     found++;
                     minPadID = Math.Min(v.PadId, minPadID);
+                } else {
+                    v.LED = (byte)(0x1 << v.PadId);
                 }
             }
 
@@ -239,37 +245,43 @@ namespace BetterJoyForCemu {
 
         static MainForm form;
 
+        static bool useHIDG = Boolean.Parse(ConfigurationSettings.AppSettings["UseHIDG"]);
+
         public static void Start() {
             pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
 
-            try {
-                var HidCerberusService = new ServiceController("HidCerberus Service");
-                if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
-                    form.console.Text += "HidGuardian was stopped. Starting...\r\n";
+            if (useHIDG) {
+                try {
+                    var HidCerberusService = new ServiceController("HidCerberus Service");
+                    if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
+                        form.console.Text += "HidGuardian was stopped. Starting...\r\n";
 
+                        try {
+                            HidCerberusService.Start();
+                        } catch (Exception e) {
+                            form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n";
+                        }
+                    }
+                } catch (Exception e) {
+                    form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, install it properly as admin.\r\n";
+                }
+
+                HttpWebResponse response;
+                if (Boolean.Parse(ConfigurationSettings.AppSettings["PurgeWhitelist"])) {
                     try {
-                        HidCerberusService.Start();
+                        response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
                     } catch (Exception e) {
-                        form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n";
+                        form.console.Text += "Unable to purge whitelist.\r\n";
                     }
                 }
-            } catch (Exception e) {
-                form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, install it properly as admin.\r\n";
-            }
 
-            HttpWebResponse response;
-            if (Boolean.Parse(ConfigurationSettings.AppSettings["PurgeWhitelist"])) {
                 try {
-                    response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
+                    response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/add/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
                 } catch (Exception e) {
-                    form.console.Text += "Unable to purge whitelist.\r\n";
+                    form.console.Text += "Unable to add program to whitelist.\r\n";
                 }
-            }
-
-            try {
-                response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/add/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
-            } catch (Exception e) {
-                form.console.Text += "Unable to add program to whitelist.\r\n";
+            } else {
+                form.console.Text += "HidGuardian is disabled.\r\n";
             }
 
             emClient = new ViGEmClient(); // Manages emulated XInput
