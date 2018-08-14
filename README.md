@@ -3,6 +3,10 @@ Allows the Nintendo Switch Pro Controller to be used with the [Cemu Emulator](ht
 
 __Note that this program allows the Pro Controller and Joycons to be used system-wide without installation of Cemu - just follow the *How to Use* instructions until point 3__
 
+So there has been a recent increase in interest in the program due to Citra now supporting native gyro in the canary builds. I'll be back to working on BetterJoyForCemu starting next week and version 5 should be out by the 20th.
+
+If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
+
 # Changelog
 ### v4
  * Implemented a GUI
