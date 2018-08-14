@@ -291,11 +291,6 @@ namespace BetterJoyForCemu {
                 
 				a[0] = 0x1;
 				dump_calibration_data();
-
-                a = Enumerable.Repeat((byte)0xFF, 25).ToArray();
-                a[0] = 0x18;
-                a[1] = 0x01;
-                Subcommand(0x38, a, 25, false);
             } else {
 				Subcommand(0x03, new byte[] { 0x3f }, 1, false);
 
@@ -328,7 +323,12 @@ namespace BetterJoyForCemu {
 				dump_calibration_data();
 			}
 
-			a[0] = leds_;
+            a = Enumerable.Repeat((byte)0xFF, 25).ToArray(); // LED ring
+            a[0] = 0x18;
+            a[1] = 0x01;
+            Subcommand(0x38, a, 25, false);
+
+            a[0] = leds_;
 			Subcommand(0x30, a, 1);
 			Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1, true);
 			Subcommand(0x3, new byte[] { 0x30 }, 1, true);
@@ -377,7 +377,9 @@ namespace BetterJoyForCemu {
 			byte[] raw_buf = new byte[report_len];
 			int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
 			if (ret > 0) {
-                SendRumble(rumble_obj.GetData()); // Needed for USB to not time out
+                if (!isPro)
+                    SendRumble(rumble_obj.GetData()); // make rumble better when on bluetooth
+                
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
 					ExtractIMUValues(raw_buf, n);
@@ -411,6 +413,8 @@ namespace BetterJoyForCemu {
 		private void Poll() {
 			int attempts = 0;
 			while (!stop_polling & state > state_.NO_JOYCONS) {
+                if (isPro)
+                    SendRumble(rumble_obj.GetData()); // Needed for USB to not time out
                 int a = ReceiveRaw();
 
 				if (a > 0) {
@@ -593,7 +597,7 @@ namespace BetterJoyForCemu {
 			}
 
 			if (xin != null) {
-                if (other != null) {
+                if (other != null | isPro) {
                     report.SetAxis(Xbox360Axes.LeftThumbX, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick[0] * (stick[0] > 0 ? Int16.MaxValue : -Int16.MinValue))));
                     report.SetAxis(Xbox360Axes.LeftThumbY, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick[1] * (stick[1] > 0 ? Int16.MaxValue : -Int16.MinValue))));
                     report.SetAxis(Xbox360Axes.RightThumbX, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick2[0] * (stick2[0] > 0 ? Int16.MaxValue : -Int16.MinValue))));
@@ -648,6 +652,7 @@ namespace BetterJoyForCemu {
 		public void Begin() {
 			if (PollThreadObj == null) {
 				PollThreadObj = new Thread(new ThreadStart(Poll));
+                PollThreadObj.IsBackground = true;
 				PollThreadObj.Start();
 
 				form.console.Text += "Starting poll thread.\r\n";

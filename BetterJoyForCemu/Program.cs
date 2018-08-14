@@ -181,12 +181,12 @@ namespace BetterJoyForCemu {
         }
 
         public void OnApplicationQuit() {
-            for (int i = 0; i < j.Count; ++i) {
-                j[i].Detach();
+            foreach (Joycon v in j) {
+                v.Detach();
 
-                if (j[i].xin != null) {
-                    j[i].xin.Disconnect();
-                    j[i].xin.Dispose();
+                if (v.xin != null) {
+                    v.xin.Disconnect();
+                    v.xin.Dispose();
                 }
             }
         }
@@ -214,6 +214,7 @@ namespace BetterJoyForCemu {
         public void Start() {
             run = true;
             thread = new Thread(new ThreadStart(Run));
+            thread.IsBackground = true;
             thread.Start();
         }
 
