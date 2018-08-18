@@ -14,8 +14,9 @@ using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace BetterJoyForCemu {
     public class Joycon {
-        float timing = 60.0f;
+        float timing = 120.0f;
 
+        public string path = String.Empty;
         public bool isPro = false;
         bool isUSB = false;
         public Joycon other;
@@ -73,8 +74,7 @@ namespace BetterJoyForCemu {
         private float[] stick = { 0, 0 };
         private float[] stick2 = { 0, 0 };
 
-        private
-        IntPtr handle;
+        private IntPtr handle;
 
         byte[] default_buf = { 0x0, 0x1, 0x40, 0x40, 0x0, 0x1, 0x40, 0x40 };
 
@@ -219,7 +219,7 @@ namespace BetterJoyForCemu {
 
         public byte LED = 0x0;
 
-		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, int id = 0, bool isPro=false, bool usb = false) {
+		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, int id = 0, bool isPro=false, bool usb = false) {
 			handle = handle_;
 			imu_enabled = imu;
 			do_localize = localize;
@@ -230,6 +230,8 @@ namespace BetterJoyForCemu {
 			PadId = id;
 			this.isPro = isPro;
 			isUSB = usb;
+
+            this.path = path;
 
 			connection = isUSB ? 0x01 : 0x02;
 
@@ -295,7 +297,7 @@ namespace BetterJoyForCemu {
 				Subcommand(0x03, new byte[] { 0x3f }, 1, false);
 
 				a = Enumerable.Repeat((byte)0, 64).ToArray();
-				form.console.Text += "Using USB.\r\n";
+				form.AppendTextBox("Using USB.\r\n");
 
 				a[0] = 0x80;
 				a[1] = 0x01;
@@ -354,6 +356,10 @@ namespace BetterJoyForCemu {
 		public void Detach() {
 			stop_polling = true;
 
+            if (xin != null) {
+                xin.Disconnect(); xin.Dispose();
+            }
+
 			if (state > state_.NO_JOYCONS) {
 				Subcommand(0x40, new byte[] { 0x0 }, 1);
 				//Subcommand(0x48, new byte[] { 0x0 }, 1); // Would turn off rumble?
@@ -375,11 +381,8 @@ namespace BetterJoyForCemu {
 			if (handle == IntPtr.Zero) return -2;
 			HIDapi.hid_set_nonblocking(handle, 0);
 			byte[] raw_buf = new byte[report_len];
-			int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
-			if (ret > 0) {
-                if (!isPro)
-                    SendRumble(rumble_obj.GetData()); // make rumble better when on bluetooth
-                
+            int ret = 0;
+			while ((ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len))) > 0) {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
 					ExtractIMUValues(raw_buf, n);
@@ -400,7 +403,7 @@ namespace BetterJoyForCemu {
 				}
 
 				if (ts_en == raw_buf[1]) {
-					form.console.Text += "Duplicate timestamp enqueued.\r\n";
+					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
 					DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
 				}
 				ts_en = raw_buf[1];
@@ -413,17 +416,17 @@ namespace BetterJoyForCemu {
 		private void Poll() {
 			int attempts = 0;
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-                if (isPro)
-                    SendRumble(rumble_obj.GetData()); // Needed for USB to not time out
+                SendRumble(rumble_obj.GetData()); // Needed for EVERYTHING to not time out. Never remove pls
                 int a = ReceiveRaw();
 
 				if (a > 0) {
-					state = state_.IMU_DATA_OK;
+                    state = state_.IMU_DATA_OK;
 					attempts = 0;
-				} else if (attempts > 1000) {
+				} else if (attempts > 240) {
 					state = state_.DROPPED;
-					//form.console.Text += "Dropped\r\n";
-					DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
+                    form.AppendTextBox("Dropped.\r\n");
+
+                    DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
 					break;
 				} else {
 					DebugPrint("Pause 5ms", DebugType.THREADING);
@@ -431,7 +434,6 @@ namespace BetterJoyForCemu {
 				}
 				++attempts;
 			}
-			DebugPrint("End poll loop.", DebugType.THREADING);
 		}
 
 		public void Update() {
@@ -449,7 +451,7 @@ namespace BetterJoyForCemu {
 
 		public float[] otherStick = { 0, 0 };
 
-		bool swapButtons = Boolean.Parse(ConfigurationSettings.AppSettings["SwapButtons"]);
+		bool swapButtons = Boolean.Parse(ConfigurationManager.AppSettings["SwapButtons"]);
 		private int ProcessButtonsAndStick(byte[] report_buf) {
 			if (report_buf[0] == 0x00) return -1;
 
@@ -655,8 +657,10 @@ namespace BetterJoyForCemu {
                 PollThreadObj.IsBackground = true;
 				PollThreadObj.Start();
 
-				form.console.Text += "Starting poll thread.\r\n";
-			}
+				form.AppendTextBox("Starting poll thread.\r\n");
+			} else {
+                form.AppendTextBox("Poll cannot start.\r\n");
+            }
 		}
 
 		public void Recenter() {
@@ -721,13 +725,13 @@ namespace BetterJoyForCemu {
 			bool found = false;
 			for (int i = 0; i < 9; ++i) {
 				if (buf_[i] != 0xff) {
-					form.console.Text += "Using user stick calibration data.\r\n";
+					form.AppendTextBox("Using user stick calibration data.\r\n");
 					found = true;
 					break;
 				}
 			}
 			if (!found) {
-				form.console.Text += "Using factory stick calibration data.\r\n";
+				form.AppendTextBox("Using factory stick calibration data.\r\n");
 				buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
 			}
 			stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
@@ -744,13 +748,13 @@ namespace BetterJoyForCemu {
 				found = false;
 				for (int i = 0; i < 9; ++i) {
 					if (buf_[i] != 0xff) {
-						form.console.Text += "Using user stick calibration data.\r\n";
+						form.AppendTextBox("Using user stick calibration data.\r\n");
 						found = true;
 						break;
 					}
 				}
 				if (!found) {
-					form.console.Text += "Using factory stick calibration data.\r\n";
+					form.AppendTextBox("Using factory stick calibration data.\r\n");
 					buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
 				}
 				stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center

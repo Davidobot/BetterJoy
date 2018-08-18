@@ -32,7 +32,7 @@ namespace BetterJoyForCemu {
         }
 
         public static bool Value(string key) {
-            if (!variables.TryGetValue(key, out bool temp)) {
+            if (!variables.ContainsKey("ProgressiveScan")) {
                 return false;
             }
             return variables[key];

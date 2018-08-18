@@ -39,7 +39,9 @@ namespace BetterJoyForCemu {
 
         public MainForm form;
 
-        bool useHIDG = Boolean.Parse(ConfigurationSettings.AppSettings["UseHIDG"]);
+        System.Timers.Timer controllerCheck;
+
+        bool useHIDG = Boolean.Parse(ConfigurationManager.AppSettings["UseHIDG"]);
 
         public static JoyconManager Instance {
             get { return instance; }
@@ -47,39 +49,70 @@ namespace BetterJoyForCemu {
 
         public void Awake() {
             instance = this;
-            int i = 0;
-
             j = new List<Joycon>();
-            bool isLeft = false;
             HIDapi.hid_init();
+        }
 
-            IntPtr ptr = HIDapi.hid_enumerate(vendor_id, 0x0);
-            IntPtr top_ptr = ptr;
+        public void Start() {
+            controllerCheck = new System.Timers.Timer(2000); // check every 2 seconds
+            controllerCheck.Elapsed += CheckForNewControllersTime;
+            controllerCheck.Start();
+        }
 
-            if (ptr == IntPtr.Zero) {
-                ptr = HIDapi.hid_enumerate(vendor_id_, 0x0);
-                if (ptr == IntPtr.Zero) {
-                    HIDapi.hid_free_enumeration(ptr);
-                    form.console.Text += "No Joy-Cons found!\r\n";
+        bool ControllerAlreadyAdded(string path) {
+            foreach (Joycon v in j)
+                if (v.path == path)
+                    return true;
+            return false;
+        }
+
+        void CleanUp() { // removes dropped controllers from list
+            List<Joycon> rem = new List<Joycon>();
+            for (int i = 0; i < j.Count; i++) {
+                Joycon v = j[i];
+                if (v.state == Joycon.state_.DROPPED) {
+                    v.Detach(); rem.Add(v);
+                    form.AppendTextBox("Removed dropped controller to list. Can be reconnected.\r\n");
                 }
             }
 
-            hid_device_info enumerate;
+            foreach (Joycon v in rem)
+                j.Remove(v);
+        }
+
+        void CheckForNewControllersTime(Object source, ElapsedEventArgs e) {
+            if (Config.Value("ProgressiveScan")) {
+                CheckForNewControllers();
+            }
+        }
+
+        public void CheckForNewControllers() {
+            CleanUp();
+
+            // move all code for initializing devices here and well as the initial code from Start()
+            bool isLeft = false;
+            IntPtr ptr = HIDapi.hid_enumerate(vendor_id, 0x0);
+            IntPtr top_ptr = ptr;
+
+            bool foundNew = false;
+
+            hid_device_info enumerate; // Add device to list
             while (ptr != IntPtr.Zero) {
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
 
-                if (enumerate.product_id == product_l || enumerate.product_id == product_r || enumerate.product_id == product_pro) {
-                    if (enumerate.product_id == product_l) {
-                        isLeft = true;
-                        form.console.Text += "Left Joy-Con connected.\r\n";
-                    } else if (enumerate.product_id == product_r) {
-                        isLeft = false;
-                        form.console.Text += "Right Joy-Con connected.\r\n";
-                    } else if (enumerate.product_id == product_pro) {
-                        isLeft = true;
-                        form.console.Text += "Pro controller connected.\r\n";
-                    } else {
-                        form.console.Text += "Non Joy-Con input device skipped.\r\n";
+                if ((enumerate.product_id == product_l || enumerate.product_id == product_r || enumerate.product_id == product_pro) && !ControllerAlreadyAdded(enumerate.path)) {
+                    switch (enumerate.product_id) {
+                        case product_l:
+                            isLeft = true;
+                            form.AppendTextBox("Left Joy-Con connected.\r\n"); break;
+                        case product_r:
+                            isLeft = false;
+                            form.AppendTextBox("Right Joy-Con connected.\r\n"); break;
+                        case product_pro:
+                            isLeft = true;
+                            form.AppendTextBox("Pro controller connected.\r\n"); break;
+                        default:
+                            form.AppendTextBox("Non Joy-Con Nintendo input device skipped.\r\n"); break;
                     }
 
                     // Add controller to block-list for HidGuardian
@@ -98,21 +131,26 @@ namespace BetterJoyForCemu {
                         try {
                             var response = (HttpWebResponse)request.GetResponse();
                             var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                        } catch (Exception e) {
-                            form.console.Text += "Unable to add controller to block-list.\r\n";
+                        } catch {
+                            form.AppendTextBox("Unable to add controller to block-list.\r\n");
                         }
+                    } else { // Remove affected devices from list
+                        try {
+                            HttpWebResponse r1 = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/purge/").GetResponse();
+                        } catch { }
                     }
                     // -------------------- //
 
                     IntPtr handle = HIDapi.hid_open_path(enumerate.path);
                     try {
                         HIDapi.hid_set_nonblocking(handle, 1);
-                    } catch (Exception e) {
-                        form.console.Text += "Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?\r\n";
+                    } catch {
+                        form.AppendTextBox("Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?\r\n");
                         break;
                     }
 
-                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
+                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
+                    foundNew = true;
 
                     j.Last().form = form;
 
@@ -120,15 +158,14 @@ namespace BetterJoyForCemu {
                     for (int n = 0; n < 6; n++)
                         mac[n] = byte.Parse(enumerate.serial_number.Substring(n * 2, 2), System.Globalization.NumberStyles.HexNumber);
                     j[j.Count - 1].PadMacAddress = new PhysicalAddress(mac);
-
-                    ++i;
                 }
+
                 ptr = enumerate.next;
             }
 
             int found = 0;
             int minPadID = 10;
-            foreach (Joycon v in j) {
+            foreach (Joycon v in j) { // current system is designed for a maximum of two joycons connected to the PC
                 if (!v.isPro) {
                     found++;
                     minPadID = Math.Min(v.PadId, minPadID);
@@ -138,12 +175,12 @@ namespace BetterJoyForCemu {
             }
 
             if (found == 2) {
-                form.console.Text += "Both joycons successfully found.\r\n";
+                form.AppendTextBox("Both joycons successfully found.\r\n");
                 Joycon temp = null;
                 foreach (Joycon v in j) {
                     if (!v.isPro) {
                         v.LED = (byte)(0x1 << minPadID);
-                        
+
                         if (temp == null)
                             temp = v;
                         else {
@@ -155,23 +192,18 @@ namespace BetterJoyForCemu {
                         }
                     }
                 } // Join up the two joycons
-            } else if (found != 0)
-                form.console.Text += "Only one joycon found. Using in single joycone mode.\r\n";
+            }
 
             HIDapi.hid_free_enumeration(top_ptr);
-        }
 
-        public void Start() {
-            for (int i = 0; i < j.Count; ++i) {
-                Joycon jc = j[i];
+            foreach (Joycon jc in j) { // Connect device straight away
+                if (jc.state == Joycon.state_.NOT_ATTACHED) {
+                    if (jc.xin != null)
+                        jc.xin.Connect();
 
-                if (jc.xin != null)
-                    jc.xin.Connect();
-
-                //byte LEDs = 0x0;
-               // LEDs |= (byte)(0x1 << jc.PadId);
-                jc.Attach(leds_: jc.LED);
-                jc.Begin();
+                    jc.Attach(leds_: jc.LED);
+                    jc.Begin();
+                }
             }
         }
 
@@ -189,6 +221,9 @@ namespace BetterJoyForCemu {
                     v.xin.Dispose();
                 }
             }
+
+            controllerCheck.Stop();
+            HIDapi.hid_exit();
         }
     }
 
@@ -234,7 +269,7 @@ namespace BetterJoyForCemu {
     class Program {
         public static PhysicalAddress btMAC = new PhysicalAddress(new byte[] { 0, 0, 0, 0, 0, 0 });
         public static UdpServer server;
-        static double pollsPerSecond = 60.0;
+        static double pollsPerSecond = 120.0;
 
         public static ViGEmClient emClient;
 
@@ -299,6 +334,7 @@ namespace BetterJoyForCemu {
             mgr = new JoyconManager();
             mgr.form = form;
             mgr.Awake();
+            mgr.CheckForNewControllers();
             mgr.Start();
 
             server = new UdpServer(mgr.j);

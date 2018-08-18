@@ -63,5 +63,13 @@ namespace BetterJoyForCemu {
         private void passiveScanBox_CheckedChanged(object sender, EventArgs e) {
             Config.Save("ProgressiveScan", passiveScanBox.Checked);
         }
+
+        public void AppendTextBox(string value) { // https://stackoverflow.com/questions/519233/writing-to-a-textbox-from-another-thread
+            if (InvokeRequired) {
+                this.Invoke(new Action<string>(AppendTextBox), new object[] { value });
+                return;
+            }
+            console.AppendText(value);
+        }
     }
 }
