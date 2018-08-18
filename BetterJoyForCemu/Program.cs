@@ -246,7 +246,7 @@ namespace BetterJoyForCemu {
 
         static MainForm form;
 
-        static bool useHIDG = Boolean.Parse(ConfigurationSettings.AppSettings["UseHIDG"]);
+        static bool useHIDG = Boolean.Parse(ConfigurationManager.AppSettings["UseHIDG"]);
 
         public static void Start() {
             pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
@@ -268,7 +268,7 @@ namespace BetterJoyForCemu {
                 }
 
                 HttpWebResponse response;
-                if (Boolean.Parse(ConfigurationSettings.AppSettings["PurgeWhitelist"])) {
+                if (Boolean.Parse(ConfigurationManager.AppSettings["PurgeWhitelist"])) {
                     try {
                         response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
                     } catch (Exception e) {
@@ -304,7 +304,7 @@ namespace BetterJoyForCemu {
             server = new UdpServer(mgr.j);
             server.form = form;
 
-            server.Start(IPAddress.Parse(ConfigurationSettings.AppSettings["IP"]), Int32.Parse(ConfigurationSettings.AppSettings["Port"]));
+            server.Start(IPAddress.Parse(ConfigurationManager.AppSettings["IP"]), Int32.Parse(ConfigurationManager.AppSettings["Port"]));
             timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
             timer.Start();
 
@@ -313,7 +313,7 @@ namespace BetterJoyForCemu {
 
         public static void Stop() {
             try {
-                HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
+                HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse();
             } catch (Exception e) {
                 form.console.Text += "Unable to remove program from whitelist.\r\n";
             }
@@ -321,6 +321,8 @@ namespace BetterJoyForCemu {
             server.Stop();
             timer.Stop();
             mgr.OnApplicationQuit();
+
+            form.console.Text += "";
         }
 
         static void Main(string[] args) {

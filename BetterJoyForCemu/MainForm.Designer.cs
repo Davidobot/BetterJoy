@@ -31,7 +31,7 @@
             this.contextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.label2 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btn_conf = new System.Windows.Forms.Button();
             this.passiveScanBox = new System.Windows.Forms.CheckBox();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.contextMenu.SuspendLayout();
@@ -88,14 +88,15 @@
             this.label2.TabIndex = 2;
             this.label2.Text = "v5.0";
             // 
-            // button1
+            // btn_conf
             // 
-            this.button1.Location = new System.Drawing.Point(12, 200);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(260, 26);
-            this.button1.TabIndex = 3;
-            this.button1.Text = "Open Controller Configuration";
-            this.button1.UseVisualStyleBackColor = true;
+            this.btn_conf.Enabled = false;
+            this.btn_conf.Location = new System.Drawing.Point(12, 200);
+            this.btn_conf.Name = "btn_conf";
+            this.btn_conf.Size = new System.Drawing.Size(260, 26);
+            this.btn_conf.TabIndex = 3;
+            this.btn_conf.Text = "Open Controller Configuration";
+            this.btn_conf.UseVisualStyleBackColor = true;
             // 
             // passiveScanBox
             // 
@@ -109,6 +110,7 @@
             this.passiveScanBox.TabIndex = 4;
             this.passiveScanBox.Text = "Passive Scan";
             this.passiveScanBox.UseVisualStyleBackColor = true;
+            this.passiveScanBox.CheckedChanged += new System.EventHandler(this.passiveScanBox_CheckedChanged);
             // 
             // linkLabel1
             // 
@@ -128,7 +130,7 @@
             this.ClientSize = new System.Drawing.Size(284, 261);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.passiveScanBox);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btn_conf);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.console);
@@ -153,7 +155,7 @@
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.ContextMenuStrip contextMenu;
 		private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btn_conf;
         private System.Windows.Forms.CheckBox passiveScanBox;
         private System.Windows.Forms.LinkLabel linkLabel1;
     }

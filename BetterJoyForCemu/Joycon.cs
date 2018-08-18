@@ -207,13 +207,13 @@ namespace BetterJoyForCemu {
         public Xbox360Controller xin;
         Xbox360Report report;
 
-        int rumblePeriod = Int32.Parse(ConfigurationSettings.AppSettings["RumblePeriod"]);
-        int lowFreq = Int32.Parse(ConfigurationSettings.AppSettings["LowFreqRumble"]);
-        int highFreq = Int32.Parse(ConfigurationSettings.AppSettings["HighFreqRumble"]);
+        int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
+        int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
+        int highFreq = Int32.Parse(ConfigurationManager.AppSettings["HighFreqRumble"]);
 
-        bool toRumble = Boolean.Parse(ConfigurationSettings.AppSettings["EnableRumble"]);
+        bool toRumble = Boolean.Parse(ConfigurationManager.AppSettings["EnableRumble"]);
 
-        bool showAsXInput = Boolean.Parse(ConfigurationSettings.AppSettings["ShowAsXInput"]);
+        bool showAsXInput = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]);
 
         public MainForm form;
 
