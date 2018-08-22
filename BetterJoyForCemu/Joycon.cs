@@ -325,16 +325,13 @@ namespace BetterJoyForCemu {
 				dump_calibration_data();
 			}
 
-            a = Enumerable.Repeat((byte)0xFF, 25).ToArray(); // LED ring
-            a[0] = 0x18;
-            a[1] = 0x01;
-            Subcommand(0x38, a, 25, false);
+            BlinkLED();
 
             a[0] = leds_;
 			Subcommand(0x30, a, 1);
 			Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1, true);
 			Subcommand(0x3, new byte[] { 0x30 }, 1, true);
-			Subcommand(0x48, new byte[] { 0x1 }, 1, true);
+			Subcommand(0x48, new byte[] { 0x01 }, 1, true);
 			
 			Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
 
@@ -349,6 +346,13 @@ namespace BetterJoyForCemu {
             Subcommand(0x30, new byte[] { leds_ }, 1);
         }
 
+        public void BlinkLED() { // do not call after initial setup
+            byte[] a = Enumerable.Repeat((byte)0xFF, 25).ToArray(); // LED ring
+            a[0] = 0x18;
+            a[1] = 0x01;
+            Subcommand(0x38, a, 25, false);
+        }
+
 		public void SetFilterCoeff(float a) {
 			filterweight = a;
 		}
@@ -361,14 +365,18 @@ namespace BetterJoyForCemu {
             }
 
 			if (state > state_.NO_JOYCONS) {
-				Subcommand(0x40, new byte[] { 0x0 }, 1);
+                HIDapi.hid_set_nonblocking(handle, 0);
+
+                Subcommand(0x40, new byte[] { 0x0 }, 1);
 				//Subcommand(0x48, new byte[] { 0x0 }, 1); // Would turn off rumble?
 
 				if (isUSB) {
 					byte[] a = Enumerable.Repeat((byte)0, 64).ToArray();
 					a[0] = 0x80; a[1] = 0x05; // Allow device to talk to BT again
 					HIDapi.hid_write(handle, a, new UIntPtr(2));
-				}
+                    a[0] = 0x80; a[1] = 0x06; // Allow device to talk to BT again
+                    HIDapi.hid_write(handle, a, new UIntPtr(2));
+                }
 			}
 			if (state > state_.DROPPED) {
 				HIDapi.hid_close(handle);
@@ -378,11 +386,11 @@ namespace BetterJoyForCemu {
 
 		private byte ts_en;
 		private int ReceiveRaw() {
-			if (handle == IntPtr.Zero) return -2;
-			HIDapi.hid_set_nonblocking(handle, 0);
+            if (handle == IntPtr.Zero) return -2;
+            HIDapi.hid_set_nonblocking(handle, 0);
 			byte[] raw_buf = new byte[report_len];
-            int ret = 0;
-			while ((ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len))) > 0) {
+            int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
+			if (ret > 0) {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
 					ExtractIMUValues(raw_buf, n);
@@ -419,7 +427,7 @@ namespace BetterJoyForCemu {
                 SendRumble(rumble_obj.GetData()); // Needed for EVERYTHING to not time out. Never remove pls
                 int a = ReceiveRaw();
 
-				if (a > 0) {
+                if (a > 0) {
                     state = state_.IMU_DATA_OK;
 					attempts = 0;
 				} else if (attempts > 240) {
@@ -429,11 +437,11 @@ namespace BetterJoyForCemu {
                     DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
 					break;
 				} else {
-					DebugPrint("Pause 5ms", DebugType.THREADING);
+					//form.AppendTextBox("Pause 5ms");
 					Thread.Sleep((Int32)5);
 				}
 				++attempts;
-			}
+            }
 		}
 
 		public void Update() {

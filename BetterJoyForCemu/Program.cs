@@ -72,6 +72,16 @@ namespace BetterJoyForCemu {
                 Joycon v = j[i];
                 if (v.state == Joycon.state_.DROPPED) {
                     v.Detach(); rem.Add(v);
+
+                    foreach (Button b in form.con) {
+                        if (b.Enabled & b.Tag == v) {
+                            b.Invoke(new MethodInvoker(delegate {
+                                b.Enabled = false;
+                            }));
+                            break;
+                        }
+                    }
+
                     form.AppendTextBox("Removed dropped controller to list. Can be reconnected.\r\n");
                 }
             }
@@ -93,8 +103,6 @@ namespace BetterJoyForCemu {
             bool isLeft = false;
             IntPtr ptr = HIDapi.hid_enumerate(vendor_id, 0x0);
             IntPtr top_ptr = ptr;
-
-            bool foundNew = false;
 
             hid_device_info enumerate; // Add device to list
             while (ptr != IntPtr.Zero) {
@@ -150,9 +158,34 @@ namespace BetterJoyForCemu {
                     }
 
                     j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
-                    foundNew = true;
 
                     j.Last().form = form;
+
+                    if (j.Count < 5) {
+                        foreach (Button v in form.con) {
+                            if (!v.Enabled) {
+                                System.Drawing.Bitmap temp;
+                                switch (enumerate.product_id) {
+                                    case (product_l):
+                                        temp = Properties.Resources.jc_left; break;
+                                    case (product_r):
+                                        temp = Properties.Resources.jc_right; break;
+                                    case (product_pro):
+                                        temp = Properties.Resources.pro; break;
+                                    default:
+                                        temp = Properties.Resources.cross; break;
+                                }
+
+                                v.Invoke(new MethodInvoker(delegate {
+                                    v.Tag = j.Last(); // assign controller to button
+                                    v.Enabled = true;
+                                    v.Click += new EventHandler(form.conBtnClick);
+                                    v.BackgroundImage = temp;
+                                }));
+                                break;
+                            }
+                        }
+                    }
 
                     byte[] mac = new byte[6];
                     for (int n = 0; n < 6; n++)

@@ -12,8 +12,12 @@ using System.Xml.Linq;
 
 namespace BetterJoyForCemu {
 	public partial class MainForm : Form {
+        public List<Button> con;
+
 		public MainForm() {
 			InitializeComponent();
+
+            con = new List<Button> { con1, con2, con3, con4 };
 		}
 
 		private void MainForm_Resize(object sender, EventArgs e) {
@@ -51,6 +55,7 @@ namespace BetterJoyForCemu {
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             try {
                 Program.Stop();
+                Close();
                 Environment.Exit(0);
             } catch { }
 		}
@@ -70,6 +75,18 @@ namespace BetterJoyForCemu {
                 return;
             }
             console.AppendText(value);
+        }
+
+        public void conBtnClick(object sender, EventArgs e) {
+            Button button = sender as Button;
+
+            if (button.ClientRectangle.Contains(PointToClient(Control.MousePosition))) { // hacky but allows both l&r clicks
+                if (button.Tag.GetType() == typeof(Joycon)) {
+                    Joycon v = (Joycon)button.Tag;
+
+                    v.SetRumble(20.0f, 400.0f, 1.0f, 300);
+                }
+            }
         }
     }
 }
