@@ -38,23 +38,27 @@
             this.con3 = new System.Windows.Forms.Button();
             this.con2 = new System.Windows.Forms.Button();
             this.con1 = new System.Windows.Forms.Button();
+            this.loc1 = new System.Windows.Forms.Button();
+            this.loc2 = new System.Windows.Forms.Button();
+            this.loc3 = new System.Windows.Forms.Button();
+            this.loc4 = new System.Windows.Forms.Button();
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.SuspendLayout();
             // 
             // console
             // 
-            this.console.Location = new System.Drawing.Point(12, 114);
+            this.console.Location = new System.Drawing.Point(12, 132);
             this.console.Multiline = true;
             this.console.Name = "console";
             this.console.ReadOnly = true;
-            this.console.Size = new System.Drawing.Size(262, 118);
+            this.console.Size = new System.Drawing.Size(262, 100);
             this.console.TabIndex = 2;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 98);
+            this.label1.Location = new System.Drawing.Point(9, 116);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(80, 13);
             this.label1.TabIndex = 1;
@@ -121,13 +125,17 @@
             // 
             // conCntrls
             // 
+            this.conCntrls.Controls.Add(this.loc4);
+            this.conCntrls.Controls.Add(this.loc3);
+            this.conCntrls.Controls.Add(this.loc2);
+            this.conCntrls.Controls.Add(this.loc1);
             this.conCntrls.Controls.Add(this.con4);
             this.conCntrls.Controls.Add(this.con3);
             this.conCntrls.Controls.Add(this.con2);
             this.conCntrls.Controls.Add(this.con1);
             this.conCntrls.Location = new System.Drawing.Point(12, 12);
             this.conCntrls.Name = "conCntrls";
-            this.conCntrls.Size = new System.Drawing.Size(262, 83);
+            this.conCntrls.Size = new System.Drawing.Size(262, 100);
             this.conCntrls.TabIndex = 0;
             this.conCntrls.TabStop = false;
             this.conCntrls.Text = "Connected Controllers";
@@ -180,6 +188,42 @@
             this.con1.TabStop = false;
             this.con1.UseVisualStyleBackColor = true;
             // 
+            // loc1
+            // 
+            this.loc1.Location = new System.Drawing.Point(6, 80);
+            this.loc1.Name = "loc1";
+            this.loc1.Size = new System.Drawing.Size(58, 20);
+            this.loc1.TabIndex = 4;
+            this.loc1.Text = "Locate";
+            this.loc1.UseVisualStyleBackColor = true;
+            // 
+            // loc2
+            // 
+            this.loc2.Location = new System.Drawing.Point(70, 80);
+            this.loc2.Name = "loc2";
+            this.loc2.Size = new System.Drawing.Size(58, 20);
+            this.loc2.TabIndex = 5;
+            this.loc2.Text = "Locate";
+            this.loc2.UseVisualStyleBackColor = true;
+            // 
+            // loc3
+            // 
+            this.loc3.Location = new System.Drawing.Point(134, 80);
+            this.loc3.Name = "loc3";
+            this.loc3.Size = new System.Drawing.Size(58, 20);
+            this.loc3.TabIndex = 6;
+            this.loc3.Text = "Locate";
+            this.loc3.UseVisualStyleBackColor = true;
+            // 
+            // loc4
+            // 
+            this.loc4.Location = new System.Drawing.Point(198, 80);
+            this.loc4.Name = "loc4";
+            this.loc4.Size = new System.Drawing.Size(58, 20);
+            this.loc4.TabIndex = 7;
+            this.loc4.Text = "Locate";
+            this.loc4.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -191,6 +235,7 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.console);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
@@ -220,5 +265,9 @@
         private System.Windows.Forms.Button con4;
         private System.Windows.Forms.Button con3;
         private System.Windows.Forms.Button con2;
+        private System.Windows.Forms.Button loc4;
+        private System.Windows.Forms.Button loc3;
+        private System.Windows.Forms.Button loc2;
+        private System.Windows.Forms.Button loc1;
     }
 }

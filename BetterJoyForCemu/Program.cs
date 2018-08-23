@@ -71,12 +71,16 @@ namespace BetterJoyForCemu {
             for (int i = 0; i < j.Count; i++) {
                 Joycon v = j[i];
                 if (v.state == Joycon.state_.DROPPED) {
+                    if (v.other != null)
+                        v.other.other = null; // The other of the other is the joycon itself
+
                     v.Detach(); rem.Add(v);
 
                     foreach (Button b in form.con) {
                         if (b.Enabled & b.Tag == v) {
                             b.Invoke(new MethodInvoker(delegate {
                                 b.Enabled = false;
+                                b.BackgroundImage = Properties.Resources.cross;
                             }));
                             break;
                         }
@@ -105,6 +109,7 @@ namespace BetterJoyForCemu {
             IntPtr top_ptr = ptr;
 
             hid_device_info enumerate; // Add device to list
+            bool foundNew = false;
             while (ptr != IntPtr.Zero) {
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
 
@@ -159,17 +164,20 @@ namespace BetterJoyForCemu {
 
                     j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
 
+                    foundNew = true;
                     j.Last().form = form;
 
                     if (j.Count < 5) {
+                        int ii = -1;
                         foreach (Button v in form.con) {
+                            ii++;
                             if (!v.Enabled) {
                                 System.Drawing.Bitmap temp;
                                 switch (enumerate.product_id) {
                                     case (product_l):
-                                        temp = Properties.Resources.jc_left; break;
+                                        temp = Properties.Resources.jc_left_s; break;
                                     case (product_r):
-                                        temp = Properties.Resources.jc_right; break;
+                                        temp = Properties.Resources.jc_right_s; break;
                                     case (product_pro):
                                         temp = Properties.Resources.pro; break;
                                     default:
@@ -182,6 +190,12 @@ namespace BetterJoyForCemu {
                                     v.Click += new EventHandler(form.conBtnClick);
                                     v.BackgroundImage = temp;
                                 }));
+
+                                form.loc[ii].Invoke(new MethodInvoker(delegate {
+                                    form.loc[ii].Tag = v;
+                                    form.loc[ii].Click += new EventHandler(form.locBtnClick);
+                                }));
+
                                 break;
                             }
                         }
@@ -202,12 +216,11 @@ namespace BetterJoyForCemu {
                 if (!v.isPro) {
                     found++;
                     minPadID = Math.Min(v.PadId, minPadID);
-                } else {
-                    v.LED = (byte)(0x1 << v.PadId);
                 }
+                v.LED = (byte)(0x1 << v.PadId);
             }
 
-            if (found == 2) {
+            if (found == 2 && foundNew) {
                 form.AppendTextBox("Both joycons successfully found.\r\n");
                 Joycon temp = null;
                 foreach (Joycon v in j) {
@@ -222,6 +235,15 @@ namespace BetterJoyForCemu {
 
                             temp.xin.Dispose();
                             temp.xin = null;
+                        }
+
+                        foreach (Button b in form.con) {
+                            if (b.Tag == v) {
+                                if (v.isLeft)
+                                    b.BackgroundImage = Properties.Resources.jc_left;
+                                else
+                                    b.BackgroundImage = Properties.Resources.jc_right;
+                            }
                         }
                     }
                 } // Join up the two joycons
@@ -308,7 +330,7 @@ namespace BetterJoyForCemu {
 
         private static readonly HttpClient client = new HttpClient();
 
-        static JoyconManager mgr;
+        public static JoyconManager mgr;
         static HighResTimer timer;
         static string pid;
 

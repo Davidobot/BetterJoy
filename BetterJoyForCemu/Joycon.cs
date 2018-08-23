@@ -205,7 +205,7 @@ namespace BetterJoyForCemu {
         public int packetCounter = 0;
 
         public Xbox360Controller xin;
-        Xbox360Report report;
+        public Xbox360Report report;
 
         int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
         int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
@@ -420,7 +420,7 @@ namespace BetterJoyForCemu {
 			return ret;
 		}
 
-		private Thread PollThreadObj;
+		private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
 		private void Poll() {
 			int attempts = 0;
 			while (!stop_polling & state > state_.NO_JOYCONS) {

@@ -83,9 +83,29 @@ namespace BetterJoyForCemu.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap jc_left_s {
+            get {
+                object obj = ResourceManager.GetObject("jc_left_s", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap jc_right {
             get {
                 object obj = ResourceManager.GetObject("jc_right", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap jc_right_s {
+            get {
+                object obj = ResourceManager.GetObject("jc_right_s", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
