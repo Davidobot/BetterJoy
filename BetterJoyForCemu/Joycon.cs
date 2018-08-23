@@ -657,6 +657,18 @@ namespace BetterJoyForCemu {
 						break;
 				}
 			}
+
+            if (other == null && !isPro) { // single joycon mode; Z do not swap, rest do
+                if (isLeft) {
+                    acc_g.X = -acc_g.X;
+                    gyr_g.X = -gyr_g.X;
+                } else {
+                    gyr_g.Y = -gyr_g.Y;
+                }
+                
+                float temp = acc_g.X; acc_g.X = acc_g.Y; acc_g.Y = temp;
+                temp = gyr_g.X; gyr_g.X = gyr_g.Y; gyr_g.Y = temp;
+            }
 		}
 
 		public void Begin() {

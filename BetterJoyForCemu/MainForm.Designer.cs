@@ -42,6 +42,7 @@
             this.loc2 = new System.Windows.Forms.Button();
             this.loc3 = new System.Windows.Forms.Button();
             this.loc4 = new System.Windows.Forms.Button();
+            this.btnTip = new System.Windows.Forms.ToolTip(this.components);
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.SuspendLayout();
@@ -186,6 +187,7 @@
             this.con1.Size = new System.Drawing.Size(58, 58);
             this.con1.TabIndex = 0;
             this.con1.TabStop = false;
+            this.btnTip.SetToolTip(this.con1, "Click on Joycons to join/split them");
             this.con1.UseVisualStyleBackColor = true;
             // 
             // loc1
@@ -269,5 +271,6 @@
         private System.Windows.Forms.Button loc3;
         private System.Windows.Forms.Button loc2;
         private System.Windows.Forms.Button loc1;
+        private System.Windows.Forms.ToolTip btnTip;
     }
 }
