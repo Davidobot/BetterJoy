@@ -83,9 +83,9 @@ For example, for use with [Citra and Steam simultaneously](https://community.cit
 Current settings are:
 * IP address of CemuHook motion server  *(default: 127.0.0.1)*
 * Port number of CemuHook motion server *(default: 26760)*
-* Rumble Period of motor in ms          *(default: 100)*
-* Frequency of low rumble in Hz         *(default: 160)*
-* Frequency of high rumble in Hz        *(default: 320)*
+* Rumble Period of motor in ms          *(default: 300)*
+* Frequency of low rumble in Hz         *(default: 20)*
+* Frequency of high rumble in Hz        *(default: 400)*
 * Rumble - en/disables rumble           *(default: true)*
 * Swap buttons                          *(default: false)*
   * Swaps the A-B and X-Y buttons to mimick the Xbox layout by button name, rather than physical layout 
