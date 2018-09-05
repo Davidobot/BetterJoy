@@ -98,6 +98,7 @@ Current settings are:
 
 # Problems
 __Controller is not recognised after using the program__
+
 Before uninstalling the drivers, navigate to http://localhost:26762/ and remove all the devices from the "Currently affected devices" list and then restart your computer.
 
 __Make sure you installed the drivers!!__
