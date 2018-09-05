@@ -97,6 +97,9 @@ Current settings are:
   * Determines whether or not the program will expose detected controllers as Xbox 360 controllers
 
 # Problems
+__Controller is not recognised after using the program__
+Before uninstalling the drivers, navigate to http://localhost:26762/ and remove all the devices from the "Currently affected devices" list and then restart your computer.
+
 __Make sure you installed the drivers!!__
 
 If the controller does not work after restarting the exe too many times - shut down the exe, disconnect your pro controller and connect it again.
