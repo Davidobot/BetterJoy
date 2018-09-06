@@ -101,6 +101,10 @@ __Controller is not recognised after using the program__
 
 Before uninstalling the drivers, navigate to http://localhost:26762/ and remove all the devices from the "Currently affected devices" list and then restart your computer.
 
+__Plugging controller into USB port does nothing__
+
+Solution found courtresy of reddit user BFCE -  go into Device Manager, go to the Universal Serial Bus Controllers, select the properties of the eXtreme (or other USB) controllers, and toggle the setting that allows you to disable the USB ports to save power when not in use. Even some desktops have this on by default.
+
 __Make sure you installed the drivers!!__
 
 If the controller does not work after restarting the exe too many times - shut down the exe, disconnect your pro controller and connect it again.
