@@ -23,16 +23,14 @@ namespace BetterJoyForCemu {
             loc = new List<Button> { loc1, loc2, loc3, loc4 };
         }
 
-        private void HideToTray()
-        {
+        private void HideToTray() {
             this.WindowState = FormWindowState.Minimized;
             notifyIcon.Visible = true;
             notifyIcon.ShowBalloonTip(1);
             this.ShowInTaskbar = false;
         }
 
-        private void ShowFromTray()
-        {
+        private void ShowFromTray() {
             this.WindowState = FormWindowState.Normal;
             this.ShowInTaskbar = true;
             notifyIcon.Visible = false;
@@ -56,12 +54,10 @@ namespace BetterJoyForCemu {
             passiveScanBox.Checked = Config.Value("ProgressiveScan");
             startInTrayBox.Checked = Config.Value("StartInTray");
 
-            if (Config.Value("StartInTray"))
-            {
+            if (Config.Value("StartInTray")) {
                 HideToTray();
             }
-            else
-            {
+            else {
                 ShowFromTray();
             }
         }
