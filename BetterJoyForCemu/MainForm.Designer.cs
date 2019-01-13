@@ -34,15 +34,16 @@
             this.passiveScanBox = new System.Windows.Forms.CheckBox();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.conCntrls = new System.Windows.Forms.GroupBox();
+            this.loc4 = new System.Windows.Forms.Button();
+            this.loc3 = new System.Windows.Forms.Button();
+            this.loc2 = new System.Windows.Forms.Button();
+            this.loc1 = new System.Windows.Forms.Button();
             this.con4 = new System.Windows.Forms.Button();
             this.con3 = new System.Windows.Forms.Button();
             this.con2 = new System.Windows.Forms.Button();
             this.con1 = new System.Windows.Forms.Button();
-            this.loc1 = new System.Windows.Forms.Button();
-            this.loc2 = new System.Windows.Forms.Button();
-            this.loc3 = new System.Windows.Forms.Button();
-            this.loc4 = new System.Windows.Forms.Button();
             this.btnTip = new System.Windows.Forms.ToolTip(this.components);
+            this.startInTrayBox = new System.Windows.Forms.CheckBox();
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.SuspendLayout();
@@ -141,6 +142,42 @@
             this.conCntrls.TabStop = false;
             this.conCntrls.Text = "Connected Controllers";
             // 
+            // loc4
+            // 
+            this.loc4.Location = new System.Drawing.Point(198, 80);
+            this.loc4.Name = "loc4";
+            this.loc4.Size = new System.Drawing.Size(58, 20);
+            this.loc4.TabIndex = 7;
+            this.loc4.Text = "Locate";
+            this.loc4.UseVisualStyleBackColor = true;
+            // 
+            // loc3
+            // 
+            this.loc3.Location = new System.Drawing.Point(134, 80);
+            this.loc3.Name = "loc3";
+            this.loc3.Size = new System.Drawing.Size(58, 20);
+            this.loc3.TabIndex = 6;
+            this.loc3.Text = "Locate";
+            this.loc3.UseVisualStyleBackColor = true;
+            // 
+            // loc2
+            // 
+            this.loc2.Location = new System.Drawing.Point(70, 80);
+            this.loc2.Name = "loc2";
+            this.loc2.Size = new System.Drawing.Size(58, 20);
+            this.loc2.TabIndex = 5;
+            this.loc2.Text = "Locate";
+            this.loc2.UseVisualStyleBackColor = true;
+            // 
+            // loc1
+            // 
+            this.loc1.Location = new System.Drawing.Point(6, 80);
+            this.loc1.Name = "loc1";
+            this.loc1.Size = new System.Drawing.Size(58, 20);
+            this.loc1.TabIndex = 4;
+            this.loc1.Text = "Locate";
+            this.loc1.UseVisualStyleBackColor = true;
+            // 
             // con4
             // 
             this.con4.BackgroundImage = global::BetterJoyForCemu.Properties.Resources.cross;
@@ -190,47 +227,24 @@
             this.btnTip.SetToolTip(this.con1, "Click on Joycons to join/split them");
             this.con1.UseVisualStyleBackColor = true;
             // 
-            // loc1
+            // startInTrayBox
             // 
-            this.loc1.Location = new System.Drawing.Point(6, 80);
-            this.loc1.Name = "loc1";
-            this.loc1.Size = new System.Drawing.Size(58, 20);
-            this.loc1.TabIndex = 4;
-            this.loc1.Text = "Locate";
-            this.loc1.UseVisualStyleBackColor = true;
-            // 
-            // loc2
-            // 
-            this.loc2.Location = new System.Drawing.Point(70, 80);
-            this.loc2.Name = "loc2";
-            this.loc2.Size = new System.Drawing.Size(58, 20);
-            this.loc2.TabIndex = 5;
-            this.loc2.Text = "Locate";
-            this.loc2.UseVisualStyleBackColor = true;
-            // 
-            // loc3
-            // 
-            this.loc3.Location = new System.Drawing.Point(134, 80);
-            this.loc3.Name = "loc3";
-            this.loc3.Size = new System.Drawing.Size(58, 20);
-            this.loc3.TabIndex = 6;
-            this.loc3.Text = "Locate";
-            this.loc3.UseVisualStyleBackColor = true;
-            // 
-            // loc4
-            // 
-            this.loc4.Location = new System.Drawing.Point(198, 80);
-            this.loc4.Name = "loc4";
-            this.loc4.Size = new System.Drawing.Size(58, 20);
-            this.loc4.TabIndex = 7;
-            this.loc4.Text = "Locate";
-            this.loc4.UseVisualStyleBackColor = true;
+            this.startInTrayBox.AutoSize = true;
+            this.startInTrayBox.Location = new System.Drawing.Point(107, 238);
+            this.startInTrayBox.Name = "startInTrayBox";
+            this.startInTrayBox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.startInTrayBox.Size = new System.Drawing.Size(83, 17);
+            this.startInTrayBox.TabIndex = 6;
+            this.startInTrayBox.Text = "Start in Tray";
+            this.startInTrayBox.UseVisualStyleBackColor = true;
+            this.startInTrayBox.CheckedChanged += new System.EventHandler(this.startInTrayBox_CheckedChanged);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.startInTrayBox);
             this.Controls.Add(this.conCntrls);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.passiveScanBox);
@@ -272,5 +286,6 @@
         private System.Windows.Forms.Button loc2;
         private System.Windows.Forms.Button loc1;
         private System.Windows.Forms.ToolTip btnTip;
+        private System.Windows.Forms.CheckBox startInTrayBox;
     }
 }

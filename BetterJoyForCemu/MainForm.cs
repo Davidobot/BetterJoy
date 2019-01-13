@@ -21,32 +21,46 @@ namespace BetterJoyForCemu {
 
             con = new List<Button> { con1, con2, con3, con4 };
             loc = new List<Button> { loc1, loc2, loc3, loc4 };
-		}
+        }
+
+        private void HideToTray() {
+            this.WindowState = FormWindowState.Minimized;
+            notifyIcon.Visible = true;
+            notifyIcon.ShowBalloonTip(1);
+            this.ShowInTaskbar = false;
+        }
+
+        private void ShowFromTray() {
+            this.WindowState = FormWindowState.Normal;
+            this.ShowInTaskbar = true;
+            notifyIcon.Visible = false;
+        }
 
 		private void MainForm_Resize(object sender, EventArgs e) {
 			if (this.WindowState == FormWindowState.Minimized) {
-				notifyIcon.Visible = true;
-				notifyIcon.ShowBalloonTip(1);
-				this.ShowInTaskbar = false;
+                HideToTray();
 			}
 		}
 
 		private void notifyIcon_MouseDoubleClick(object sender, MouseEventArgs e) {
-			this.WindowState = FormWindowState.Normal;
-			this.ShowInTaskbar = true;
-			notifyIcon.Visible = false;
+            ShowFromTray();
 		}
 
 		private void MainForm_Load(object sender, EventArgs e) {
-			this.ShowInTaskbar = true;
-			notifyIcon.Visible = false;
-            this.Show();
             Program.Start();
 
             Config.Init();
 
             passiveScanBox.Checked = Config.Value("ProgressiveScan");
-		}
+            startInTrayBox.Checked = Config.Value("StartInTray");
+
+            if (Config.Value("StartInTray")) {
+                HideToTray();
+            }
+            else {
+                ShowFromTray();
+            }
+        }
 
 		private void MainForm_FormClosing(object sender, FormClosingEventArgs e) {
             try {
@@ -171,6 +185,11 @@ namespace BetterJoyForCemu {
                     v.other = null;
                 }
             }
+        }
+
+        private void startInTrayBox_CheckedChanged(object sender, EventArgs e)
+        {
+            Config.Save("StartInTray", startInTrayBox.Checked);
         }
 
         void ReenableXinput(Joycon v) {

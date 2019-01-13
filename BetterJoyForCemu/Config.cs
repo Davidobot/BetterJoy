@@ -12,7 +12,8 @@ namespace BetterJoyForCemu {
 
         public static void Init() {
             variables["ProgressiveScan"] = true;
-            
+            variables["StartInTray"] = false;
+
             if (File.Exists(PATH)) {
                 using (StreamReader file = new StreamReader(PATH)) {
                     string line = String.Empty;
@@ -32,7 +33,7 @@ namespace BetterJoyForCemu {
         }
 
         public static bool Value(string key) {
-            if (!variables.ContainsKey("ProgressiveScan")) {
+            if (!variables.ContainsKey("ProgressiveScan") && !variables.ContainsKey("StartInTray")) {
                 return false;
             }
             return variables[key];
