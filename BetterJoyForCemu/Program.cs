@@ -409,6 +409,12 @@ namespace BetterJoyForCemu {
                 form.console.Text += "Unable to remove program from whitelist.\r\n";
             }
 
+            if (Boolean.Parse(ConfigurationManager.AppSettings["PurgeAffectedDevices"])) {
+                try {
+                    HttpWebResponse r1 = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/purge/").GetResponse();
+                } catch { }
+            }
+
             server.Stop();
             timer.Stop();
             mgr.OnApplicationQuit();
