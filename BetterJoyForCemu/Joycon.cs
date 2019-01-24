@@ -353,6 +353,30 @@ namespace BetterJoyForCemu {
             Subcommand(0x38, a, 25, false);
         }
 
+        private void BatteryChanged() { // battery changed level
+            foreach (var v in form.con) {
+                if (v.Tag == this) {
+                    switch (battery) {
+                        case 4:
+                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Green);
+                            break;
+                        case 3:
+                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Orange);
+                            break;
+                        case 2:
+                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Red);
+                            break;
+                        case 1:
+                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.DarkRed);
+                            break;
+                        default:
+                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Black);
+                            break;
+                    }
+                }
+            }
+        }
+
 		public void SetFilterCoeff(float a) {
 			filterweight = a;
 		}
@@ -399,6 +423,11 @@ namespace BetterJoyForCemu {
 					if (n == 0) {
 						Timestamp += (ulong)lag * 5000; // add lag once
 						ProcessButtonsAndStick(raw_buf);
+
+                        int newbat = battery;
+                        battery = (raw_buf[2] >> 4) / 2;
+                        if (newbat != battery)
+                            BatteryChanged();
 					}
 					Timestamp += 5000; // 5ms difference
 
@@ -497,6 +526,7 @@ namespace BetterJoyForCemu {
 			}
 			//
 
+            // Set button states both for server and ViGEm
 			lock (buttons) {
 				lock (down_) {
 					for (int i = 0; i < buttons.Length; ++i) {
@@ -652,7 +682,7 @@ namespace BetterJoyForCemu {
 						break;
 					case 2:
 						acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-                                                gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+                        gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
 						break;
 				}
@@ -687,20 +717,17 @@ namespace BetterJoyForCemu {
 			first_imu_packet = true;
 		}
 
+        // Should really be called calculating stick data
 		private float[] CenterSticks(UInt16[] vals, ushort[] cal, ushort dz) {
 			ushort[] t = cal;
 
 			float[] s = { 0, 0 };
-			for (uint i = 0; i < 2; ++i) {
-				float diff = vals[i] - t[2 + i];
-				if (Math.Abs(diff) < dz) vals[i] = 0;
-				else if (diff > 0) // if axis is above center
-				{
-					s[i] = diff / t[i];
-				} else {
-					s[i] = diff / t[4 + i];
-				}
-			}
+            float dx = vals[0] - t[2], dy = vals[1] - t[3];
+            if (Math.Abs(dx * dx + dy * dy) < dz * dz)
+                return s;
+
+            s[0] = dx / (dx > 0 ? t[0] : t[4]);
+            s[1] = dy / (dy > 0 ? t[1] : t[5]);
 			return s;
 		}
 

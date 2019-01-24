@@ -30,7 +30,7 @@
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.contextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.label2 = new System.Windows.Forms.Label();
+            this.version_lbl = new System.Windows.Forms.Label();
             this.passiveScanBox = new System.Windows.Forms.CheckBox();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.conCntrls = new System.Windows.Forms.GroupBox();
@@ -91,14 +91,14 @@
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
-            // label2
+            // version_lbl
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(246, 239);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(28, 13);
-            this.label2.TabIndex = 2;
-            this.label2.Text = "v5.0";
+            this.version_lbl.AutoSize = true;
+            this.version_lbl.Location = new System.Drawing.Point(246, 239);
+            this.version_lbl.Name = "version_lbl";
+            this.version_lbl.Size = new System.Drawing.Size(28, 13);
+            this.version_lbl.TabIndex = 2;
+            this.version_lbl.Text = "v6.0";
             // 
             // passiveScanBox
             // 
@@ -248,7 +248,7 @@
             this.Controls.Add(this.conCntrls);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.passiveScanBox);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.version_lbl);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.console);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -271,7 +271,7 @@
 		public System.Windows.Forms.TextBox console;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.NotifyIcon notifyIcon;
-		private System.Windows.Forms.Label label2;
+		private System.Windows.Forms.Label version_lbl;
 		private System.Windows.Forms.ContextMenuStrip contextMenu;
 		private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.CheckBox passiveScanBox;
