@@ -1,9 +1,22 @@
-# BetterJoyForCemu v5
+# BetterJoyForCemu v5 (v6 Nightly)
 Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), and system-wide with generic XInput support.
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
+## Nightly builds (updated 19/01/19)
+Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
+* [64-bit](https://drive.google.com/open?id=1WKVr9saaL_brrzLPsW4Sc7tQqc64w0kT)
+* [32-bit](https://drive.google.com/open?id=1IwMVhRu5DLlCI5D6Sx_UKB-z_fMevaoV)
+
 # Changelog
+### v6
+* Added option from starting the application minimized to tray
+   * thanks [marco-calautti](https://github.com/marco-calautti)
+* Fixed gyro drift on some controllers
+   * thanks [brakhane](https://github.com/brakhane)
+* Added option to config to remove affected devices at application shutdown
+   * Should prevent any more issues of the controller being unusable after the program (even though this can be fixed if you read the README)
+
 ### v5
 * Progressive scanning
    * You can keep BetterJoyForCemu running and just connect controllers to your PC - it will detect them.
