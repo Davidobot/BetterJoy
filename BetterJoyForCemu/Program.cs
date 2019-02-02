@@ -81,6 +81,7 @@ namespace BetterJoyForCemu {
                             b.Invoke(new MethodInvoker(delegate {
                                 b.Enabled = false;
                                 b.BackgroundImage = Properties.Resources.cross;
+                                b.BackColor = System.Drawing.SystemColors.Control;
                             }));
                             break;
                         }
@@ -210,23 +211,10 @@ namespace BetterJoyForCemu {
                 ptr = enumerate.next;
             }
 
-            int found = 0;
-            int minPadID = 10;
-            foreach (Joycon v in j) { // current system is designed for a maximum of two joycons connected to the PC
-                if (!v.isPro) {
-                    found++;
-                    minPadID = Math.Min(v.PadId, minPadID);
-                }
-                v.LED = (byte)(0x1 << v.PadId);
-            }
-
-            if (found == 2 && foundNew) {
-                form.AppendTextBox("Both joycons successfully found.\r\n");
+            if (foundNew) { // attempt to auto join-up joycons on connection
                 Joycon temp = null;
                 foreach (Joycon v in j) {
                     if (!v.isPro) {
-                        v.LED = (byte)(0x1 << minPadID);
-
                         if (temp == null)
                             temp = v;
                         else {
@@ -235,18 +223,14 @@ namespace BetterJoyForCemu {
 
                             temp.xin.Dispose();
                             temp.xin = null;
+                            temp = null;    // repeat
                         }
 
-                        foreach (Button b in form.con) {
-                            if (b.Tag == v) {
-                                if (v.isLeft)
-                                    b.BackgroundImage = Properties.Resources.jc_left;
-                                else
-                                    b.BackgroundImage = Properties.Resources.jc_right;
-                            }
-                        }
+                        foreach (Button b in form.con)
+                            if (b.Tag == v)
+                                b.BackgroundImage = v.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
                     }
-                } // Join up the two joycons
+                }
             }
 
             HIDapi.hid_free_enumeration(top_ptr);

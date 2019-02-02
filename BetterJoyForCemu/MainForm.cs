@@ -117,45 +117,28 @@ namespace BetterJoyForCemu {
                 Joycon v = (Joycon)button.Tag;
 
                 if (v.other == null && !v.isPro) { // needs connecting to other joycon (so messy omg)
+                    bool succ = false;
+                    foreach (Joycon jc in Program.mgr.j) {
+                        if (!jc.isPro && jc.isLeft != v.isLeft && jc != v && jc.other == null) {
+                            v.other = jc;
+                            jc.other = v;
 
-                    int found = 0;
-                    int minPadID = 10;
-                    foreach (Joycon jc in Program.mgr.j) { // current system is designed for a maximum of two joycons connected to the PC
-                        if (!jc.isPro) {
-                            found++;
-                            minPadID = Math.Min(jc.PadId, minPadID);
+                            v.xin.Dispose();
+                            v.xin = null;
+
+                            foreach (Button b in con)
+                                if (b.Tag == jc)
+                                        b.BackgroundImage = jc.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
+
+                            succ = true;
+                            break;
                         }
-                        jc.LED = (byte)(0x1 << jc.PadId);
                     }
 
-                    if (found == 2) {
-                        AppendTextBox("Both joycons successfully found.\r\n");
-                        Joycon temp = null;
-                        foreach (Joycon jc in Program.mgr.j) {
-                            if (!jc.isPro) {
-                                jc.LED = (byte)(0x1 << minPadID);
-
-                                if (temp == null)
-                                    temp = jc;
-                                else {
-                                    temp.other = jc;
-                                    jc.other = temp;
-
-                                    temp.xin.Dispose();
-                                    temp.xin = null;
-                                }
-
-                                foreach (Button b in con) {
-                                    if (b.Tag == jc) {
-                                        if (jc.isLeft)
-                                            b.BackgroundImage = Properties.Resources.jc_left;
-                                        else
-                                            b.BackgroundImage = Properties.Resources.jc_right;
-                                    }
-                                }
-                            }
-                        } // Join up the two joycons
-                    }
+                    if (succ)
+                        foreach (Button b in con)
+                            if (b.Tag == v)
+                                b.BackgroundImage = v.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
                 } else if (v.other != null && !v.isPro) { // needs disconnecting from other joycon
                     if (v.xin == null) {
                         ReenableXinput(v);
@@ -167,19 +150,11 @@ namespace BetterJoyForCemu {
                         v.other.xin.Connect();
                     }
 
-                    if (v.isLeft)
-                        button.BackgroundImage = Properties.Resources.jc_left_s;
-                    else
-                        button.BackgroundImage = Properties.Resources.jc_right_s;
+                    button.BackgroundImage = v.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
 
-                    foreach (Button b in con) {
-                        if (b.Tag == v.other) {
-                            if (v.other.isLeft)
-                                b.BackgroundImage = Properties.Resources.jc_left_s;
-                            else
-                                b.BackgroundImage = Properties.Resources.jc_right_s;
-                        }
-                    }
+                    foreach (Button b in con)
+                        if (b.Tag == v.other)
+                                b.BackgroundImage = v.other.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
 
                     v.other.other = null;
                     v.other = null;

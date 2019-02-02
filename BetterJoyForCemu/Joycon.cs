@@ -228,7 +228,8 @@ namespace BetterJoyForCemu {
 			isLeft = left;
 
 			PadId = id;
-			this.isPro = isPro;
+            LED = (byte)(0x1 << PadId);
+            this.isPro = isPro;
 			isUSB = usb;
 
             this.path = path;
