@@ -411,9 +411,9 @@ namespace BetterJoyForCemu {
 		private byte ts_en;
 		private int ReceiveRaw() {
             if (handle == IntPtr.Zero) return -2;
-            HIDapi.hid_set_nonblocking(handle, 0);
+            HIDapi.hid_set_nonblocking(handle, 1);
 			byte[] raw_buf = new byte[report_len];
-            int ret = HIDapi.hid_read(handle, raw_buf, new UIntPtr(report_len));
+			int ret = HIDapi.hid_read_timeout(handle, raw_buf, new UIntPtr(report_len), 5000);
 			if (ret > 0) {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
@@ -452,8 +452,16 @@ namespace BetterJoyForCemu {
 		private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
 		private void Poll() {
 			int attempts = 0;
+			Stopwatch watch = new Stopwatch();
+			watch.Start();
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-                SendRumble(rumble_obj.GetData()); // Needed for EVERYTHING to not time out. Never remove pls
+				if (watch.ElapsedMilliseconds >= 5000) {
+					// Send a no-op operation as heartbeat to keep connection alive.
+					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
+					// Needed for both BLUETOOTH and USB to not time out. Never remove pls
+					SendRumble(rumble_obj.GetData());
+					watch.Restart();
+				}
                 int a = ReceiveRaw();
 
                 if (a > 0) {
@@ -465,11 +473,15 @@ namespace BetterJoyForCemu {
 
                     DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
 					break;
-				} else {
+				} else if (a < 0) {
+					// An error on read.
 					//form.AppendTextBox("Pause 5ms");
 					Thread.Sleep((Int32)5);
+					++attempts;
+				} else if (a == 0) {
+					// The non-blocking read timed out. No need to sleep.
+					// No need to increase attempts because it's not an error.
 				}
-				++attempts;
             }
 		}
 
