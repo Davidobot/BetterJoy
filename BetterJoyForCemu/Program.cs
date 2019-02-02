@@ -79,9 +79,9 @@ namespace BetterJoyForCemu {
                     foreach (Button b in form.con) {
                         if (b.Enabled & b.Tag == v) {
                             b.Invoke(new MethodInvoker(delegate {
+                                b.BackColor = System.Drawing.Color.FromArgb(0x00, System.Drawing.SystemColors.Control);
                                 b.Enabled = false;
                                 b.BackgroundImage = Properties.Resources.cross;
-                                b.BackColor = System.Drawing.SystemColors.Control;
                             }));
                             break;
                         }
@@ -217,18 +217,21 @@ namespace BetterJoyForCemu {
                     if (!v.isPro) {
                         if (temp == null)
                             temp = v;
-                        else {
+                        else if (temp.isLeft != v.isLeft && v.other == null) {
                             temp.other = v;
                             v.other = temp;
 
                             temp.xin.Dispose();
                             temp.xin = null;
-                            temp = null;    // repeat
-                        }
 
-                        foreach (Button b in form.con)
-                            if (b.Tag == v)
-                                b.BackgroundImage = v.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
+                            foreach (Button b in form.con)
+                                if (b.Tag == v || b.Tag == temp) {
+                                    Joycon tt = (b.Tag == v) ? v : (b.Tag == temp) ? temp : v;
+                                    b.BackgroundImage = tt.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
+                                }
+
+                            temp = null;    // repeat
+                        }       
                     }
                 }
             }

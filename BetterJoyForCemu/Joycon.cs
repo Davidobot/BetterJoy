@@ -458,7 +458,7 @@ namespace BetterJoyForCemu {
 			while (!stop_polling & state > state_.NO_JOYCONS) {
                 if (isUSB)
                     SendRumble(rumble_obj.GetData());
-                else if (watch.ElapsedMilliseconds >= 5000) {
+                else if (watch.ElapsedMilliseconds >= 1000f / timing) {
 					// Send a no-op operation as heartbeat to keep connection alive.
 					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
 					// Needed for both BLUETOOTH and USB to not time out. Never remove pls
@@ -750,8 +750,8 @@ namespace BetterJoyForCemu {
 			if (state <= Joycon.state_.ATTACHED) return;
 			//if (rumble_obj.timed_rumble == false || rumble_obj.t < 0) {
 				rumble_obj = new Rumble(low_freq, high_freq, amp, time);
-			//}
-		}
+            //}
+        }
 
 		private void SendRumble(byte[] buf) {
 			byte[] buf_ = new byte[report_len];
