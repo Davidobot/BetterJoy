@@ -195,7 +195,7 @@ namespace BetterJoyForCemu {
 
         // For UdpServer
         public int PadId = 0;
-        public int battery = 4;
+        public int battery = -1;
         public int model = 2;
         public int constate = 2;
         public int connection = 3;
@@ -358,19 +358,19 @@ namespace BetterJoyForCemu {
                 if (v.Tag == this) {
                     switch (battery) {
                         case 4:
-                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Green);
+                            v.BackColor = System.Drawing.Color.FromArgb(0xAA, System.Drawing.Color.Green);
                             break;
                         case 3:
-                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Orange);
+                            v.BackColor = System.Drawing.Color.FromArgb(0xAA, System.Drawing.Color.Green);
                             break;
                         case 2:
-                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Red);
+                            v.BackColor = System.Drawing.Color.FromArgb(0xAA, System.Drawing.Color.GreenYellow);
                             break;
                         case 1:
-                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.DarkRed);
+                            v.BackColor = System.Drawing.Color.FromArgb(0xAA, System.Drawing.Color.Orange);
                             break;
                         default:
-                            v.BackColor = System.Drawing.Color.FromArgb(0x33, System.Drawing.Color.Black);
+                            v.BackColor = System.Drawing.Color.FromArgb(0xAA, System.Drawing.Color.Red);
                             break;
                     }
                 }
@@ -455,7 +455,9 @@ namespace BetterJoyForCemu {
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-				if (watch.ElapsedMilliseconds >= 5000) {
+                if (isUSB)
+                    SendRumble(rumble_obj.GetData());
+                else if (watch.ElapsedMilliseconds >= 5000) {
 					// Send a no-op operation as heartbeat to keep connection alive.
 					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
 					// Needed for both BLUETOOTH and USB to not time out. Never remove pls
