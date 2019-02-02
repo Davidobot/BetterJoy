@@ -452,8 +452,16 @@ namespace BetterJoyForCemu {
 		private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
 		private void Poll() {
 			int attempts = 0;
+			Stopwatch watch = new Stopwatch();
+			watch.Start();
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-                SendRumble(rumble_obj.GetData()); // Needed for EVERYTHING to not time out. Never remove pls
+				if (watch.ElapsedMilliseconds >= 5000) {
+					// Send a no-op operation as heartbeat to keep connection alive.
+					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
+					// Needed for both BLUETOOTH and USB to not time out. Never remove pls
+					SendRumble(rumble_obj.GetData());
+					watch.Restart();
+				}
                 int a = ReceiveRaw();
 
                 if (a > 0) {
