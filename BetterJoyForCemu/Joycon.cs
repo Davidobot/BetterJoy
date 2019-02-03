@@ -456,7 +456,7 @@ namespace BetterJoyForCemu {
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-                if (isUSB)
+                if (isUSB || rumble_obj.t > 0)
                     SendRumble(rumble_obj.GetData());
                 else if (watch.ElapsedMilliseconds >= 1000f / timing) {
 					// Send a no-op operation as heartbeat to keep connection alive.
