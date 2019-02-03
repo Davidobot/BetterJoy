@@ -458,7 +458,7 @@ namespace BetterJoyForCemu {
 			while (!stop_polling & state > state_.NO_JOYCONS) {
                 if (isUSB || rumble_obj.t > 0)
                     SendRumble(rumble_obj.GetData());
-                else if (watch.ElapsedMilliseconds >= 1000f / timing) {
+                else if (watch.ElapsedMilliseconds >= 1000) {
 					// Send a no-op operation as heartbeat to keep connection alive.
 					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
 					// Needed for both BLUETOOTH and USB to not time out. Never remove pls

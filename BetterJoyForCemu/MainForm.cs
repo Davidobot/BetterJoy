@@ -167,6 +167,11 @@ namespace BetterJoyForCemu {
             Config.Save("StartInTray", startInTrayBox.Checked);
         }
 
+        private void btn_open3rdP_Click(object sender, EventArgs e) {
+            _3rdPartyControllers partyForm = new _3rdPartyControllers();
+            partyForm.ShowDialog();
+        }
+
         void ReenableXinput(Joycon v) {
             if (showAsXInput) {
                 v.xin = new Xbox360Controller(Program.emClient);

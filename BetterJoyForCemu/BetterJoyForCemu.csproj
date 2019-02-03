@@ -126,6 +126,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="3rdPartyControllers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="3rdPartyControllers.Designer.cs">
+      <DependentUpon>3rdPartyControllers.cs</DependentUpon>
+    </Compile>
     <Compile Include="Config.cs" />
     <Compile Include="HIDapi.cs" />
     <Compile Include="Joycon.cs" />
@@ -162,6 +168,9 @@
     <Resource Include="Icons\pro.png" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="3rdPartyControllers.resx">
+      <DependentUpon>3rdPartyControllers.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

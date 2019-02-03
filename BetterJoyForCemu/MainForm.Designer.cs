@@ -44,6 +44,7 @@
             this.con1 = new System.Windows.Forms.Button();
             this.btnTip = new System.Windows.Forms.ToolTip(this.components);
             this.startInTrayBox = new System.Windows.Forms.CheckBox();
+            this.btn_open3rdP = new System.Windows.Forms.Button();
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.SuspendLayout();
@@ -239,11 +240,22 @@
             this.startInTrayBox.UseVisualStyleBackColor = true;
             this.startInTrayBox.CheckedChanged += new System.EventHandler(this.startInTrayBox_CheckedChanged);
             // 
+            // btn_open3rdP
+            // 
+            this.btn_open3rdP.Location = new System.Drawing.Point(188, 112);
+            this.btn_open3rdP.Name = "btn_open3rdP";
+            this.btn_open3rdP.Size = new System.Drawing.Size(86, 20);
+            this.btn_open3rdP.TabIndex = 7;
+            this.btn_open3rdP.Text = "Add Controllers";
+            this.btn_open3rdP.UseVisualStyleBackColor = true;
+            this.btn_open3rdP.Click += new System.EventHandler(this.btn_open3rdP_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btn_open3rdP);
             this.Controls.Add(this.startInTrayBox);
             this.Controls.Add(this.conCntrls);
             this.Controls.Add(this.linkLabel1);
@@ -287,5 +299,6 @@
         private System.Windows.Forms.Button loc1;
         private System.Windows.Forms.ToolTip btnTip;
         private System.Windows.Forms.CheckBox startInTrayBox;
+        private System.Windows.Forms.Button btn_open3rdP;
     }
 }
