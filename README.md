@@ -3,10 +3,10 @@ Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](htt
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
-## Nightly builds (updated 02/02/19)
+## Nightly builds (updated 03/02/19)
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1OqKLhfT9lIb-bhD45I2k1UgpllmBJILZ)
-* [32-bit](https://drive.google.com/open?id=1RIYR2LdC8UDwrWIC_RlJi5SOvRc2aIzN)
+* [64-bit](https://drive.google.com/open?id=1SeGd9xcJhK2Vd1fQRAryS-MHfQRGcT9x)
+* [32-bit](https://drive.google.com/open?id=1TAAFcV_GldApfZHqLE5Rt82x7blSgzYu)
 
 # Changelog
 ### v6
@@ -18,7 +18,7 @@ Due to popular request (and my fear of releasing full builds without many new fe
    * Should prevent any more issues of the controller being unusable after the program (even though this can be fixed if you read the README)
 * Added battery level indicator by changing background colour of respective controller icon
 * Fixed multi-joycon lag
-   * As of 02/02/19 nightly - this means there is no rumble, but this will be fixed
+   * thanks [quark-zju](https://github.com/quark-zju)
 * Allow for more than one pair of joycons to be joined up
 
 ### v5
