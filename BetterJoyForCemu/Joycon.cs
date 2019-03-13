@@ -652,14 +652,14 @@ namespace BetterJoyForCemu {
 			}
 
 			if (xin != null) {
-                if (other != null | isPro) {
-                    report.SetAxis(Xbox360Axes.LeftThumbX, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick[0] * (stick[0] > 0 ? Int16.MaxValue : -Int16.MinValue))));
-                    report.SetAxis(Xbox360Axes.LeftThumbY, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick[1] * (stick[1] > 0 ? Int16.MaxValue : -Int16.MinValue))));
-                    report.SetAxis(Xbox360Axes.RightThumbX, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick2[0] * (stick2[0] > 0 ? Int16.MaxValue : -Int16.MinValue))));
-                    report.SetAxis(Xbox360Axes.RightThumbY, (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick2[1] * (stick2[1] > 0 ? Int16.MaxValue : -Int16.MinValue))));
+                if (other != null || isPro) {
+                    report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue(stick[0]));
+                    report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue(stick[1]));
+                    report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue(stick2[0]));
+                    report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue(stick2[1]));
                 } else { // single joycon mode
-                    report.SetAxis(Xbox360Axes.LeftThumbY, (short)((isLeft ? 1 : -1) * Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick[0] * (stick[0] > 0 ? Int16.MaxValue : -Int16.MinValue)))));
-                    report.SetAxis(Xbox360Axes.LeftThumbX, (short)((isLeft ? -1 : 1) * Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick[1] * (stick[1] > 0 ? Int16.MaxValue : -Int16.MinValue)))));
+                    report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
+                    report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
                 }
                 report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Int16.MaxValue : 0));
 				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
@@ -667,6 +667,7 @@ namespace BetterJoyForCemu {
 
 			return 0;
 		}
+
 		private void ExtractIMUValues(byte[] report_buf, int n = 0) {
 			gyr_r[0] = (Int16)(report_buf[19 + n * 12] | ((report_buf[20 + n * 12] << 8) & 0xff00));
 			gyr_r[1] = (Int16)(report_buf[21 + n * 12] | ((report_buf[22 + n * 12] << 8) & 0xff00));
@@ -745,6 +746,11 @@ namespace BetterJoyForCemu {
             s[1] = dy / (dy > 0 ? t[1] : t[5]);
 			return s;
 		}
+
+        private short CastStickValue(float stick_value)
+        {
+            return (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick_value * (stick_value > 0 ? Int16.MaxValue : -Int16.MinValue)));
+        }
 
 		public void SetRumble(float low_freq, float high_freq, float amp, int time = 0) {
 			if (state <= Joycon.state_.ATTACHED) return;
