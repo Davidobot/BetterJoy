@@ -118,7 +118,7 @@
             // 
             // btn_applyAndClose
             // 
-            this.btn_applyAndClose.Location = new System.Drawing.Point(121, 229);
+            this.btn_applyAndClose.Location = new System.Drawing.Point(203, 229);
             this.btn_applyAndClose.Name = "btn_applyAndClose";
             this.btn_applyAndClose.Size = new System.Drawing.Size(69, 23);
             this.btn_applyAndClose.TabIndex = 5;
@@ -128,7 +128,7 @@
             // 
             // btn_apply
             // 
-            this.btn_apply.Location = new System.Drawing.Point(203, 229);
+            this.btn_apply.Location = new System.Drawing.Point(121, 229);
             this.btn_apply.Name = "btn_apply";
             this.btn_apply.Size = new System.Drawing.Size(69, 23);
             this.btn_apply.TabIndex = 6;

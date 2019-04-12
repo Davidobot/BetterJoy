@@ -503,8 +503,9 @@ namespace BetterJoyForCemu {
 
 		public float[] otherStick = { 0, 0 };
 
-		bool swapButtons = Boolean.Parse(ConfigurationManager.AppSettings["SwapButtons"]);
-		private int ProcessButtonsAndStick(byte[] report_buf) {
+		bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
+        bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        private int ProcessButtonsAndStick(byte[] report_buf) {
 			if (report_buf[0] == 0x00) return -1;
 
 			stick_raw[0] = report_buf[6 + (isLeft ? 0 : 3)];
@@ -572,10 +573,10 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.SHOULDER2_1] = (report_buf[3 + (!isLeft ? 2 : 0)] & 0x40) != 0;
 					buttons[(int)Button.SHOULDER2_2] = (report_buf[3 + (!isLeft ? 2 : 0)] & 0x80) != 0;
 
-					report.SetButtonState(Xbox360Buttons.A, buttons[(int)(!swapButtons ? Button.B : Button.A)]);
-					report.SetButtonState(Xbox360Buttons.B, buttons[(int)(!swapButtons ? Button.A : Button.B)]);
-					report.SetButtonState(Xbox360Buttons.Y, buttons[(int)(!swapButtons ? Button.X : Button.Y)]);
-					report.SetButtonState(Xbox360Buttons.X, buttons[(int)(!swapButtons ? Button.Y : Button.X)]);
+					report.SetButtonState(Xbox360Buttons.A, buttons[(int)(!swapAB ? Button.B : Button.A)]);
+					report.SetButtonState(Xbox360Buttons.B, buttons[(int)(!swapAB ? Button.A : Button.B)]);
+					report.SetButtonState(Xbox360Buttons.Y, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
+					report.SetButtonState(Xbox360Buttons.X, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
 					report.SetButtonState(Xbox360Buttons.Up, buttons[(int)Button.DPAD_UP]);
 					report.SetButtonState(Xbox360Buttons.Down, buttons[(int)Button.DPAD_DOWN]);
 					report.SetButtonState(Xbox360Buttons.Left, buttons[(int)Button.DPAD_LEFT]);
@@ -611,10 +612,10 @@ namespace BetterJoyForCemu {
 
 				if (!isPro && xin != null) {
                     if (other != null) {
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
+                        report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
+                        report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
+                        report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
+                        report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
                         report.SetButtonState(Xbox360Buttons.Up, buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)]);
                         report.SetButtonState(Xbox360Buttons.Down, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)]);
                         report.SetButtonState(Xbox360Buttons.Left, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)]);
@@ -627,10 +628,10 @@ namespace BetterJoyForCemu {
                         report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
                         report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
                     } else { // single joycon mode
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
-                        report.SetButtonState(!swapButtons ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
+                        report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
+                        report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
+                        report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
+                        report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
                         report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
                         report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
 
