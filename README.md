@@ -20,6 +20,9 @@ Due to popular request (and my fear of releasing full builds without many new fe
 * Fixed multi-joycon lag
    * thanks [quark-zju](https://github.com/quark-zju)
 * Allow for more than one pair of joycons to be joined up
+* Fixed stick casting overflow
+   * thanks [idan-weizman](https://github.com/idan-weizman)
+* Separated swap buttons into swapAB and swapXY; hid BetterJoy from Alt+Tab when minimised
 
 ### v5
 * Progressive scanning
@@ -104,8 +107,10 @@ Current settings are:
 * Frequency of low rumble in Hz         *(default: 20)*
 * Frequency of high rumble in Hz        *(default: 400)*
 * Rumble - en/disables rumble           *(default: true)*
-* Swap buttons                          *(default: false)*
-  * Swaps the A-B and X-Y buttons to mimick the Xbox layout by button name, rather than physical layout 
+* Swap A-B                              *(default: false)*
+  * Swaps the A-B buttons to mimick the Xbox layout by button name, rather than physical layout 
+* Swap X-Y                              *(default: false)*
+  * Swaps the X-Y buttons to mimick the Xbox layout by button name, rather than physical layout 
 * PurgeWhitelist                        *(default: true)*
   * Determines whether or not HidGuardian's process whitelist is purged on start-up
 * UseHIDG                               *(default: true)*
