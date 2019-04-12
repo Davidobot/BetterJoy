@@ -3,10 +3,10 @@ Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](htt
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
-## Nightly builds (updated 03/02/19)
+## Nightly builds (updated 12/04/19)
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1SeGd9xcJhK2Vd1fQRAryS-MHfQRGcT9x)
-* [32-bit](https://drive.google.com/open?id=1TAAFcV_GldApfZHqLE5Rt82x7blSgzYu)
+* [64-bit](https://drive.google.com/open?id=1jUDy9TWaGqFiPdGtwZOVWnrrbzeSlkdP)
+* [32-bit](https://drive.google.com/open?id=1h67fwdqXZKl21cq2G0zQtbWm8IXC8R55)
 
 # Changelog
 ### v6
