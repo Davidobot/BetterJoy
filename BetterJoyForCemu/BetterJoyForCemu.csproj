@@ -155,6 +155,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\bjfc.bmp" />
     <None Include="FodyWeavers.xml" />
     <Content Include="Icons\betterjoyforcemu_icon.ico" />
     <Content Include="hidapi.dll">
