@@ -1,3 +1,6 @@
+# BetterJoyForCemu v6.1 (based on v6 Nightly)
+Automatically enumerate options and enble to control them directly from the UI. Any further options can be supported. -- by StarryTony
+
 # BetterJoyForCemu v5 (v6 Nightly)
 Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), and system-wide with generic XInput support.
 
