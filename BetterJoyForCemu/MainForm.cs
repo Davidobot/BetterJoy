@@ -25,22 +25,21 @@ namespace BetterJoyForCemu {
 
             //list all options
             string[] myConfigs = ConfigurationManager.AppSettings.AllKeys;
-
+            Size childSize = new Size(87, 20);
             for (int i = 0; i != myConfigs.Length; i++)
             {
                 tableLayoutPanel1.RowCount++;
-                tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-                tableLayoutPanel1.Controls.Add(new Label() { Text = myConfigs[i] }, 0, i);
+                tableLayoutPanel1.Controls.Add(new Label() { Text = myConfigs[i], TextAlign=ContentAlignment.BottomLeft, AutoEllipsis=true, Size = childSize }, 0, i);
 
                 var value = ConfigurationManager.AppSettings[myConfigs[i]];
                 Control childControl;
                 if (value == "true" || value == "false")
                 {
-                    childControl = new CheckBox() { Checked = Boolean.Parse(value) };
+                    childControl = new CheckBox() { Checked = Boolean.Parse(value), Size= childSize };
                 }
                 else
                 {
-                    childControl = new TextBox() { Text = value };
+                    childControl = new TextBox() { Text = value, Size = childSize };
                 }
 
                 tableLayoutPanel1.Controls.Add(childControl, 1, i);

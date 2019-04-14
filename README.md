@@ -1,5 +1,5 @@
 # BetterJoyForCemu v6.1 (based on v6 Nightly)
-Automatically enumerate options and enble to control them directly from the UI. Any further options can be supported. -- by StarryTony
+Automatically enumerate options and enable to control them directly from the UI. Any further options can be supported. -- by StarryTony
 
 ![Example](/Examples/example1.png)
 
