@@ -43,13 +43,13 @@
             this.con2 = new System.Windows.Forms.Button();
             this.con1 = new System.Windows.Forms.Button();
             this.btnTip = new System.Windows.Forms.ToolTip(this.components);
+            this.foldLbl = new System.Windows.Forms.Label();
             this.startInTrayBox = new System.Windows.Forms.CheckBox();
             this.btn_open3rdP = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.rightPanel = new System.Windows.Forms.Panel();
             this.button1 = new System.Windows.Forms.Button();
-            this.foldLbl = new System.Windows.Forms.Label();
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -251,6 +251,18 @@
             this.btnTip.SetToolTip(this.con1, "Click on Joycons to join/split them");
             this.con1.UseVisualStyleBackColor = true;
             // 
+            // foldLbl
+            // 
+            this.foldLbl.Location = new System.Drawing.Point(411, 27);
+            this.foldLbl.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.foldLbl.Name = "foldLbl";
+            this.foldLbl.Size = new System.Drawing.Size(20, 328);
+            this.foldLbl.TabIndex = 12;
+            this.foldLbl.Text = ">";
+            this.foldLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnTip.SetToolTip(this.foldLbl, "Config");
+            this.foldLbl.Click += new System.EventHandler(this.label2_Click);
+            // 
             // startInTrayBox
             // 
             this.startInTrayBox.AutoSize = true;
@@ -309,6 +321,7 @@
             this.rightPanel.Name = "rightPanel";
             this.rightPanel.Size = new System.Drawing.Size(347, 388);
             this.rightPanel.TabIndex = 11;
+            this.rightPanel.Visible = false;
             // 
             // button1
             // 
@@ -321,18 +334,6 @@
             this.button1.Text = "Apply";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
-            // 
-            // foldLbl
-            // 
-            this.foldLbl.Location = new System.Drawing.Point(411, 27);
-            this.foldLbl.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.foldLbl.Name = "foldLbl";
-            this.foldLbl.Size = new System.Drawing.Size(20, 328);
-            this.foldLbl.TabIndex = 12;
-            this.foldLbl.Text = "<";
-            this.foldLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.btnTip.SetToolTip(this.foldLbl, "Config");
-            this.foldLbl.Click += new System.EventHandler(this.label2_Click);
             // 
             // MainForm
             // 
