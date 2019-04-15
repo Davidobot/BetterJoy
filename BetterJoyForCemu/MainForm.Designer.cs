@@ -47,10 +47,13 @@
             this.btn_open3rdP = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.rightPanel = new System.Windows.Forms.Panel();
             this.button1 = new System.Windows.Forms.Button();
+            this.foldLbl = new System.Windows.Forms.Label();
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.rightPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // console
@@ -275,43 +278,71 @@
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.tableLayoutPanel1);
-            this.groupBox1.Location = new System.Drawing.Point(416, 18);
+            this.groupBox1.Location = new System.Drawing.Point(4, 16);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(394, 337);
+            this.groupBox1.Size = new System.Drawing.Size(340, 343);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Config";
             // 
             // tableLayoutPanel1
             // 
+            this.tableLayoutPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.tableLayoutPanel1.AutoScroll = true;
             this.tableLayoutPanel1.ColumnCount = 2;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 29);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(6, 25);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(392, 306);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(328, 311);
             this.tableLayoutPanel1.TabIndex = 1;
+            // 
+            // rightPanel
+            // 
+            this.rightPanel.Controls.Add(this.button1);
+            this.rightPanel.Controls.Add(this.groupBox1);
+            this.rightPanel.Location = new System.Drawing.Point(433, 2);
+            this.rightPanel.Margin = new System.Windows.Forms.Padding(3, 3, 18, 3);
+            this.rightPanel.Name = "rightPanel";
+            this.rightPanel.Size = new System.Drawing.Size(347, 388);
+            this.rightPanel.TabIndex = 11;
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(719, 359);
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.Location = new System.Drawing.Point(247, 358);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(91, 36);
+            this.button1.Size = new System.Drawing.Size(91, 30);
             this.button1.TabIndex = 10;
             this.button1.Text = "Apply";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // foldLbl
+            // 
+            this.foldLbl.Location = new System.Drawing.Point(411, 27);
+            this.foldLbl.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.foldLbl.Name = "foldLbl";
+            this.foldLbl.Size = new System.Drawing.Size(20, 328);
+            this.foldLbl.TabIndex = 12;
+            this.foldLbl.Text = "<";
+            this.foldLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnTip.SetToolTip(this.foldLbl, "Config");
+            this.foldLbl.Click += new System.EventHandler(this.label2_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(817, 402);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.groupBox1);
+            this.AutoSize = true;
+            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.ClientSize = new System.Drawing.Size(859, 402);
+            this.Controls.Add(this.foldLbl);
+            this.Controls.Add(this.rightPanel);
             this.Controls.Add(this.btn_open3rdP);
             this.Controls.Add(this.startInTrayBox);
             this.Controls.Add(this.conCntrls);
@@ -332,6 +363,7 @@
             this.contextMenu.ResumeLayout(false);
             this.conCntrls.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
+            this.rightPanel.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -361,6 +393,8 @@
         private System.Windows.Forms.Button btn_open3rdP;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.Panel rightPanel;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Label foldLbl;
     }
 }

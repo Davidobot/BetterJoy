@@ -215,6 +215,12 @@ namespace BetterJoyForCemu {
             }
         }
 
+        private void label2_Click(object sender, EventArgs e)
+        {
+            rightPanel.Visible = !rightPanel.Visible;
+            foldLbl.Text = rightPanel.Visible ? "<" : ">";
+        }
+
         private void cbBox_Changed(object sender, EventArgs e)
         {
             var coord = tableLayoutPanel1.GetPositionFromControl(sender as Control);
