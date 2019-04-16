@@ -1,12 +1,3 @@
-# BetterJoyForCemu v6.1 (based on v6 Nightly)
-Automatically enumerate options and enable to control them directly from the UI. Any further options can be supported. -- by StarryTony
-
-Click the arrow to open config panel.
-
-Collapse             |  Expand
-:-------------------------:|:-------------------------:
-![Example](./Examples/example2.png)|![Example](./Examples/example3.png)
-
 # BetterJoyForCemu v5 (v6 Nightly)
 Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), and system-wide with generic XInput support.
 
@@ -16,6 +7,11 @@ If anyone would like to donate (for whatever reason), [you can do so here](https
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
 * [64-bit](https://drive.google.com/open?id=1jUDy9TWaGqFiPdGtwZOVWnrrbzeSlkdP)
 * [32-bit](https://drive.google.com/open?id=1h67fwdqXZKl21cq2G0zQtbWm8IXC8R55)
+
+### Screenshots
+Collapsed             |  Expanded
+:-------------------------:|:-------------------------:
+![Example](./Examples/example2.png)|![Example](./Examples/example3.png)
 
 # Changelog
 ### v6
@@ -32,6 +28,9 @@ Due to popular request (and my fear of releasing full builds without many new fe
 * Fixed stick casting overflow
    * thanks [idan-weizman](https://github.com/idan-weizman)
 * Separated swap buttons into swapAB and swapXY; hid BetterJoy from Alt+Tab when minimised
+* Added way to automatically enumerate options and enable to control them directly from the UI. Any further options can be supported.
+   * Click the arrow to open config panel.
+   * thanks [StarryTony](https://github.com/StarryTony)
 
 ### v5
 * Progressive scanning
