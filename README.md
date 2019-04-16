@@ -1,3 +1,12 @@
+# BetterJoyForCemu v6.1 (based on v6 Nightly)
+Automatically enumerate options and enable to control them directly from the UI. Any further options can be supported. -- by StarryTony
+
+Click the arrow to open config panel.
+
+Collapse             |  Expand
+:-------------------------:|:-------------------------:
+![Example](./Examples/example2.png)|![Example](./Examples/example3.png)
+
 # BetterJoyForCemu v5 (v6 Nightly)
 Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), and system-wide with generic XInput support.
 
@@ -83,15 +92,15 @@ Due to popular request (and my fear of releasing full builds without many new fe
 # How to use
 1. Install drivers
     1. Run *! Driver Install (Run as Admin).bat*
-1. Run BetterJoyForCemu.exe
+2. Run BetterJoyForCemu.exe
     1. If running for the first time, things might glitch out - just close BetterJoyForCemu normally and restart your computer for the drivers to take effect.
-    1. If not, see the __Problems__ section.
-1. Connect your controllers.
-1. Start Cemu and ensure CemuHook has the controller selected.
+    2. If not, see the __Problems__ section.
+3. Connect your controllers.
+4. Start Cemu and ensure CemuHook has the controller selected.
     1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
-1. Go into *Input Settings*, choose XInput as a source and assign buttons normally.
+5. Go into *Input Settings*, choose XInput as a source and assign buttons normally.
     1. If you don't want to do this for some reason, just have one input profile set up with *Wii U Gamepad* as the controller and enable "Also use for buttons/axes" under *GamePad motion source*. **This is no longer required as of version 3**
-    1. Turn rumble up to 70-80% if you want rumble.
+    2. Turn rumble up to 70-80% if you want rumble.
 
 * As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam!
 

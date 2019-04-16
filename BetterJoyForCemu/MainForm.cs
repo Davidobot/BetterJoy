@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -21,6 +22,29 @@ namespace BetterJoyForCemu {
 
             con = new List<Button> { con1, con2, con3, con4 };
             loc = new List<Button> { loc1, loc2, loc3, loc4 };
+
+            //list all options
+            string[] myConfigs = ConfigurationManager.AppSettings.AllKeys;
+            Size childSize = new Size(87, 20);
+            for (int i = 0; i != myConfigs.Length; i++)
+            {
+                tableLayoutPanel1.RowCount++;
+                tableLayoutPanel1.Controls.Add(new Label() { Text = myConfigs[i], TextAlign=ContentAlignment.BottomLeft, AutoEllipsis=true, Size = childSize }, 0, i);
+
+                var value = ConfigurationManager.AppSettings[myConfigs[i]];
+                Control childControl;
+                if (value == "true" || value == "false")
+                {
+                    childControl = new CheckBox() { Checked = Boolean.Parse(value), Size= childSize };
+                }
+                else
+                {
+                    childControl = new TextBox() { Text = value, Size = childSize };
+                }
+
+                tableLayoutPanel1.Controls.Add(childControl, 1, i);
+                childControl.MouseClick += cbBox_Changed;
+            }
         }
 
         private void HideToTray() {
@@ -175,6 +199,12 @@ namespace BetterJoyForCemu {
             partyForm.ShowDialog();
         }
 
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Application.Restart();
+            Environment.Exit(0);
+        }
+
         void ReenableXinput(Joycon v) {
             if (showAsXInput) {
                 v.xin = new Xbox360Controller(Program.emClient);
@@ -182,6 +212,41 @@ namespace BetterJoyForCemu {
                 if (toRumble)
                     v.xin.FeedbackReceived += v.ReceiveRumble;
                 v.report = new Xbox360Report();
+            }
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+            rightPanel.Visible = !rightPanel.Visible;
+            foldLbl.Text = rightPanel.Visible ? "<" : ">";
+        }
+
+        private void cbBox_Changed(object sender, EventArgs e)
+        {
+            var coord = tableLayoutPanel1.GetPositionFromControl(sender as Control);
+
+            var valCtl = tableLayoutPanel1.GetControlFromPosition(coord.Column, coord.Row);
+            var KeyCtl = tableLayoutPanel1.GetControlFromPosition(coord.Column - 1, coord.Row).Text;
+
+            try
+            {
+                var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                var settings = configFile.AppSettings.Settings;
+                if (sender.GetType() == typeof(CheckBox) && settings[KeyCtl] != null)
+                {
+                    settings[KeyCtl].Value = ((CheckBox)valCtl).Checked.ToString().ToLower();
+                }
+                else if (sender.GetType() == typeof(TextBox) && settings[KeyCtl] != null)
+                {
+                    settings[KeyCtl].Value = ((TextBox)valCtl).Text.ToLower();
+                }
+                configFile.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection(configFile.AppSettings.SectionInformation.Name);
+            }
+            catch (ConfigurationErrorsException)
+            {
+                Console.WriteLine("Error writing app settings");
+                Trace.WriteLine(String.Format("rw {0}, column {1}, {2}, {3}", coord.Row, coord.Column, sender.GetType(), KeyCtl));
             }
         }
     }
