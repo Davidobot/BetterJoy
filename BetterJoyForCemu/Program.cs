@@ -221,6 +221,13 @@ namespace BetterJoyForCemu {
                             temp.other = v;
                             v.other = temp;
 
+                            //Set both Joycon LEDs to the one with the lowest ID
+                            byte led = temp.LED <= v.LED ? temp.LED : v.LED;
+                            temp.LED = led;
+                            v.LED = led;
+                            temp.SetLED(led);
+                            v.SetLED(led);
+
                             temp.xin.Dispose();
                             temp.xin = null;
 
