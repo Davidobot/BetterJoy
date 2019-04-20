@@ -51,11 +51,12 @@ namespace BetterJoyForCemu {
             this.WindowState = FormWindowState.Minimized;
             notifyIcon.Visible = true;
             notifyIcon.ShowBalloonTip(1);
-            this.FormBorderStyle = FormBorderStyle.FixedToolWindow;
             this.ShowInTaskbar = false;
+            this.Hide();
         }
 
         private void ShowFromTray() {
+            this.Show();
             this.WindowState = FormWindowState.Normal;
             this.ShowInTaskbar = true;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
