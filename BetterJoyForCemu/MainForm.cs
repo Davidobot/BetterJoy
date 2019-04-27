@@ -15,9 +15,29 @@ using System.Xml.Linq;
 
 namespace BetterJoyForCemu {
 	public partial class MainForm : Form {
+        public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
         public List<Button> con, loc;
+        public bool calibrate;
+        public List<KeyValuePair<string,float[]>> caliData;
+        private Timer countDown;
+        private int count;
+        public List<int> xG;
+        public List<int> yG;
+        public List<int> zG;
+        public List<int> xA;
+        public List<int> yA;
+        public List<int> zA;
 
 		public MainForm() {
+            xG = new List<int>();
+            yG = new List<int>();
+            zG = new List<int>();
+            xA = new List<int>();
+            yA = new List<int>();
+            zA = new List<int>();
+            caliData = new List<KeyValuePair<string, float[]>> {
+                new KeyValuePair<string, float[]>("0", new float[6] {0,0,0,-710,0,0})
+            };
 			InitializeComponent();
 
             con = new List<Button> { con1, con2, con3, con4 };
@@ -75,9 +95,9 @@ namespace BetterJoyForCemu {
 		}
 
 		private void MainForm_Load(object sender, EventArgs e) {
-            Program.Start();
+            Config.Init(caliData);
 
-            Config.Init();
+            Program.Start();
 
             passiveScanBox.Checked = Config.Value("ProgressiveScan");
             startInTrayBox.Checked = Config.Value("StartInTray");
@@ -262,6 +282,124 @@ namespace BetterJoyForCemu {
                 Console.WriteLine("Error writing app settings");
                 Trace.WriteLine(String.Format("rw {0}, column {1}, {2}, {3}", coord.Row, coord.Column, sender.GetType(), KeyCtl));
             }
+        }
+        private void StartCalibrate(object sender, EventArgs e){
+            if(Program.mgr.j.Count == 0){
+                this.console.Text = "Please connect to a controller.";
+                return;
+            }
+            if (Program.mgr.j.Count > 1){
+                this.console.Text = "Please only use one controller.";
+                return;
+            }
+            this.AutoCalibrate.Enabled = false;
+            countDown = new Timer();
+            this.count = 4;
+            this.CountDown(null, null);
+            countDown.Tick += new EventHandler(CountDown);
+            countDown.Interval = 1000;
+            countDown.Enabled = true;
+        }
+
+        private void StartGetData(){
+            this.xG.Clear();
+            this.yG.Clear();
+            this.zG.Clear();
+            this.xA.Clear();
+            this.yA.Clear();
+            this.zA.Clear();
+            countDown = new Timer();
+            this.count = 3;
+            this.calibrate = true;
+            countDown.Tick += new EventHandler(CalcData);
+            countDown.Interval = 1000;
+            countDown.Enabled = true;
+        }
+
+        private void CountDown(object sender, EventArgs e){
+            if(this.count == 0){
+                this.console.Text = "Calibrating...";
+                countDown.Stop();
+                this.StartGetData();
+            } else {
+                this.console.Text = "Plese keep controller flat." + "\r\n";
+                this.console.Text += "Calibrate will start in " + this.count + " seconds.";
+                this.count--;
+            }
+        }
+        private void CalcData(object sender, EventArgs e){
+            if (this.count == 0){
+                countDown.Stop();
+                this.calibrate = false;
+                string serNum = Program.mgr.j.First().serial_number;
+                int serIndex = this.findSer(serNum);
+                float[] Arr = new float[6] { 0,0,0,0,0,0};
+                if(serIndex == -1){
+                    this.caliData.Add(new KeyValuePair<string, float[]>(
+                         serNum,
+                         Arr
+                    ));
+                } else {
+                    Arr = this.caliData[serIndex].Value;
+                }
+                Random rnd = new Random();
+                Arr[0] = (float)quickselect_median(this.xG, rnd.Next);
+                Arr[1] = (float)quickselect_median(this.yG, rnd.Next);
+                Arr[2] = (float)quickselect_median(this.zG, rnd.Next);
+                Arr[3] = (float)quickselect_median(this.xA, rnd.Next);
+                Arr[4] = (float)quickselect_median(this.yA, rnd.Next);
+                Arr[5] = (float)quickselect_median(this.zA, rnd.Next) - 4010; //Joycon.cs acc_sen 16384
+                this.console.Text = "Calibrate completed!!!" + "\r\n";
+                Config.SaveCaliData(this.caliData);
+                Program.mgr.j.First().getActiveData();
+                this.AutoCalibrate.Enabled = true;
+            } else {
+                this.count--;
+            }
+
+        }
+        private double quickselect_median(List<int> l, Func<int,int> pivot_fn){
+            int ll = l.Count;
+            if (ll % 2 == 1){
+                return this.quickselect(l, ll / 2, pivot_fn);
+            } else {
+                return 0.5 * (quickselect(l, ll / 2 - 1, pivot_fn) + quickselect(l, ll / 2, pivot_fn));
+            }
+        }
+
+        private int quickselect(List<int> l, int k, Func<int,int> pivot_fn){
+            if (l.Count == 1 && k == 0){
+                return l[0];
+            }
+            int pivot = l[pivot_fn(l.Count)];
+            List<int> lows = l.Where(x => x < pivot).ToList();
+            List<int> highs = l.Where(x => x > pivot).ToList();
+            List<int> pivots = l.Where(x => x == pivot).ToList();
+            if (k < lows.Count){
+                return quickselect(lows, k, pivot_fn);
+            } else if(k < (lows.Count + pivots.Count)){
+                return pivots[0];
+            } else {
+                return quickselect(highs, k - lows.Count - pivots.Count, pivot_fn);
+            }
+        }
+
+        public float[] activeCaliData(string serNum){
+            for (int i = 0; i < this.caliData.Count; i++){
+                if (this.caliData[i].Key == serNum){
+                    return this.caliData[i].Value;
+                }
+            }
+            return this.caliData[0].Value;
+        }
+
+        private int findSer(string serNum){
+            for(int i = 0; i < this.caliData.Count; i++){
+                if(this.caliData[i].Key== serNum){
+                    return i;
+                }
+            }
+            return -1;
         }
     }
 }

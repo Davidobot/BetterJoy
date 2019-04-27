@@ -102,6 +102,17 @@ namespace BetterJoyForCemu {
         private Int16[] gyr_sensiti = { 0, 0, 0 };
         private Vector3 gyr_g;
 
+		private short[] acc_sen = new short[3]{
+            16384,
+            16384,
+            16384
+        };
+        private short[] gyr_sen = new short[3]{
+            18642,
+            18642,
+            18642
+        };
+
         private Int16[] pro_hor_offset = { -710, 0, 0 };
         private Int16[] left_hor_offset = { 0, 0, 0 };
         private Int16[] right_hor_offset = { 0, 0, 0 };
@@ -219,7 +230,13 @@ namespace BetterJoyForCemu {
 
         public byte LED = 0x0;
 
-		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, int id = 0, bool isPro=false, bool usb = false) {
+		public string serial_number;
+
+        private float[] activeData;
+
+		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro=false) {
+			serial_number = serialNum;
+			activeData = new float[6];
 			handle = handle_;
 			imu_enabled = imu;
 			do_localize = localize;
@@ -230,7 +247,7 @@ namespace BetterJoyForCemu {
 			PadId = id;
             LED = (byte)(0x1 << PadId);
             this.isPro = isPro;
-			isUSB = usb;
+			isUSB = serialNum == "000000000001";
 
             this.path = path;
 
@@ -244,6 +261,11 @@ namespace BetterJoyForCemu {
                 report = new Xbox360Report();
             }
 		}
+
+		public void getActiveData()
+        {
+            this.activeData = form.activeCaliData(serial_number);
+        }
 
 		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
 			SetRumble(lowFreq, highFreq, (float) e.LargeMotor / (float) 255, rumblePeriod);
@@ -520,13 +542,21 @@ namespace BetterJoyForCemu {
 
 			stick_precal[0] = (UInt16)(stick_raw[0] | ((stick_raw[1] & 0xf) << 8));
 			stick_precal[1] = (UInt16)((stick_raw[1] >> 4) | (stick_raw[2] << 4));
-
-			stick = CenterSticks(stick_precal, stick_cal, deadzone);
+			ushort[] cal = form.nonOriginal ? new ushort[6]{
+                2048,
+                2048,
+                2048,
+                2048,
+                2048,
+                2048
+            }: stick_cal;
+            ushort dz = form.nonOriginal ? (ushort)200 : deadzone;
+			stick = CenterSticks(stick_precal, cal, dz);
 
 			if (isPro) {
 				stick2_precal[0] = (UInt16)(stick2_raw[0] | ((stick2_raw[1] & 0xf) << 8));
 				stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
-				stick2 = CenterSticks(stick2_precal, stick2_cal, deadzone2);
+				stick2 = CenterSticks(stick2_precal, form.nonOriginal ? cal : stick2_cal, deadzone2);
 			}
 
 			// Read other Joycon's sticks
@@ -677,33 +707,74 @@ namespace BetterJoyForCemu {
 			acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
 			acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
 
-			Int16[] offset;
-			if (isPro)
-				offset = pro_hor_offset;
-			else if (isLeft)
-				offset = left_hor_offset;
-			else
-				offset = right_hor_offset;
 
-			for (int i = 0; i < 3; ++i) {
-				switch (i) {
-					case 0:
-						acc_g.X = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.X = (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+            if (form.nonOriginal)
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            acc_g.X = (acc_r[i] - activeData[3]) * (1.0f / acc_sen[i]) * 4.0f;
+                            gyr_g.X = (gyr_r[i] - activeData[0]) * (816.0f / gyr_sen[i]);
+                            if (form.calibrate)
+                            {
+                                form.xA.Add(acc_r[i]);
+                                form.xG.Add(gyr_r[i]);
+                            }
+                            break;
+                        case 1:
+                            acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - activeData[4]) * (1.0f / acc_sen[i]) * 4.0f;
+                            gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - activeData[1]) * (816.0f / gyr_sen[i]);
+                            if (form.calibrate)
+                            {
+                                form.yA.Add(acc_r[i]);
+                                form.yG.Add(gyr_r[i]);
+                            }
+                            break;
+                        case 2:
+                            acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - activeData[5]) * (1.0f / acc_sen[i]) * 4.0f;
+                            gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - activeData[2]) * (816.0f / gyr_sen[i]);
+                            if (form.calibrate)
+                            {
+                                form.zA.Add(acc_r[i]);
+                                form.zG.Add(gyr_r[i]);
+                            }
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                Int16[] offset;
+                if (isPro)
+                    offset = pro_hor_offset;
+                else if (isLeft)
+                    offset = left_hor_offset;
+                else
+                    offset = right_hor_offset;
 
-						break;
-					case 1:
-						acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-						gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+                for (int i = 0; i < 3; ++i)
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            acc_g.X = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+                            gyr_g.X = (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
 
-						break;
-					case 2:
-						acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-                        gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
-
-						break;
-				}
-			}
+                            break;
+                        case 1:
+                            acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+                            gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+                            break;
+                        case 2:
+                            acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+                            gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+                            break;
+                    }
+                }
+            }
+            
 
             if (other == null && !isPro) { // single joycon mode; Z do not swap, rest do
                 if (isLeft) {

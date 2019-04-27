@@ -113,6 +113,10 @@ namespace BetterJoyForCemu {
             bool foundNew = false;
             while (ptr != IntPtr.Zero) {
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
+                if (form.nonOriginal)
+                {
+                    enumerate.product_id = product_pro;
+                }
 
                 if ((enumerate.product_id == product_l || enumerate.product_id == product_r || enumerate.product_id == product_pro) && !ControllerAlreadyAdded(enumerate.path)) {
                     switch (enumerate.product_id) {
@@ -163,7 +167,7 @@ namespace BetterJoyForCemu {
                         break;
                     }
 
-                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, j.Count, enumerate.product_id == product_pro, enumerate.serial_number == "000000000001"));
+                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, enumerate.product_id == product_pro));
 
                     foundNew = true;
                     j.Last().form = form;
@@ -252,6 +256,11 @@ namespace BetterJoyForCemu {
 
                     jc.Attach(leds_: jc.LED);
                     jc.Begin();
+                    if (form.nonOriginal)
+                    {
+                        jc.getActiveData();
+                    }
+                    
                 }
             }
         }
