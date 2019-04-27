@@ -331,10 +331,6 @@
             this.AutoCalibrate.Text = "Calibrate";
             this.AutoCalibrate.UseVisualStyleBackColor = true;
             this.AutoCalibrate.Click += new System.EventHandler(this.StartCalibrate);
-            if (!this.nonOriginal)
-            {
-                this.AutoCalibrate.Hide();
-            }
             // 
             // MainForm
             // 
