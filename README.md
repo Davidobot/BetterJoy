@@ -31,6 +31,10 @@ Collapsed             |  Expanded
 * Added way to automatically enumerate options and enable to control them directly from the UI. Any further options can be supported.
    * Click the arrow to open config panel.
    * thanks [StarryTony](https://github.com/StarryTony)
+* Added option to calibrate gyroscope for 3rd (and 1st) party controllers.
+   * Experimental - only supports pro controllers at the moment
+   * thanks [xqdoo00o](https://github.com/xqdoo00o)
+   * see _NonOriginalController_ option
 
 ### v5
 * Progressive scanning
@@ -125,7 +129,11 @@ Current settings are:
   * Determines whether or not to use HidGuardian (improves compatibility with other programs, like Steam, when set to "false")
 * ShowAsXInput                          *(default: true)*
   * Determines whether or not the program will expose detected controllers as Xbox 360 controllers
-
+* PurgeAffectedDevices                  *(default: true)*
+  * Determines whether or not the program should purge the affected devices list upon exit
+  * Should prevent any more issues of the controller being unusable after the program
+* NonOriginalController                 *(default: false)*
+  * When "true", click the "Calibrate" button once to calibrate the gyroscope on your connect pro controller
 # Problems
 __Make sure you installed the drivers!!__
 
