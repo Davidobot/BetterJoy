@@ -31,6 +31,8 @@ Collapsed             |  Expanded
 * Added way to automatically enumerate options and enable to control them directly from the UI. Any further options can be supported.
    * Click the arrow to open config panel.
    * thanks [StarryTony](https://github.com/StarryTony)
+* Fixed joycon LED bug and minimising behaviour.
+   * thanks [agustinmorantes](https://github.com/agustinmorantes)
 * Added option to calibrate gyroscope for 3rd (and 1st) party controllers.
    * Experimental - only supports pro controllers at the moment
    * thanks [xqdoo00o](https://github.com/xqdoo00o)
