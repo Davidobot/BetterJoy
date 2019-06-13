@@ -347,7 +347,7 @@ namespace BetterJoyForCemu {
 				dump_calibration_data();
 			}
 
-			BlinkLED();
+			BlinkHomeLight();
 
 			a[0] = leds_;
 			Subcommand(0x30, a, 1);
@@ -364,16 +364,29 @@ namespace BetterJoyForCemu {
 			return 0;
 		}
 
-		public void SetLED(byte leds_ = 0x0) {
+		public void SetPlayerLED(byte leds_ = 0x0) {
 			Subcommand(0x30, new byte[] { leds_ }, 1);
 		}
 
-		public void BlinkLED() { // do not call after initial setup
-			byte[] a = Enumerable.Repeat((byte)0xFF, 25).ToArray(); // LED ring
+		public void BlinkHomeLight() { // do not call after initial setup
+			byte[] a = Enumerable.Repeat((byte)0xFF, 25).ToArray();
 			a[0] = 0x18;
 			a[1] = 0x01;
 			Subcommand(0x38, a, 25, false);
-		}
+        }
+
+        public void SetHomeLight(bool on) {
+            byte[] a = Enumerable.Repeat((byte)0xFF, 25).ToArray();
+            if(on) {
+                a[0] = 0x1F;
+                a[1] = 0xF0;
+            }
+            else {
+                a[0] = 0x10;
+                a[1] = 0x01;
+            }
+            Subcommand(0x38, a, 25, false);
+        }
 
 		private void BatteryChanged() { // battery changed level
 			foreach (var v in form.con) {

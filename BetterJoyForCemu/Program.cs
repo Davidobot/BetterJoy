@@ -228,8 +228,8 @@ namespace BetterJoyForCemu {
 							byte led = temp.LED <= v.LED ? temp.LED : v.LED;
 							temp.LED = led;
 							v.LED = led;
-							temp.SetLED(led);
-							v.SetLED(led);
+							temp.SetPlayerLED(led);
+							v.SetPlayerLED(led);
 
 							temp.xin.Dispose();
 							temp.xin = null;
@@ -254,7 +254,14 @@ namespace BetterJoyForCemu {
 						jc.xin.Connect();
 
 					jc.Attach(leds_: jc.LED);
-					jc.Begin();
+
+                    bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
+                    foreach (Joycon j in Program.mgr.j)
+                    {
+                        j.SetHomeLight(on);
+                    }
+
+                    jc.Begin();
 					if (form.nonOriginal) {
 						jc.getActiveData();
 					}
