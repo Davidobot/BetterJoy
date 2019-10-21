@@ -166,12 +166,12 @@ namespace BetterJoyForCemu {
 								v.other = jc;
 								jc.other = v;
 
-								// Set both Joycon LEDs to the one with the lowest ID
-								byte led = jc.LED <= v.LED ? jc.LED : v.LED;
-								jc.LED = led;
-								v.LED = led;
-								jc.SetLED(led);
-								v.SetLED(led);
+							//Set both Joycon LEDs to the one with the lowest ID
+							byte led = jc.LED <= v.LED ? jc.LED : v.LED;
+							jc.LED = led;
+							v.LED = led;
+							jc.SetPlayerLED(led);
+							v.SetPlayerLED(led);
 
 								v.xin.Dispose();
 								v.xin = null;
@@ -211,8 +211,8 @@ namespace BetterJoyForCemu {
 					//Set original Joycon LEDs
 					v.other.LED = (byte)(0x1 << v.other.PadId);
 					v.LED = (byte)(0x1 << v.PadId);
-					v.other.SetLED(v.other.LED);
-					v.SetLED(v.LED);
+					v.other.SetPlayerLED(v.other.LED);
+					v.SetPlayerLED(v.LED);
 
 					v.other.other = null;
 					v.other = null;
@@ -263,6 +263,12 @@ namespace BetterJoyForCemu {
 				} else if (sender.GetType() == typeof(TextBox) && settings[KeyCtl] != null) {
 					settings[KeyCtl].Value = ((TextBox)valCtl).Text.ToLower();
 				}
+                if(KeyCtl == "HomeLEDOn") {
+                    bool on = settings[KeyCtl].Value.ToLower() == "true";
+                    foreach(Joycon j in Program.mgr.j) {
+                        j.SetHomeLight(on);
+                    }
+                }
 				configFile.Save(ConfigurationSaveMode.Modified);
 				ConfigurationManager.RefreshSection(configFile.AppSettings.SectionInformation.Name);
 			} catch (ConfigurationErrorsException) {

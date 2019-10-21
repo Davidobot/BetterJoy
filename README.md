@@ -3,10 +3,10 @@ Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](htt
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
-## Nightly builds (updated 16/04/19)
+## Nightly builds (updated 28/04/19)
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1PV5Ecxj5sFzFNHqgYz5TLXVP6WF4CKQL)
-* [32-bit](https://drive.google.com/open?id=1lR9nzBc4zznRj0lIaf78fCtAdh71fka6)
+* [64-bit](https://drive.google.com/open?id=1-OEP7yV9RkTOzNhjiISl_9KDxpMAu9yR)
+* [32-bit](https://drive.google.com/open?id=1gFknJU6RO6SR_ddHTWxs6qdStl8gLGY0)
 
 ### Screenshots
 Collapsed             |  Expanded
@@ -31,6 +31,12 @@ Collapsed             |  Expanded
 * Added way to automatically enumerate options and enable to control them directly from the UI. Any further options can be supported.
    * Click the arrow to open config panel.
    * thanks [StarryTony](https://github.com/StarryTony)
+* Fixed joycon LED bug and minimising behaviour.
+   * thanks [agustinmorantes](https://github.com/agustinmorantes)
+* Added option to calibrate gyroscope for 3rd (and 1st) party controllers.
+   * Experimental - only supports pro controllers at the moment
+   * thanks [xqdoo00o](https://github.com/xqdoo00o)
+   * see _NonOriginalController_ option
 
 ### v5
 * Progressive scanning
@@ -125,7 +131,11 @@ Current settings are:
   * Determines whether or not to use HidGuardian (improves compatibility with other programs, like Steam, when set to "false")
 * ShowAsXInput                          *(default: true)*
   * Determines whether or not the program will expose detected controllers as Xbox 360 controllers
-
+* PurgeAffectedDevices                  *(default: true)*
+  * Determines whether or not the program should purge the affected devices list upon exit
+  * Should prevent any more issues of the controller being unusable after the program
+* NonOriginalController                 *(default: false)*
+  * When "true", click the "Calibrate" button once to calibrate the gyroscope on your connect pro controller
 # Problems
 __Make sure you installed the drivers!!__
 

@@ -29,8 +29,13 @@ namespace BetterJoyForCemu {
 
         private bool ContainsText(ListBox a, String manu) {
             foreach (var v in a.Items)
-                if ((v as dynamic).Text.Equals(manu))
+            {
+                dynamic d = v as dynamic;
+                if (d.Text == null)
+                    continue;
+                if (d.Text.Equals(manu))
                     return true;
+            }
             return false;
         }
 
