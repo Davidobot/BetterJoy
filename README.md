@@ -3,10 +3,10 @@ Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](htt
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
-## Nightly builds (updated 28/04/19)
+## Nightly builds (updated 21/10/19)
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1-OEP7yV9RkTOzNhjiISl_9KDxpMAu9yR)
-* [32-bit](https://drive.google.com/open?id=1gFknJU6RO6SR_ddHTWxs6qdStl8gLGY0)
+* [64-bit](https://drive.google.com/open?id=1gDt0_vhOmqWYeaeo7E6B0b6mYLOcja3d)
+* [32-bit](https://drive.google.com/open?id=15uxK6HpglReKbjIRThuMxCtxNziPPiNm)
 
 ### Screenshots
 Collapsed             |  Expanded
@@ -37,6 +37,14 @@ Collapsed             |  Expanded
    * Experimental - only supports pro controllers at the moment
    * thanks [xqdoo00o](https://github.com/xqdoo00o)
    * see _NonOriginalController_ option
+* Fixed exception when pressing Add Controllers button
+   * thanks [spacechase0](https://github.com/spacechase0)
+* Added the ability to toggle the HOME button ring LED on and off
+   * thanks [Houdini111](https://github.com/Houdini111)
+* Perform null check on enumerate.serial_number. Caused by Mayflash Dolphinbar and nonOriginal selected
+   * thanks [Trozmagon](https://github.com/Trozmagon)
+* Added a way to use single joycon in vertical mode
+   * with a single joycon attached, click on the icon to change its orientation
 
 ### v5
 * Progressive scanning
