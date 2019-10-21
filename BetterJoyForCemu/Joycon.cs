@@ -269,7 +269,7 @@ namespace BetterJoyForCemu {
 		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
 			SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
 
-			if (other != null)
+			if (other != null && other != this)
 				other.SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
 		}
 
@@ -552,12 +552,12 @@ namespace BetterJoyForCemu {
 			}
 
 			// Read other Joycon's sticks
-			if (isLeft && other != null) {
+			if (isLeft && other != null && other != this) {
 				stick2 = otherStick;
 				other.otherStick = stick;
 			}
 
-			if (!isLeft && other != null) {
+			if (!isLeft && other != null && other != this) {
 				Array.Copy(stick, stick2, 2);
 				stick = otherStick;
 				other.otherStick = stick2;
@@ -612,7 +612,7 @@ namespace BetterJoyForCemu {
 					report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)Button.STICK2]);
 				}
 
-				if (other != null) {
+				if (other != null && other != this) {
 					buttons[(int)(Button.B)] = other.buttons[(int)Button.DPAD_DOWN];
 					buttons[(int)(Button.A)] = other.buttons[(int)Button.DPAD_RIGHT];
 					buttons[(int)(Button.X)] = other.buttons[(int)Button.DPAD_UP];
@@ -623,17 +623,17 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.SHOULDER2_2] = other.buttons[(int)Button.SHOULDER_2];
 				}
 
-				if (isLeft && other != null) {
+				if (isLeft && other != null && other != this) {
 					buttons[(int)Button.HOME] = other.buttons[(int)Button.HOME];
 					buttons[(int)Button.PLUS] = other.buttons[(int)Button.PLUS];
 				}
 
-				if (!isLeft && other != null) {
+				if (!isLeft && other != null && other != this) {
 					buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
 				}
 
 				if (!isPro && xin != null) {
-					if (other != null) {
+					if (other != null) { // no need for && other != this
 						report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
 						report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
 						report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
@@ -675,11 +675,11 @@ namespace BetterJoyForCemu {
 			}
 
 			if (xin != null) {
-				if (other != null || isPro) {
-					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue(stick[0]));
-					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue(stick[1]));
-					report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue(stick2[0]));
-					report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue(stick2[1]));
+				if (other != null || isPro) { // no need for && other != this
+					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
+					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
+					report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
+					report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
 				} else { // single joycon mode
 					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
 					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));

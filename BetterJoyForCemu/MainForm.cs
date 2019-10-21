@@ -116,7 +116,7 @@ namespace BetterJoyForCemu {
 		}
 
 		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-			linkLabel1.LinkVisited = true;
+			donationLink.LinkVisited = true;
 			System.Diagnostics.Process.Start("http://paypal.me/DavidKhachaturov/5");
 		}
 
@@ -156,27 +156,34 @@ namespace BetterJoyForCemu {
 
 				if (v.other == null && !v.isPro) { // needs connecting to other joycon (so messy omg)
 					bool succ = false;
-					foreach (Joycon jc in Program.mgr.j) {
-						if (!jc.isPro && jc.isLeft != v.isLeft && jc != v && jc.other == null) {
-							v.other = jc;
-							jc.other = v;
 
-							//Set both Joycon LEDs to the one with the lowest ID
-							byte led = jc.LED <= v.LED ? jc.LED : v.LED;
-							jc.LED = led;
-							v.LED = led;
-							jc.SetLED(led);
-							v.SetLED(led);
+					if (Program.mgr.j.Count == 1) { // when want to have a single joycon in vertical mode
+						v.other = v; // hacky; implement check in Joycon.cs to account for this
+						succ = true;
+					} else {
+						foreach (Joycon jc in Program.mgr.j) {
+							if (!jc.isPro && jc.isLeft != v.isLeft && jc != v && jc.other == null) {
+								v.other = jc;
+								jc.other = v;
 
-							v.xin.Dispose();
-							v.xin = null;
+								// Set both Joycon LEDs to the one with the lowest ID
+								byte led = jc.LED <= v.LED ? jc.LED : v.LED;
+								jc.LED = led;
+								v.LED = led;
+								jc.SetLED(led);
+								v.SetLED(led);
 
-							foreach (Button b in con)
-								if (b.Tag == jc)
-									b.BackgroundImage = jc.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
+								v.xin.Dispose();
+								v.xin = null;
 
-							succ = true;
-							break;
+								// setting the other joycon's button image
+								foreach (Button b in con)
+									if (b.Tag == jc)
+										b.BackgroundImage = jc.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
+
+								succ = true;
+								break;
+							}
 						}
 					}
 
@@ -237,7 +244,7 @@ namespace BetterJoyForCemu {
 			}
 		}
 
-		private void label2_Click(object sender, EventArgs e) {
+		private void foldLbl_Click(object sender, EventArgs e) {
 			rightPanel.Visible = !rightPanel.Visible;
 			foldLbl.Text = rightPanel.Visible ? "<" : ">";
 		}
