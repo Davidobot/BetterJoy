@@ -33,6 +33,7 @@ namespace BetterJoyForCemu {
 		private const ushort product_l = 0x2006;
 		private const ushort product_r = 0x2007;
 		private const ushort product_pro = 0x2009;
+		private const ushort product_snes = 0x2017;
 
 		public List<Joycon> j; // Array of all connected Joy-Cons
 		static JoyconManager instance;
@@ -119,7 +120,13 @@ namespace BetterJoyForCemu {
 					enumerate.product_id = product_pro;
 				}
 
-				if ((enumerate.product_id == product_l || enumerate.product_id == product_r || enumerate.product_id == product_pro) && !ControllerAlreadyAdded(enumerate.path)) {
+				// Kurt - debug outputs
+				form.AppendTextBox("product id = " + Convert.ToString((int)enumerate.product_id) + "\r\n");
+				//form.AppendTextBox("serial number = " + enumerate.serial_number + "\r\n");
+				//form.AppendTextBox("path = " + enumerate.path + "\r\n");
+				bool validController = (enumerate.product_id == product_l || enumerate.product_id == product_r ||
+										enumerate.product_id == product_pro || enumerate.product_id == product_snes);
+				if (validController && !ControllerAlreadyAdded(enumerate.path)) {
 					switch (enumerate.product_id) {
 						case product_l:
 							isLeft = true;
@@ -130,6 +137,9 @@ namespace BetterJoyForCemu {
 						case product_pro:
 							isLeft = true;
 							form.AppendTextBox("Pro controller connected.\r\n"); break;
+						case product_snes:
+							isLeft = true;
+							form.AppendTextBox("SNES controller connected.\r\n"); break;
 						default:
 							form.AppendTextBox("Non Joy-Con Nintendo input device skipped.\r\n"); break;
 					}
@@ -167,8 +177,8 @@ namespace BetterJoyForCemu {
 						form.AppendTextBox("Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?\r\n");
 						break;
 					}
-
-					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, enumerate.product_id == product_pro));
+					bool isController = (enumerate.product_id == product_pro) || (enumerate.product_id == product_snes);
+					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isController));
 
 					foundNew = true;
 					j.Last().form = form;
@@ -186,6 +196,8 @@ namespace BetterJoyForCemu {
 										temp = Properties.Resources.jc_right_s; break;
 									case (product_pro):
 										temp = Properties.Resources.pro; break;
+									case (product_snes):
+										temp = Properties.Resources.snes; break;
 									default:
 										temp = Properties.Resources.cross; break;
 								}
@@ -257,13 +269,12 @@ namespace BetterJoyForCemu {
 
 					jc.Attach(leds_: jc.LED);
 
-                    bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
-                    foreach (Joycon j in Program.mgr.j)
-                    {
-                        j.SetHomeLight(on);
-                    }
+					bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
+					foreach (Joycon j in Program.mgr.j) {
+						j.SetHomeLight(on);
+					}
 
-                    jc.Begin();
+					jc.Begin();
 					if (form.nonOriginal) {
 						jc.getActiveData();
 					}

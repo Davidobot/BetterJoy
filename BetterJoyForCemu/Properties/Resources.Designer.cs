@@ -129,5 +129,12 @@ namespace BetterJoyForCemu.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+
+        internal static System.Drawing.Bitmap snes {
+            get { 
+                object obj = ResourceManager.GetObject("snes", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
     }
 }
