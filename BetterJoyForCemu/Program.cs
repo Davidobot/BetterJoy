@@ -120,10 +120,6 @@ namespace BetterJoyForCemu {
 					enumerate.product_id = product_pro;
 				}
 
-				// Kurt - debug outputs
-				form.AppendTextBox("product id = " + Convert.ToString((int)enumerate.product_id) + "\r\n");
-				//form.AppendTextBox("serial number = " + enumerate.serial_number + "\r\n");
-				//form.AppendTextBox("path = " + enumerate.path + "\r\n");
 				bool validController = (enumerate.product_id == product_l || enumerate.product_id == product_r ||
 										enumerate.product_id == product_pro || enumerate.product_id == product_snes);
 				if (validController && !ControllerAlreadyAdded(enumerate.path)) {
@@ -177,9 +173,11 @@ namespace BetterJoyForCemu {
 						form.AppendTextBox("Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?\r\n");
 						break;
 					}
-					bool isController = (enumerate.product_id == product_pro) || (enumerate.product_id == product_snes);
-					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isController));
 
+					bool isPro = enumerate.product_id == product_pro;
+					bool isSnes = enumerate.product_id == product_snes;
+					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes));
+					
 					foundNew = true;
 					j.Last().form = form;
 

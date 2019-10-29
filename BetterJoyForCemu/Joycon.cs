@@ -18,6 +18,7 @@ namespace BetterJoyForCemu {
 
 		public string path = String.Empty;
 		public bool isPro = false;
+		public bool isSnes = false;
 		bool isUSB = false;
 		public Joycon other;
 
@@ -234,7 +235,7 @@ namespace BetterJoyForCemu {
 
 		private float[] activeData;
 
-		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false) {
+		public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false) {
 			serial_number = serialNum;
 			activeData = new float[6];
 			handle = handle_;
@@ -246,7 +247,8 @@ namespace BetterJoyForCemu {
 
 			PadId = id;
 			LED = (byte)(0x1 << PadId);
-			this.isPro = isPro;
+			this.isPro = isPro || isSnes;
+			this.isSnes = isSnes;
 			isUSB = serialNum == "000000000001";
 
 			this.path = path;
@@ -474,7 +476,7 @@ namespace BetterJoyForCemu {
 						xin.SendReport(report);
 				}
 
-				if (ts_en == raw_buf[1]) {
+				if (ts_en == raw_buf[1] && ! isSnes) {
 					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
 					DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
 				}
