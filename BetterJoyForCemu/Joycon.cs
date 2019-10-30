@@ -476,7 +476,7 @@ namespace BetterJoyForCemu {
 						xin.SendReport(report);
 				}
 
-				if (ts_en == raw_buf[1] && ! isSnes) {
+				if (ts_en == raw_buf[1] && !isSnes) {
 					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
 					DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
 				}
@@ -492,7 +492,7 @@ namespace BetterJoyForCemu {
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-				if (isUSB || rumble_obj.t > 0)
+				if (!isSnes && (isUSB || rumble_obj.t > 0))
 					SendRumble(rumble_obj.GetData());
 				else if (watch.ElapsedMilliseconds >= 1000) {
 					// Send a no-op operation as heartbeat to keep connection alive.
@@ -543,39 +543,40 @@ namespace BetterJoyForCemu {
 		bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
 		private int ProcessButtonsAndStick(byte[] report_buf) {
 			if (report_buf[0] == 0x00) return -1;
+			if (!isSnes) {
+				stick_raw[0] = report_buf[6 + (isLeft ? 0 : 3)];
+				stick_raw[1] = report_buf[7 + (isLeft ? 0 : 3)];
+				stick_raw[2] = report_buf[8 + (isLeft ? 0 : 3)];
 
-			stick_raw[0] = report_buf[6 + (isLeft ? 0 : 3)];
-			stick_raw[1] = report_buf[7 + (isLeft ? 0 : 3)];
-			stick_raw[2] = report_buf[8 + (isLeft ? 0 : 3)];
+				if (isPro) {
+					stick2_raw[0] = report_buf[6 + (!isLeft ? 0 : 3)];
+					stick2_raw[1] = report_buf[7 + (!isLeft ? 0 : 3)];
+					stick2_raw[2] = report_buf[8 + (!isLeft ? 0 : 3)];
+				}
 
-			if (isPro) {
-				stick2_raw[0] = report_buf[6 + (!isLeft ? 0 : 3)];
-				stick2_raw[1] = report_buf[7 + (!isLeft ? 0 : 3)];
-				stick2_raw[2] = report_buf[8 + (!isLeft ? 0 : 3)];
-			}
+				stick_precal[0] = (UInt16)(stick_raw[0] | ((stick_raw[1] & 0xf) << 8));
+				stick_precal[1] = (UInt16)((stick_raw[1] >> 4) | (stick_raw[2] << 4));
+				ushort[] cal = form.nonOriginal ? new ushort[6] { 2048, 2048, 2048, 2048, 2048, 2048 } : stick_cal;
+				ushort dz = form.nonOriginal ? (ushort)200 : deadzone;
+				stick = CenterSticks(stick_precal, cal, dz);
 
-			stick_precal[0] = (UInt16)(stick_raw[0] | ((stick_raw[1] & 0xf) << 8));
-			stick_precal[1] = (UInt16)((stick_raw[1] >> 4) | (stick_raw[2] << 4));
-			ushort[] cal = form.nonOriginal ? new ushort[6] { 2048, 2048, 2048, 2048, 2048, 2048 } : stick_cal;
-			ushort dz = form.nonOriginal ? (ushort)200 : deadzone;
-			stick = CenterSticks(stick_precal, cal, dz);
+				if (isPro) {
+					stick2_precal[0] = (UInt16)(stick2_raw[0] | ((stick2_raw[1] & 0xf) << 8));
+					stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
+					stick2 = CenterSticks(stick2_precal, form.nonOriginal ? cal : stick2_cal, deadzone2);
+				}
 
-			if (isPro) {
-				stick2_precal[0] = (UInt16)(stick2_raw[0] | ((stick2_raw[1] & 0xf) << 8));
-				stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
-				stick2 = CenterSticks(stick2_precal, form.nonOriginal ? cal : stick2_cal, deadzone2);
-			}
+				// Read other Joycon's sticks
+				if (isLeft && other != null && other != this) {
+					stick2 = otherStick;
+					other.otherStick = stick;
+				}
 
-			// Read other Joycon's sticks
-			if (isLeft && other != null && other != this) {
-				stick2 = otherStick;
-				other.otherStick = stick;
-			}
-
-			if (!isLeft && other != null && other != this) {
-				Array.Copy(stick, stick2, 2);
-				stick = otherStick;
-				other.otherStick = stick2;
+				if (!isLeft && other != null && other != this) {
+					Array.Copy(stick, stick2, 2);
+					stick = otherStick;
+					other.otherStick = stick2;
+				}
 			}
 			//
 
@@ -690,14 +691,16 @@ namespace BetterJoyForCemu {
 			}
 
 			if (xin != null) {
-				if (other != null || isPro) { // no need for && other != this
-					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
-					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
-					report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
-					report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
-				} else { // single joycon mode
-					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
-					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
+				if (!isSnes) {
+					if (other != null || isPro) { // no need for && other != this
+						report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
+						report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
+						report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
+						report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
+					} else { // single joycon mode
+						report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
+						report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
+					}
 				}
 				report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Int16.MaxValue : 0));
 				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
@@ -707,82 +710,84 @@ namespace BetterJoyForCemu {
 		}
 
 		private void ExtractIMUValues(byte[] report_buf, int n = 0) {
-			gyr_r[0] = (Int16)(report_buf[19 + n * 12] | ((report_buf[20 + n * 12] << 8) & 0xff00));
-			gyr_r[1] = (Int16)(report_buf[21 + n * 12] | ((report_buf[22 + n * 12] << 8) & 0xff00));
-			gyr_r[2] = (Int16)(report_buf[23 + n * 12] | ((report_buf[24 + n * 12] << 8) & 0xff00));
-			acc_r[0] = (Int16)(report_buf[13 + n * 12] | ((report_buf[14 + n * 12] << 8) & 0xff00));
-			acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
-			acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
+			if (!isSnes) {
+				gyr_r[0] = (Int16)(report_buf[19 + n * 12] | ((report_buf[20 + n * 12] << 8) & 0xff00));
+				gyr_r[1] = (Int16)(report_buf[21 + n * 12] | ((report_buf[22 + n * 12] << 8) & 0xff00));
+				gyr_r[2] = (Int16)(report_buf[23 + n * 12] | ((report_buf[24 + n * 12] << 8) & 0xff00));
+				acc_r[0] = (Int16)(report_buf[13 + n * 12] | ((report_buf[14 + n * 12] << 8) & 0xff00));
+				acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
+				acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
 
 
-			if (form.nonOriginal) {
-				for (int i = 0; i < 3; ++i) {
-					switch (i) {
-						case 0:
-							acc_g.X = (acc_r[i] - activeData[3]) * (1.0f / acc_sen[i]) * 4.0f;
-							gyr_g.X = (gyr_r[i] - activeData[0]) * (816.0f / gyr_sen[i]);
-							if (form.calibrate) {
-								form.xA.Add(acc_r[i]);
-								form.xG.Add(gyr_r[i]);
-							}
-							break;
-						case 1:
-							acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - activeData[4]) * (1.0f / acc_sen[i]) * 4.0f;
-							gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - activeData[1]) * (816.0f / gyr_sen[i]);
-							if (form.calibrate) {
-								form.yA.Add(acc_r[i]);
-								form.yG.Add(gyr_r[i]);
-							}
-							break;
-						case 2:
-							acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - activeData[5]) * (1.0f / acc_sen[i]) * 4.0f;
-							gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - activeData[2]) * (816.0f / gyr_sen[i]);
-							if (form.calibrate) {
-								form.zA.Add(acc_r[i]);
-								form.zG.Add(gyr_r[i]);
-							}
-							break;
+				if (form.nonOriginal) {
+					for (int i = 0; i < 3; ++i) {
+						switch (i) {
+							case 0:
+								acc_g.X = (acc_r[i] - activeData[3]) * (1.0f / acc_sen[i]) * 4.0f;
+								gyr_g.X = (gyr_r[i] - activeData[0]) * (816.0f / gyr_sen[i]);
+								if (form.calibrate) {
+									form.xA.Add(acc_r[i]);
+									form.xG.Add(gyr_r[i]);
+								}
+								break;
+							case 1:
+								acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - activeData[4]) * (1.0f / acc_sen[i]) * 4.0f;
+								gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - activeData[1]) * (816.0f / gyr_sen[i]);
+								if (form.calibrate) {
+									form.yA.Add(acc_r[i]);
+									form.yG.Add(gyr_r[i]);
+								}
+								break;
+							case 2:
+								acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - activeData[5]) * (1.0f / acc_sen[i]) * 4.0f;
+								gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - activeData[2]) * (816.0f / gyr_sen[i]);
+								if (form.calibrate) {
+									form.zA.Add(acc_r[i]);
+									form.zG.Add(gyr_r[i]);
+								}
+								break;
+						}
 					}
-				}
-			} else {
-				Int16[] offset;
-				if (isPro)
-					offset = pro_hor_offset;
-				else if (isLeft)
-					offset = left_hor_offset;
-				else
-					offset = right_hor_offset;
-
-				for (int i = 0; i < 3; ++i) {
-					switch (i) {
-						case 0:
-							acc_g.X = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-							gyr_g.X = (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
-
-							break;
-						case 1:
-							acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-							gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
-							break;
-						case 2:
-							acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
-							gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
-							break;
-					}
-				}
-			}
-
-
-			if (other == null && !isPro) { // single joycon mode; Z do not swap, rest do
-				if (isLeft) {
-					acc_g.X = -acc_g.X;
-					gyr_g.X = -gyr_g.X;
 				} else {
-					gyr_g.Y = -gyr_g.Y;
+					Int16[] offset;
+					if (isPro)
+						offset = pro_hor_offset;
+					else if (isLeft)
+						offset = left_hor_offset;
+					else
+						offset = right_hor_offset;
+
+					for (int i = 0; i < 3; ++i) {
+						switch (i) {
+							case 0:
+								acc_g.X = (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+								gyr_g.X = (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+
+								break;
+							case 1:
+								acc_g.Y = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+								gyr_g.Y = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+								break;
+							case 2:
+								acc_g.Z = (!isLeft ? -1 : 1) * (acc_r[i] - offset[i]) * (1.0f / (acc_sensiti[i] - acc_neutral[i])) * 4.0f;
+								gyr_g.Z = -(!isLeft ? -1 : 1) * (gyr_r[i] - gyr_neutral[i]) * (816.0f / (gyr_sensiti[i] - gyr_neutral[i]));
+								break;
+						}
+					}
 				}
 
-				float temp = acc_g.X; acc_g.X = acc_g.Y; acc_g.Y = temp;
-				temp = gyr_g.X; gyr_g.X = gyr_g.Y; gyr_g.Y = temp;
+
+				if (other == null && !isPro) { // single joycon mode; Z do not swap, rest do
+					if (isLeft) {
+						acc_g.X = -acc_g.X;
+						gyr_g.X = -gyr_g.X;
+					} else {
+						gyr_g.Y = -gyr_g.Y;
+					}
+
+					float temp = acc_g.X; acc_g.X = acc_g.Y; acc_g.Y = temp;
+					temp = gyr_g.X; gyr_g.X = gyr_g.Y; gyr_g.Y = temp;
+				}
 			}
 		}
 
@@ -857,31 +862,9 @@ namespace BetterJoyForCemu {
 		}
 
 		private void dump_calibration_data() {
-			byte[] buf_ = ReadSPI(0x80, (isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
-			bool found = false;
-			for (int i = 0; i < 9; ++i) {
-				if (buf_[i] != 0xff) {
-					form.AppendTextBox("Using user stick calibration data.\r\n");
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				form.AppendTextBox("Using factory stick calibration data.\r\n");
-				buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
-			}
-			stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
-			stick_cal[isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
-			stick_cal[isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
-			stick_cal[isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
-			stick_cal[isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
-			stick_cal[isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
-
-			PrintArray(stick_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
-
-			if (isPro) {
-				buf_ = ReadSPI(0x80, (!isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
-				found = false;
+			if(!isSnes) {
+				byte[] buf_ = ReadSPI(0x80, (isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
+				bool found = false;
 				for (int i = 0; i < 9; ++i) {
 					if (buf_[i] != 0xff) {
 						form.AppendTextBox("Using user stick calibration data.\r\n");
@@ -891,69 +874,93 @@ namespace BetterJoyForCemu {
 				}
 				if (!found) {
 					form.AppendTextBox("Using factory stick calibration data.\r\n");
-					buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
+					buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
 				}
-				stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
-				stick2_cal[!isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
-				stick2_cal[!isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
-				stick2_cal[!isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
-				stick2_cal[!isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
-				stick2_cal[!isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
+				stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
+				stick_cal[isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
+				stick_cal[isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
+				stick_cal[isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
+				stick_cal[isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
+				stick_cal[isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
 
-				PrintArray(stick2_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
+				PrintArray(stick_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
 
-				buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x86 : (byte)0x98), 16);
-				deadzone2 = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
-			}
+				if (isPro) {
+					buf_ = ReadSPI(0x80, (!isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
+					found = false;
+					for (int i = 0; i < 9; ++i) {
+						if (buf_[i] != 0xff) {
+							form.AppendTextBox("Using user stick calibration data.\r\n");
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						form.AppendTextBox("Using factory stick calibration data.\r\n");
+						buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
+					}
+					stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
+					stick2_cal[!isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
+					stick2_cal[!isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
+					stick2_cal[!isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
+					stick2_cal[!isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
+					stick2_cal[!isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
 
-			buf_ = ReadSPI(0x60, (isLeft ? (byte)0x86 : (byte)0x98), 16);
-			deadzone = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
+					PrintArray(stick2_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
 
-			buf_ = ReadSPI(0x80, 0x28, 10);
-			acc_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-			acc_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-			acc_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+					buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x86 : (byte)0x98), 16);
+					deadzone2 = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
+				}
 
-			buf_ = ReadSPI(0x80, 0x2E, 10);
-			acc_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-			acc_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-			acc_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+				buf_ = ReadSPI(0x60, (isLeft ? (byte)0x86 : (byte)0x98), 16);
+				deadzone = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
 
-			buf_ = ReadSPI(0x80, 0x34, 10);
-			gyr_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-			gyr_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-			gyr_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
-
-			buf_ = ReadSPI(0x80, 0x3A, 10);
-			gyr_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-			gyr_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-			gyr_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
-
-			PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "User gyro neutral position: {0:S}");
-
-			// This is an extremely messy way of checking to see whether there is user stick calibration data present, but I've seen conflicting user calibration data on blank Joy-Cons. Worth another look eventually.
-			if (gyr_neutral[0] + gyr_neutral[1] + gyr_neutral[2] == -3 || Math.Abs(gyr_neutral[0]) > 100 || Math.Abs(gyr_neutral[1]) > 100 || Math.Abs(gyr_neutral[2]) > 100) {
-				buf_ = ReadSPI(0x60, 0x20, 10);
+				buf_ = ReadSPI(0x80, 0x28, 10);
 				acc_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
 				acc_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
 				acc_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-				buf_ = ReadSPI(0x60, 0x26, 10);
+				buf_ = ReadSPI(0x80, 0x2E, 10);
 				acc_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
 				acc_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
 				acc_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-				buf_ = ReadSPI(0x60, 0x2C, 10);
+				buf_ = ReadSPI(0x80, 0x34, 10);
 				gyr_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
 				gyr_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
 				gyr_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-				buf_ = ReadSPI(0x60, 0x32, 10);
+				buf_ = ReadSPI(0x80, 0x3A, 10);
 				gyr_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
 				gyr_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
 				gyr_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-				PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "Factory gyro neutral position: {0:S}");
+				PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "User gyro neutral position: {0:S}");
+
+				// This is an extremely messy way of checking to see whether there is user stick calibration data present, but I've seen conflicting user calibration data on blank Joy-Cons. Worth another look eventually.
+				if (gyr_neutral[0] + gyr_neutral[1] + gyr_neutral[2] == -3 || Math.Abs(gyr_neutral[0]) > 100 || Math.Abs(gyr_neutral[1]) > 100 || Math.Abs(gyr_neutral[2]) > 100) {
+					buf_ = ReadSPI(0x60, 0x20, 10);
+					acc_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+					acc_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+					acc_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+
+					buf_ = ReadSPI(0x60, 0x26, 10);
+					acc_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+					acc_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+					acc_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+
+					buf_ = ReadSPI(0x60, 0x2C, 10);
+					gyr_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+					gyr_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+					gyr_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+
+					buf_ = ReadSPI(0x60, 0x32, 10);
+					gyr_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+					gyr_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+					gyr_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+
+					PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "Factory gyro neutral position: {0:S}");
+				}
 			}
 		}
 
