@@ -3,15 +3,15 @@ Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](htt
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
-## Nightly builds (updated 21/10/19)
+## Nightly builds (updated 10/11/19)
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1gDt0_vhOmqWYeaeo7E6B0b6mYLOcja3d)
-* [32-bit](https://drive.google.com/open?id=15uxK6HpglReKbjIRThuMxCtxNziPPiNm)
+* [64-bit](https://drive.google.com/open?id=11qX2UWwuQRbb3hWMaH2tuoD3_y9rpZFV)
+* [32-bit](https://drive.google.com/open?id=1VL7c3sv5r7T-CwytdwAmtssV2DDD0oI0)
 
 ### Screenshots
 Collapsed             |  Expanded
 :-------------------------:|:-------------------------:
-![Example](./Examples/example2.png)|![Example](./Examples/example3.png)
+![Example](https://user-images.githubusercontent.com/16619943/67919451-bf8e5680-fb76-11e9-995e-7193b87548e1.png)|![Example](./Examples/example3.png)
 
 # Changelog
 ### v6
@@ -45,6 +45,8 @@ Collapsed             |  Expanded
    * thanks [Trozmagon](https://github.com/Trozmagon)
 * Added a way to use single joycon in vertical mode
    * with a single joycon attached, click on the icon to change its orientation
+* Added Switch SNES controller support
+   * thanks [KurtYilmaz](https://github.com/KurtYilmaz)
 
 ### v5
 * Progressive scanning
