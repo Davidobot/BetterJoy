@@ -47,9 +47,9 @@
 			this.startInTrayBox = new System.Windows.Forms.CheckBox();
 			this.btn_open3rdP = new System.Windows.Forms.Button();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
-			this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+			this.settingsTable = new System.Windows.Forms.TableLayoutPanel();
 			this.rightPanel = new System.Windows.Forms.Panel();
-			this.button1 = new System.Windows.Forms.Button();
+			this.settingsApply = new System.Windows.Forms.Button();
 			this.AutoCalibrate = new System.Windows.Forms.Button();
 			this.contextMenu.SuspendLayout();
 			this.conCntrls.SuspendLayout();
@@ -273,7 +273,7 @@
 			// 
 			// groupBox1
 			// 
-			this.groupBox1.Controls.Add(this.tableLayoutPanel1);
+			this.groupBox1.Controls.Add(this.settingsTable);
 			this.groupBox1.Location = new System.Drawing.Point(3, 11);
 			this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
 			this.groupBox1.Name = "groupBox1";
@@ -283,25 +283,25 @@
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Config";
 			// 
-			// tableLayoutPanel1
+			// settingsTable
 			// 
-			this.tableLayoutPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+			this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.tableLayoutPanel1.AutoScroll = true;
-			this.tableLayoutPanel1.ColumnCount = 2;
-			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 58.90411F));
-			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 41.09589F));
-			this.tableLayoutPanel1.Location = new System.Drawing.Point(4, 17);
-			this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
-			this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-			this.tableLayoutPanel1.RowCount = 1;
-			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-			this.tableLayoutPanel1.Size = new System.Drawing.Size(219, 219);
-			this.tableLayoutPanel1.TabIndex = 1;
+			this.settingsTable.AutoScroll = true;
+			this.settingsTable.ColumnCount = 2;
+			this.settingsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 58.90411F));
+			this.settingsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 41.09589F));
+			this.settingsTable.Location = new System.Drawing.Point(4, 17);
+			this.settingsTable.Margin = new System.Windows.Forms.Padding(2);
+			this.settingsTable.Name = "settingsTable";
+			this.settingsTable.RowCount = 1;
+			this.settingsTable.RowStyles.Add(new System.Windows.Forms.RowStyle());
+			this.settingsTable.Size = new System.Drawing.Size(219, 219);
+			this.settingsTable.TabIndex = 1;
 			// 
 			// rightPanel
 			// 
-			this.rightPanel.Controls.Add(this.button1);
+			this.rightPanel.Controls.Add(this.settingsApply);
 			this.rightPanel.Controls.Add(this.groupBox1);
 			this.rightPanel.Location = new System.Drawing.Point(289, 1);
 			this.rightPanel.Margin = new System.Windows.Forms.Padding(2, 2, 12, 2);
@@ -310,18 +310,18 @@
 			this.rightPanel.TabIndex = 11;
 			this.rightPanel.Visible = false;
 			// 
-			// button1
+			// settingsApply
 			// 
-			this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.button1.Location = new System.Drawing.Point(165, 252);
-			this.button1.Margin = new System.Windows.Forms.Padding(2);
-			this.button1.Name = "button1";
-			this.button1.Size = new System.Drawing.Size(61, 21);
-			this.button1.TabIndex = 10;
-			this.button1.Text = "Apply";
-			this.button1.UseVisualStyleBackColor = true;
-			this.button1.Click += new System.EventHandler(this.button1_Click);
+			this.settingsApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+			this.settingsApply.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.settingsApply.Location = new System.Drawing.Point(165, 252);
+			this.settingsApply.Margin = new System.Windows.Forms.Padding(2);
+			this.settingsApply.Name = "settingsApply";
+			this.settingsApply.Size = new System.Drawing.Size(61, 21);
+			this.settingsApply.TabIndex = 10;
+			this.settingsApply.Text = "Apply";
+			this.settingsApply.UseVisualStyleBackColor = true;
+			this.settingsApply.Click += new System.EventHandler(this.settingsApply_Click);
 			// 
 			// AutoCalibrate
 			// 
@@ -391,9 +391,9 @@
         private System.Windows.Forms.CheckBox startInTrayBox;
         private System.Windows.Forms.Button btn_open3rdP;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.TableLayoutPanel settingsTable;
         private System.Windows.Forms.Panel rightPanel;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button settingsApply;
         private System.Windows.Forms.Label foldLbl;
         private System.Windows.Forms.Button AutoCalibrate;
     }

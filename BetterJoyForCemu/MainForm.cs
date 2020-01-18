@@ -42,8 +42,8 @@ namespace BetterJoyForCemu {
 			string[] myConfigs = ConfigurationManager.AppSettings.AllKeys;
 			Size childSize = new Size(87, 20);
 			for (int i = 0; i != myConfigs.Length; i++) {
-				tableLayoutPanel1.RowCount++;
-				tableLayoutPanel1.Controls.Add(new Label() { Text = myConfigs[i], TextAlign = ContentAlignment.BottomLeft, AutoEllipsis = true, Size = childSize }, 0, i);
+				settingsTable.RowCount++;
+				settingsTable.Controls.Add(new Label() { Text = myConfigs[i], TextAlign = ContentAlignment.BottomLeft, AutoEllipsis = true, Size = childSize }, 0, i);
 
 				var value = ConfigurationManager.AppSettings[myConfigs[i]];
 				Control childControl;
@@ -53,8 +53,8 @@ namespace BetterJoyForCemu {
 					childControl = new TextBox() { Text = value, Size = childSize };
 				}
 
-				tableLayoutPanel1.Controls.Add(childControl, 1, i);
 				childControl.MouseClick += cbBox_Changed;
+				settingsTable.Controls.Add(childControl, 1, i);
 			}
 		}
 
@@ -229,7 +229,27 @@ namespace BetterJoyForCemu {
 			partyForm.ShowDialog();
 		}
 
-		private void button1_Click(object sender, EventArgs e) {
+		private void settingsApply_Click(object sender, EventArgs e) {
+			var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+			var settings = configFile.AppSettings.Settings;
+
+			for (int row = 0; row < ConfigurationManager.AppSettings.AllKeys.Length; row++) {
+				var valCtl = settingsTable.GetControlFromPosition(1, row);
+				var KeyCtl = settingsTable.GetControlFromPosition(0, row).Text;
+
+				if (valCtl.GetType() == typeof(CheckBox) && settings[KeyCtl] != null) {
+					settings[KeyCtl].Value = ((CheckBox)valCtl).Checked.ToString().ToLower();
+				} else if (valCtl.GetType() == typeof(TextBox) && settings[KeyCtl] != null) {
+					settings[KeyCtl].Value = ((TextBox)valCtl).Text.ToLower();
+				}
+			}
+
+			try {
+				configFile.Save(ConfigurationSaveMode.Modified);
+			} catch (ConfigurationErrorsException) {
+				AppendTextBox("Error writing app settings.\r\n");
+			}
+
 			Application.Restart();
 			Environment.Exit(0);
 		}
@@ -250,29 +270,31 @@ namespace BetterJoyForCemu {
 		}
 
 		private void cbBox_Changed(object sender, EventArgs e) {
-			var coord = tableLayoutPanel1.GetPositionFromControl(sender as Control);
+			var coord = settingsTable.GetPositionFromControl(sender as Control);
 
-			var valCtl = tableLayoutPanel1.GetControlFromPosition(coord.Column, coord.Row);
-			var KeyCtl = tableLayoutPanel1.GetControlFromPosition(coord.Column - 1, coord.Row).Text;
+			var valCtl = settingsTable.GetControlFromPosition(coord.Column, coord.Row);
+			var KeyCtl = settingsTable.GetControlFromPosition(coord.Column - 1, coord.Row).Text;
 
 			try {
 				var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 				var settings = configFile.AppSettings.Settings;
-				if (sender.GetType() == typeof(CheckBox) && settings[KeyCtl] != null) {
+				if (valCtl.GetType() == typeof(CheckBox) && settings[KeyCtl] != null) {
 					settings[KeyCtl].Value = ((CheckBox)valCtl).Checked.ToString().ToLower();
-				} else if (sender.GetType() == typeof(TextBox) && settings[KeyCtl] != null) {
+				} else if (valCtl.GetType() == typeof(TextBox) && settings[KeyCtl] != null) {
 					settings[KeyCtl].Value = ((TextBox)valCtl).Text.ToLower();
 				}
-                if(KeyCtl == "HomeLEDOn") {
-                    bool on = settings[KeyCtl].Value.ToLower() == "true";
-                    foreach(Joycon j in Program.mgr.j) {
-                        j.SetHomeLight(on);
-                    }
-                }
+
+				if (KeyCtl == "HomeLEDOn") {
+					bool on = settings[KeyCtl].Value.ToLower() == "true";
+					foreach (Joycon j in Program.mgr.j) {
+						j.SetHomeLight(on);
+					}
+				}
+
 				configFile.Save(ConfigurationSaveMode.Modified);
 				ConfigurationManager.RefreshSection(configFile.AppSettings.SectionInformation.Name);
 			} catch (ConfigurationErrorsException) {
-				Console.WriteLine("Error writing app settings");
+				AppendTextBox("Error writing app settings\r\n");
 				Trace.WriteLine(String.Format("rw {0}, column {1}, {2}, {3}", coord.Row, coord.Column, sender.GetType(), KeyCtl));
 			}
 		}
