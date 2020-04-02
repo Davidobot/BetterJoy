@@ -344,7 +344,7 @@ namespace BetterJoyForCemu {
 				form.AppendTextBox("Using USB.\r\n");
 
 				a[0] = 0x80;
-				a[1] = 0x01;
+				a[1] = 0x1;
 				HIDapi.hid_write(handle, a, new UIntPtr(2));
 				HIDapi.hid_read(handle, a, new UIntPtr(64));
 
@@ -354,16 +354,16 @@ namespace BetterJoyForCemu {
 
 				// USB Pairing
 				a = Enumerable.Repeat((byte)0, 64).ToArray();
-				a[0] = 0x80; a[1] = 0x02; // Handshake
+				a[0] = 0x80; a[1] = 0x2; // Handshake
 				HIDapi.hid_write(handle, a, new UIntPtr(2));
 
-				a[0] = 0x80; a[1] = 0x03; // 3Mbit baud rate
+				a[0] = 0x80; a[1] = 0x3; // 3Mbit baud rate
 				HIDapi.hid_write(handle, a, new UIntPtr(2));
 
-				a[0] = 0x80; a[1] = 0x02; // Handshake at new baud rate
+				a[0] = 0x80; a[1] = 0x2; // Handshake at new baud rate
 				HIDapi.hid_write(handle, a, new UIntPtr(2));
 
-				a[0] = 0x80; a[1] = 0x04; // Prevent HID timeout
+				a[0] = 0x80; a[1] = 0x4; // Prevent HID timeout
 				HIDapi.hid_write(handle, a, new UIntPtr(2));
 
 				dump_calibration_data();
@@ -448,14 +448,14 @@ namespace BetterJoyForCemu {
 			if (state > state_.NO_JOYCONS) {
 				HIDapi.hid_set_nonblocking(handle, 0);
 
-				Subcommand(0x40, new byte[] { 0x0 }, 1);
+				Subcommand(0x40, new byte[] { 0x0 }, 1); // disable IMU sensor
 				//Subcommand(0x48, new byte[] { 0x0 }, 1); // Would turn off rumble?
 
 				if (isUSB) {
 					byte[] a = Enumerable.Repeat((byte)0, 64).ToArray();
-					a[0] = 0x80; a[1] = 0x05; // Allow device to talk to BT again
+					a[0] = 0x80; a[1] = 0x5; // Allow device to talk to BT again
 					HIDapi.hid_write(handle, a, new UIntPtr(2));
-					a[0] = 0x80; a[1] = 0x06; // Allow device to talk to BT again
+					a[0] = 0x80; a[1] = 0x6; // Allow device to talk to BT again
 					HIDapi.hid_write(handle, a, new UIntPtr(2));
 				}
 			}
@@ -501,7 +501,7 @@ namespace BetterJoyForCemu {
 
 				if (extraGyroFeature == "joy") {
 					// TODO
-				} else if (extraGyroFeature == "mouse") {
+				} else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
 					Win32.POINT p;
 					Win32.GetCursorPos(out p);
 
@@ -541,7 +541,8 @@ namespace BetterJoyForCemu {
 					// Send a no-op operation as heartbeat to keep connection alive.
 					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
 					// Needed for both BLUETOOTH and USB to not time out. Never remove pls
-					SendRumble(rumble_obj.GetData());
+					//SendRumble(rumble_obj.GetData());
+					// TODO: Investigate if this really is safe to remove now?
 					watch.Restart();
 				}
 				int a = ReceiveRaw();

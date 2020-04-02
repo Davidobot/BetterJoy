@@ -35,6 +35,9 @@ namespace BetterJoyForCemu {
 			if (!nonOriginal)
 				AutoCalibrate.Hide();
 
+			// Feature not yet implemented - hide
+			btn_open3rdP.Hide();
+
 			con = new List<Button> { con1, con2, con3, con4 };
 			loc = new List<Button> { loc1, loc2, loc3, loc4 };
 

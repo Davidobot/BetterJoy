@@ -325,7 +325,7 @@
 			// 
 			// AutoCalibrate
 			// 
-			this.AutoCalibrate.Location = new System.Drawing.Point(111, 112);
+			this.AutoCalibrate.Location = new System.Drawing.Point(203, 112);
 			this.AutoCalibrate.Name = "AutoCalibrate";
 			this.AutoCalibrate.Size = new System.Drawing.Size(71, 20);
 			this.AutoCalibrate.TabIndex = 8;
