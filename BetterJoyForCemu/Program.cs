@@ -53,7 +53,7 @@ namespace BetterJoyForCemu {
 		}
 
 		public void Start() {
-			controllerCheck = new System.Timers.Timer(2000); // check every 2 seconds
+			controllerCheck = new System.Timers.Timer(5000); // check for new controllers every 5 seconds
 			controllerCheck.Elapsed += CheckForNewControllersTime;
 			controllerCheck.Start();
 		}
@@ -159,10 +159,6 @@ namespace BetterJoyForCemu {
 						} catch {
 							form.AppendTextBox("Unable to add controller to block-list.\r\n");
 						}
-					} else { // Remove affected devices from list
-						try {
-							HttpWebResponse r1 = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/purge/").GetResponse();
-						} catch { }
 					}
 					// -------------------- //
 
@@ -426,13 +422,15 @@ namespace BetterJoyForCemu {
 		}
 
 		public static void Stop() {
-			try {
-				HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse();
-			} catch (Exception e) {
-				form.console.Text += "Unable to remove program from whitelist.\r\n";
+			if (Program.useHIDG) {
+				try {
+					HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse();
+				} catch (Exception e) {
+					form.console.Text += "Unable to remove program from whitelist.\r\n";
+				}
 			}
 
-			if (Boolean.Parse(ConfigurationManager.AppSettings["PurgeAffectedDevices"])) {
+			if (Boolean.Parse(ConfigurationManager.AppSettings["PurgeAffectedDevices"]) && Program.useHIDG) {
 				try {
 					HttpWebResponse r1 = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/affected/purge/").GetResponse();
 				} catch { }
@@ -441,8 +439,6 @@ namespace BetterJoyForCemu {
 			server.Stop();
 			timer.Stop();
 			mgr.OnApplicationQuit();
-
-			form.console.Text += "";
 		}
 
 		static void Main(string[] args) {

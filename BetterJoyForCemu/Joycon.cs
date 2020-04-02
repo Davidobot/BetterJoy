@@ -11,8 +11,28 @@ using System.Threading.Tasks;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace BetterJoyForCemu {
+	// For mouse movement
+	public class Win32 {
+		[DllImport("User32.Dll")]
+		public static extern long SetCursorPos(int x, int y);
+
+		[DllImport("User32.dll")]
+		public static extern bool GetCursorPos(out POINT lpPoint);
+
+		[DllImport("User32.Dll")]
+		public static extern bool ClientToScreen(IntPtr hWnd, ref POINT point);
+
+		[StructLayout(LayoutKind.Sequential)]
+		public struct POINT {
+			public int x;
+			public int y;
+		}
+	}
+
 	public class Joycon {
 		float timing = 120.0f;
 
@@ -445,6 +465,9 @@ namespace BetterJoyForCemu {
 			state = state_.NOT_ATTACHED;
 		}
 
+		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
+		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
+		// TODO: Improve this loop, make USB not laggy
 		private byte ts_en;
 		private int ReceiveRaw() {
 			if (handle == IntPtr.Zero) return -2;
@@ -476,6 +499,25 @@ namespace BetterJoyForCemu {
 						xin.SendReport(report);
 				}
 
+				if (extraGyroFeature == "joy") {
+					// TODO
+				} else if (extraGyroFeature == "mouse") {
+					Win32.POINT p;
+					Win32.GetCursorPos(out p);
+
+					float dt = 0.015f; // 15ms
+
+					// gyro data is in degrees/s
+					int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+					int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+
+					Win32.SetCursorPos(p.x + dx, p.y + dy);
+
+					// reset mouse position to centre of primary monitor
+					if (buttons[(int) Button.STICK] || buttons[(int) Button.STICK2])
+						Win32.SetCursorPos(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
+				}
+
 				if (ts_en == raw_buf[1] && !isSnes) {
 					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
 					DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
@@ -486,6 +528,7 @@ namespace BetterJoyForCemu {
 			return ret;
 		}
 
+		// TODO: Fix?
 		private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
 		private void Poll() {
 			int attempts = 0;
@@ -709,6 +752,7 @@ namespace BetterJoyForCemu {
 			return 0;
 		}
 
+		// Get Gyro/Accel data
 		private void ExtractIMUValues(byte[] report_buf, int n = 0) {
 			if (!isSnes) {
 				gyr_r[0] = (Int16)(report_buf[19 + n * 12] | ((report_buf[20 + n * 12] << 8) & 0xff00));
@@ -717,7 +761,6 @@ namespace BetterJoyForCemu {
 				acc_r[0] = (Int16)(report_buf[13 + n * 12] | ((report_buf[14 + n * 12] << 8) & 0xff00));
 				acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
 				acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
-
 
 				if (form.nonOriginal) {
 					for (int i = 0; i < 3; ++i) {
