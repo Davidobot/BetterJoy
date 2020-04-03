@@ -93,10 +93,10 @@ namespace BetterJoyForCemu {
 
 			Program.Start();
 
-			passiveScanBox.Checked = Config.Value("ProgressiveScan");
-			startInTrayBox.Checked = Config.Value("StartInTray");
+			passiveScanBox.Checked = Config.IntValue("ProgressiveScan") == 1;
+			startInTrayBox.Checked = Config.IntValue("StartInTray") == 1;
 
-			if (Config.Value("StartInTray")) {
+			if (Config.IntValue("StartInTray") == 1) {
 				HideToTray();
 			} else {
 				ShowFromTray();
@@ -124,7 +124,8 @@ namespace BetterJoyForCemu {
 		}
 
 		private void passiveScanBox_CheckedChanged(object sender, EventArgs e) {
-			Config.Save("ProgressiveScan", passiveScanBox.Checked);
+			Config.SetValue("ProgressiveScan", passiveScanBox.Checked ? "1" : "0");
+			Config.Save();
 		}
 
 		public void AppendTextBox(string value) { // https://stackoverflow.com/questions/519233/writing-to-a-textbox-from-another-thread
@@ -224,7 +225,8 @@ namespace BetterJoyForCemu {
 		}
 
 		private void startInTrayBox_CheckedChanged(object sender, EventArgs e) {
-			Config.Save("StartInTray", startInTrayBox.Checked);
+			Config.SetValue("StartInTray", startInTrayBox.Checked ? "1" : "0");
+			Config.Save();
 		}
 
 		private void btn_open3rdP_Click(object sender, EventArgs e) {
@@ -328,6 +330,11 @@ namespace BetterJoyForCemu {
 			countDown.Tick += new EventHandler(CalcData);
 			countDown.Interval = 1000;
 			countDown.Enabled = true;
+		}
+
+		private void btn_reassign_open_Click(object sender, EventArgs e) {
+			Reassign mapForm = new Reassign();
+			mapForm.ShowDialog();
 		}
 
 		private void CountDown(object sender, EventArgs e) {

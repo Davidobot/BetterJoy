@@ -8,23 +8,36 @@ using System.Threading.Tasks;
 namespace BetterJoyForCemu {
 	public static class Config { // stores dynamic configuration, including
 		const string PATH = "settings";
-		static Dictionary<string, bool> variables = new Dictionary<string, bool>();
+		static Dictionary<string, string> variables = new Dictionary<string, string>();
 
-		const int settingsNum = 2; // currently - ProgressiveScan, StartInTray
+		const int settingsNum = 9; // currently - ProgressiveScan, StartInTray + special buttons
+
+		public static string GetDefaultValue(string s) {
+			switch(s) {
+				case "ProgressiveScan":
+					return "1";
+				case "capture":
+					return "key_" + ((int)WindowsInput.Events.KeyCode.PrintScreen);
+				case "reset_mouse":
+					return "joy_" + ((int)Joycon.Button.STICK);
+			}
+			return "0";
+		}
 
 		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
-			variables["ProgressiveScan"] = true;
-			variables["StartInTray"] = false;
+			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "reset_mouse" })
+				variables[s] = GetDefaultValue(s);
 
 			if (File.Exists(PATH)) {
+				int lineNO = 0;
 				using (StreamReader file = new StreamReader(PATH)) {
 					string line = String.Empty;
-					int lineNO = 0;
+					
 					while ((line = file.ReadLine()) != null) {
 						string[] vs = line.Split();
 						try {
 							if (lineNO < settingsNum) { // load in basic settings
-								variables[vs[0]] = Boolean.Parse(vs[1]);
+								variables[vs[0]] = vs[1];
 							} else { // load in calibration presets
 								caliData.Clear();
 								for (int i = 0; i < vs.Length; i++) {
@@ -42,6 +55,14 @@ namespace BetterJoyForCemu {
 						} catch { }
 						lineNO++;
 					}
+
+					
+				}
+
+				// if old settings
+				if (lineNO < settingsNum) {
+					File.Delete(PATH);
+					Init(caliData);
 				}
 			} else {
 				using (StreamWriter file = new StreamWriter(PATH)) {
@@ -58,11 +79,25 @@ namespace BetterJoyForCemu {
 			}
 		}
 
-		public static bool Value(string key) {
-			if (!variables.ContainsKey("ProgressiveScan") && !variables.ContainsKey("StartInTray")) {
-				return false;
+		public static int IntValue(string key) {
+			if (!variables.ContainsKey(key)) {
+				return 0;
+			}
+			return Int32.Parse(variables[key]);
+		}
+
+		public static string Value(string key) {
+			if (!variables.ContainsKey(key)) {
+				return "";
 			}
 			return variables[key];
+		}
+
+		public static bool SetValue(string key, string value) {
+			if (!variables.ContainsKey(key))
+				return false;
+			variables[key] = value;
+			return true;
 		}
 
 		public static void SaveCaliData(List<KeyValuePair<string, float[]>> caliData) {
@@ -80,8 +115,7 @@ namespace BetterJoyForCemu {
 			File.WriteAllLines(PATH, txt);
 		}
 
-		public static void Save(string key, bool value) {
-			variables[key] = value;
+		public static void Save() {
 			string[] txt = File.ReadAllLines(PATH);
 			int NO = 0;
 			foreach (string k in variables.Keys) {

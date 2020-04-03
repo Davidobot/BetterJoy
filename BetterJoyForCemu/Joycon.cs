@@ -299,7 +299,7 @@ namespace BetterJoyForCemu {
 		public void DebugPrint(String s, DebugType d) {
 			if (debug_type == DebugType.NONE) return;
 			if (d == DebugType.ALL || d == debug_type || debug_type == DebugType.ALL) {
-				form.console.Text += s + "\r\n";
+				form.AppendTextBox(s + "\r\n");
 			}
 		}
 		public bool GetButtonDown(Button b) {
@@ -470,8 +470,6 @@ namespace BetterJoyForCemu {
 			state = state_.NOT_ATTACHED;
 		}
 
-		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
-		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
 		// TODO: Improve this loop, make USB not laggy
 		private byte ts_en;
 		private int ReceiveRaw() {
@@ -501,28 +499,14 @@ namespace BetterJoyForCemu {
 						Program.server.NewReportIncoming(this);
 
 					if (xin != null)
-						xin.SendReport(report);
+						try {
+							xin.SendReport(report);
+						} catch (Exception e) {
+							// ignore /shrug
+						}
 				}
 
-				// Link capture button to print screen
-				if (buttons[(int)Button.CAPTURE])
-					WindowsInput.Simulate.Events().Click(WindowsInput.Events.KeyCode.PrintScreen).Invoke();
-
-				if (extraGyroFeature == "joy") {
-					// TODO
-				} else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
-					float dt = 0.015f; // 15ms
-
-					// gyro data is in degrees/s
-					int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
-					int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
-
-					WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
-
-					// reset mouse position to centre of primary monitor
-					if (buttons[(int)Button.STICK] || buttons[(int)Button.STICK2])
-						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();				
-				}
+				DoThingsWithButtons();
 
 				if (ts_en == raw_buf[1] && !isSnes) {
 					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
@@ -532,6 +516,46 @@ namespace BetterJoyForCemu {
 				DebugPrint(string.Format("Enqueue. Bytes read: {0:D}. Timestamp: {1:X2}", ret, raw_buf[1]), DebugType.THREADING);
 			}
 			return ret;
+		}
+
+		private void Simulate(string s) {
+			if (s.StartsWith("key_"))
+				WindowsInput.Simulate.Events().Click((WindowsInput.Events.KeyCode) Int32.Parse(s.Substring(4))).Invoke();
+			else if (s.StartsWith("mse_"))
+				WindowsInput.Simulate.Events().Click((WindowsInput.Events.ButtonCode) Int32.Parse(s.Substring(4))).Invoke();
+		}
+
+		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
+		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
+		private void DoThingsWithButtons() {
+			if (buttons_down[(int)Button.CAPTURE])
+				Simulate(Config.Value("capture"));
+			if (buttons_down[(int)Button.HOME])
+				Simulate(Config.Value("home"));
+			if (isLeft && buttons_down[(int)Button.SL])
+				Simulate(Config.Value("sl_l"));
+			if (isLeft && buttons_down[(int)Button.SR])
+				Simulate(Config.Value("sr_l"));
+			if (!isLeft && buttons_down[(int)Button.SL])
+				Simulate(Config.Value("sl_r"));
+			if (!isLeft && buttons_down[(int)Button.SR])
+				Simulate(Config.Value("sr_r"));
+
+			if (extraGyroFeature == "joy") {
+				// TODO
+			} else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
+				float dt = 0.015f; // 15ms
+
+				// gyro data is in degrees/s
+				int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+				int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+
+				WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
+
+				// reset mouse position to centre of primary monitor
+				if (buttons_down[(int)Button.STICK] || buttons_down[(int)Button.STICK2])
+					WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+			}
 		}
 
 		// TODO: Fix?
@@ -726,6 +750,10 @@ namespace BetterJoyForCemu {
 						report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
 					}
 				}
+
+				// overwrite guide button if it's custom-mapped
+				if (Config.Value("home") != "0")
+					report.SetButtonState(Xbox360Buttons.Guide, false);
 
 				lock (buttons_up) {
 					lock (buttons_down) {

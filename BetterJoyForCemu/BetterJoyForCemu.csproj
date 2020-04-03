@@ -170,6 +170,12 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Reassign.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Reassign.Designer.cs">
+      <DependentUpon>Reassign.cs</DependentUpon>
+    </Compile>
     <Compile Include="UpdServer.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -203,6 +209,9 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reassign.resx">
+      <DependentUpon>Reassign.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

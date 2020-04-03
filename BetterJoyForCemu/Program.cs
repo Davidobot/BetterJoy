@@ -95,7 +95,7 @@ namespace BetterJoyForCemu {
 		}
 
 		void CheckForNewControllersTime(Object source, ElapsedEventArgs e) {
-			if (Config.Value("ProgressiveScan")) {
+			if (Config.IntValue("ProgressiveScan") == 1) {
 				CheckForNewControllers();
 			}
 		}

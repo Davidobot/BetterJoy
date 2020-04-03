@@ -51,6 +51,7 @@
 			this.rightPanel = new System.Windows.Forms.Panel();
 			this.settingsApply = new System.Windows.Forms.Button();
 			this.AutoCalibrate = new System.Windows.Forms.Button();
+			this.btn_reassign_open = new System.Windows.Forms.Button();
 			this.contextMenu.SuspendLayout();
 			this.conCntrls.SuspendLayout();
 			this.groupBox1.SuspendLayout();
@@ -333,6 +334,16 @@
 			this.AutoCalibrate.UseVisualStyleBackColor = true;
 			this.AutoCalibrate.Click += new System.EventHandler(this.StartCalibrate);
 			// 
+			// btn_reassign_open
+			// 
+			this.btn_reassign_open.Location = new System.Drawing.Point(107, 112);
+			this.btn_reassign_open.Name = "btn_reassign_open";
+			this.btn_reassign_open.Size = new System.Drawing.Size(75, 20);
+			this.btn_reassign_open.TabIndex = 13;
+			this.btn_reassign_open.Text = "Map Buttons";
+			this.btn_reassign_open.UseVisualStyleBackColor = true;
+			this.btn_reassign_open.Click += new System.EventHandler(this.btn_reassign_open_Click);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -340,6 +351,7 @@
 			this.AutoSize = true;
 			this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
 			this.ClientSize = new System.Drawing.Size(284, 261);
+			this.Controls.Add(this.btn_reassign_open);
 			this.Controls.Add(this.foldLbl);
 			this.Controls.Add(this.rightPanel);
 			this.Controls.Add(this.AutoCalibrate);
@@ -396,5 +408,6 @@
         private System.Windows.Forms.Button settingsApply;
         private System.Windows.Forms.Label foldLbl;
         private System.Windows.Forms.Button AutoCalibrate;
-    }
+		private System.Windows.Forms.Button btn_reassign_open;
+	}
 }
