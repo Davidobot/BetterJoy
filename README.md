@@ -9,10 +9,10 @@ Thank you for using my software and all the constructive feedback I've been gett
 It's been quite a wild ride, with nearly 90k official download on GitHub and probably many more through the nightlies. I think this project was responsible for both software jobs I landed so far, so I am quite proud of it.
 
 
-## Nightly builds (updated 18/01/20)
+## Nightly builds (updated 02/04/20)
 Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1x3jxWG9DQMkpMGu864nn0gYNZZR80sjX)
-* [32-bit](https://drive.google.com/open?id=1SBq_8CHZvuOVs8Mtmcc-WqpSyf6tNIk2)
+* [64-bit](https://drive.google.com/open?id=1FnTqo4ZBte_P6gLRP4dK9t8nXPeu5gfc)
+* [32-bit](https://drive.google.com/open?id=1VQ471LLBd3rqsNpeNGalpHNDYV8Vi5IQ)
 
 ### Screenshots
 Collapsed             |  Expanded
@@ -53,6 +53,14 @@ Collapsed             |  Expanded
    * with a single joycon attached, click on the icon to change its orientation
 * Added Switch SNES controller support
    * thanks [KurtYilmaz](https://github.com/KurtYilmaz)
+* Added option to use gyro input as mouse input
+   * works quite well actually! It's a bit like playing Wii!
+   * with left-handed mode
+* Improved start-up and shut-down time
+   * improves usability immensely
+* Added option to disable motion server
+* Fixed USB lag?
+   * Need confirmation, after - I'll release full v6
 
 ### v5
 * Progressive scanning
@@ -133,6 +141,7 @@ For example, for use with [Citra and Steam simultaneously](https://community.cit
 Current settings are:
 * IP address of CemuHook motion server  *(default: 127.0.0.1)*
 * Port number of CemuHook motion server *(default: 26760)*
+* Use CemuHook motion server? *(default: true)*
 * Rumble Period of motor in ms          *(default: 300)*
 * Frequency of low rumble in Hz         *(default: 20)*
 * Frequency of high rumble in Hz        *(default: 400)*
@@ -152,6 +161,10 @@ Current settings are:
   * Should prevent any more issues of the controller being unusable after the program
 * NonOriginalController                 *(default: false)*
   * When "true", click the "Calibrate" button once to calibrate the gyroscope on your connect pro controller
+* GyroToJoyOrMouse                      *(default: none)*
+  * "mouse" allows you to use gyro input as mouse input. Press stick buttons to reset
+* GyroMouseSensitivity                  *(default: 50)*
+* GyroMouseLeftHanded                   *(default: false)*
 # Problems
 __Make sure you installed the drivers!!__
 
