@@ -13,6 +13,7 @@ using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using WindowsInput;
 
 namespace BetterJoyForCemu {
 	// For mouse movement
@@ -364,7 +365,7 @@ namespace BetterJoyForCemu {
 				HIDapi.hid_write(handle, a, new UIntPtr(2));
 
 				a[0] = 0x80; a[1] = 0x4; // Prevent HID timeout
-				HIDapi.hid_write(handle, a, new UIntPtr(2));
+				HIDapi.hid_write(handle, a, new UIntPtr(2)); // doesn't actually prevent timout...
 
 				dump_calibration_data();
 			}
@@ -382,6 +383,10 @@ namespace BetterJoyForCemu {
 			DebugPrint("Done with init.", DebugType.COMMS);
 
 			HIDapi.hid_set_nonblocking(handle, 1);
+
+			// send ping to USB to not time out instantly
+			if (isUSB)
+				SendRumble(rumble_obj.GetData());
 
 			return 0;
 		}
@@ -499,23 +504,24 @@ namespace BetterJoyForCemu {
 						xin.SendReport(report);
 				}
 
+				// Link capture button to print screen
+				if (buttons[(int)Button.CAPTURE])
+					WindowsInput.Simulate.Events().Click(WindowsInput.Events.KeyCode.PrintScreen).Invoke();
+
 				if (extraGyroFeature == "joy") {
 					// TODO
 				} else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
-					Win32.POINT p;
-					Win32.GetCursorPos(out p);
-
 					float dt = 0.015f; // 15ms
 
 					// gyro data is in degrees/s
 					int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
 					int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
 
-					Win32.SetCursorPos(p.x + dx, p.y + dy);
+					WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
 
 					// reset mouse position to centre of primary monitor
-					if (buttons[(int) Button.STICK] || buttons[(int) Button.STICK2])
-						Win32.SetCursorPos(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2);
+					if (buttons[(int)Button.STICK] || buttons[(int)Button.STICK2])
+						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();				
 				}
 
 				if (ts_en == raw_buf[1] && !isSnes) {
@@ -535,21 +541,18 @@ namespace BetterJoyForCemu {
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 			while (!stop_polling & state > state_.NO_JOYCONS) {
-				if (!isSnes && (isUSB || rumble_obj.t > 0))
+				if (!isSnes && (rumble_obj.t > 0))
 					SendRumble(rumble_obj.GetData());
-				else if (watch.ElapsedMilliseconds >= 1000) {
-					// Send a no-op operation as heartbeat to keep connection alive.
-					// Do not send this too frequently, otherwise I/O would be too heavy and cause lag.
-					// Needed for both BLUETOOTH and USB to not time out. Never remove pls
-					//SendRumble(rumble_obj.GetData());
-					// TODO: Investigate if this really is safe to remove now?
-					watch.Restart();
-				}
+
 				int a = ReceiveRaw();
 
 				if (a > 0) {
 					state = state_.IMU_DATA_OK;
 					attempts = 0;
+
+					// Needed for USB to not time out; I think USB requires a reply message after every packet sent
+					if (isUSB)
+						SendRumble(rumble_obj.GetData());
 				} else if (attempts > 240) {
 					state = state_.DROPPED;
 					form.AppendTextBox("Dropped.\r\n");
