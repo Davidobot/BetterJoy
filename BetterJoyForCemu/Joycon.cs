@@ -563,10 +563,8 @@ namespace BetterJoyForCemu {
 				Simulate(Config.Value("capture"));
 			if (buttons_down[(int)Button.HOME])
 				Simulate(Config.Value("home"));
-			if (buttons[(int)Button.CAPTURE])
-				SimulateContinous((int)Button.CAPTURE, Config.Value("capture"));
-			if (buttons[(int)Button.HOME])
-				SimulateContinous((int)Button.HOME, Config.Value("home"));
+			SimulateContinous((int)Button.CAPTURE, Config.Value("capture"));
+			SimulateContinous((int)Button.HOME, Config.Value("home"));
 
 			if (isLeft) {
 				if (buttons_down[(int)Button.SL])
@@ -578,10 +576,8 @@ namespace BetterJoyForCemu {
 				if (buttons_up[(int)Button.SR])
 					Simulate(Config.Value("sr_l"), false, true);
 
-				if (buttons[(int)Button.SL])
-					SimulateContinous((int)Button.SL, Config.Value("sl_l"));
-				if (buttons[(int)Button.SR])
-					SimulateContinous((int)Button.SR, Config.Value("sr_l"));
+				SimulateContinous((int)Button.SL, Config.Value("sl_l"));
+				SimulateContinous((int)Button.SR, Config.Value("sr_l"));
 			} else {
 				if (buttons_down[(int)Button.SL])
 					Simulate(Config.Value("sl_r"), false, false);
@@ -592,10 +588,8 @@ namespace BetterJoyForCemu {
 				if (buttons_up[(int)Button.SR])
 					Simulate(Config.Value("sr_r"), false, true);
 
-				if (buttons[(int)Button.SL])
-					SimulateContinous((int)Button.SL, Config.Value("sl_r"));
-				if (buttons[(int)Button.SR])
-					SimulateContinous((int)Button.SR, Config.Value("sr_r"));
+				SimulateContinous((int)Button.SL, Config.Value("sl_r"));
+				SimulateContinous((int)Button.SR, Config.Value("sr_r"));
 			}			
 
 			if (extraGyroFeature == "joy") {
