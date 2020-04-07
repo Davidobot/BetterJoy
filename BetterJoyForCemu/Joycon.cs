@@ -42,6 +42,7 @@ namespace BetterJoyForCemu {
 		public bool isSnes = false;
 		bool isUSB = false;
 		public Joycon other;
+		public bool active_gyro = false;
 
 		public bool send = true;
 
@@ -569,16 +570,25 @@ namespace BetterJoyForCemu {
 			if (extraGyroFeature == "joy") {
 				// TODO
 			} else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
+				string res_val = Config.Value("active_gyro");
+				if (res_val.StartsWith("joy_"))
+					if (buttons_down[Int32.Parse(res_val.Substring(4))])
+						active_gyro = true;
+					else if (buttons_up[Int32.Parse(res_val.Substring(4))])
+						active_gyro = false;
+
 				float dt = 0.015f; // 15ms
 
 				// gyro data is in degrees/s
-				int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
-				int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+				if (Config.Value("active_gyro") == "0" || active_gyro) {
+					int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+					int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
 
-				WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
+					WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
+				}
 
 				// reset mouse position to centre of primary monitor
-				string res_val = Config.Value("reset_mouse");
+				res_val = Config.Value("reset_mouse");
 				if (res_val.StartsWith("joy_"))
 					if (buttons_down[Int32.Parse(res_val.Substring(4))])
 						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
