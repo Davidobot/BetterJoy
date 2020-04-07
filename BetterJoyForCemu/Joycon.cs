@@ -518,11 +518,28 @@ namespace BetterJoyForCemu {
 			return ret;
 		}
 
-		private void Simulate(string s) {
-			if (s.StartsWith("key_"))
-				WindowsInput.Simulate.Events().Click((WindowsInput.Events.KeyCode) Int32.Parse(s.Substring(4))).Invoke();
-			else if (s.StartsWith("mse_"))
-				WindowsInput.Simulate.Events().Click((WindowsInput.Events.ButtonCode) Int32.Parse(s.Substring(4))).Invoke();
+		private void Simulate(string s, bool click=true, bool up=false) {
+			if (s.StartsWith("key_")) {
+				if (click) {
+					WindowsInput.Simulate.Events().Click((WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4))).Invoke();
+				} else {
+					if (up) {
+						WindowsInput.Simulate.Events().Release((WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4))).Invoke();
+					} else {
+						WindowsInput.Simulate.Events().Hold((WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4))).Invoke();
+					}
+				}
+			} else if (s.StartsWith("mse_")) {
+				if (click) {
+					WindowsInput.Simulate.Events().Click((WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4))).Invoke();
+				} else {
+					if (up) {
+						WindowsInput.Simulate.Events().Release((WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4))).Invoke();
+					} else {
+						WindowsInput.Simulate.Events().Hold((WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4))).Invoke();
+					}
+				}
+			}
 		}
 
 		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
@@ -533,13 +550,21 @@ namespace BetterJoyForCemu {
 			if (buttons_down[(int)Button.HOME])
 				Simulate(Config.Value("home"));
 			if (isLeft && buttons_down[(int)Button.SL])
-				Simulate(Config.Value("sl_l"));
+				Simulate(Config.Value("sl_l"), false, false);
+			if (isLeft && buttons_up[(int)Button.SL])
+				Simulate(Config.Value("sl_l"), false, true);
 			if (isLeft && buttons_down[(int)Button.SR])
-				Simulate(Config.Value("sr_l"));
+				Simulate(Config.Value("sr_l"), false, false);
+			if (isLeft && buttons_up[(int)Button.SR])
+				Simulate(Config.Value("sr_l"), false, true);
 			if (!isLeft && buttons_down[(int)Button.SL])
-				Simulate(Config.Value("sl_r"));
+				Simulate(Config.Value("sl_r"), false, false);
+			if (!isLeft && buttons_up[(int)Button.SL])
+				Simulate(Config.Value("sl_r"), false, true);
 			if (!isLeft && buttons_down[(int)Button.SR])
-				Simulate(Config.Value("sr_r"));
+				Simulate(Config.Value("sr_r"), false, false);
+			if (!isLeft && buttons_up[(int)Button.SR])
+				Simulate(Config.Value("sr_r"), false, true);
 
 			if (extraGyroFeature == "joy") {
 				// TODO
@@ -553,8 +578,10 @@ namespace BetterJoyForCemu {
 				WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
 
 				// reset mouse position to centre of primary monitor
-				if (buttons_down[(int)Button.STICK] || buttons_down[(int)Button.STICK2])
-					WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+				string res_val = Config.Value("reset_mouse");
+				if (res_val.StartsWith("joy_"))
+					if (buttons_down[Int32.Parse(res_val.Substring(4))])
+						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
 			}
 		}
 

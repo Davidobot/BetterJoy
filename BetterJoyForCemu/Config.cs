@@ -25,7 +25,7 @@ namespace BetterJoyForCemu {
 		}
 
 		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
-			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "reset_mouse" })
+			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "reset_mouse", "active_gyro" })
 				variables[s] = GetDefaultValue(s);
 
 			if (File.Exists(PATH)) {

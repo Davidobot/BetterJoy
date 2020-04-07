@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace BetterJoyForCemu {
+	// from https://stackoverflow.com/a/27173509
 	public class SplitButton : Button {
 		[DefaultValue(null), Browsable(true),
 		DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
@@ -47,7 +48,7 @@ namespace BetterJoyForCemu {
 				int lineX = ClientRectangle.Width - this.SplitWidth;
 				int lineYFrom = arrowY - 4;
 				int lineYTo = arrowY + 8;
-				using (var separatorPen = new Pen(Brushes.DarkGray) { DashStyle = DashStyle.Dot }) {
+				using (var separatorPen = new Pen(Brushes.DarkGray) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }) {
 					pevent.Graphics.DrawLine(separatorPen, lineX, lineYFrom, lineX, lineYTo);
 				}
 			}
@@ -80,23 +81,25 @@ namespace BetterJoyForCemu {
 		private void InitializeComponent() {
 			this.components = new System.ComponentModel.Container();
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Reassign));
-			this.btn_capture = new SplitButton();
+			this.btn_capture = new BetterJoyForCemu.SplitButton();
 			this.lbl_capture = new System.Windows.Forms.Label();
 			this.lbl_home = new System.Windows.Forms.Label();
-			this.btn_home = new SplitButton();
+			this.btn_home = new BetterJoyForCemu.SplitButton();
 			this.lbl_sl_l = new System.Windows.Forms.Label();
-			this.btn_sl_l = new SplitButton();
+			this.btn_sl_l = new BetterJoyForCemu.SplitButton();
 			this.lbl_sr_l = new System.Windows.Forms.Label();
-			this.btn_sr_l = new SplitButton();
+			this.btn_sr_l = new BetterJoyForCemu.SplitButton();
 			this.lbl_sl_r = new System.Windows.Forms.Label();
-			this.btn_sl_r = new SplitButton();
+			this.btn_sl_r = new BetterJoyForCemu.SplitButton();
 			this.lbl_sr_r = new System.Windows.Forms.Label();
-			this.btn_sr_r = new SplitButton();
-			this.btn_close = new SplitButton();
-			this.btn_apply = new SplitButton();
+			this.btn_sr_r = new BetterJoyForCemu.SplitButton();
+			this.btn_close = new BetterJoyForCemu.SplitButton();
+			this.btn_apply = new BetterJoyForCemu.SplitButton();
 			this.tip_reassign = new System.Windows.Forms.ToolTip(this.components);
 			this.lbl_reset_mouse = new System.Windows.Forms.Label();
-			this.btn_reset_mouse = new SplitButton();
+			this.btn_reset_mouse = new BetterJoyForCemu.SplitButton();
+			this.lbl_activate_gyro = new System.Windows.Forms.Label();
+			this.btn_active_gyro = new SplitButton();
 			this.SuspendLayout();
 			// 
 			// btn_capture
@@ -209,7 +212,7 @@ namespace BetterJoyForCemu {
 			// 
 			// btn_close
 			// 
-			this.btn_close.Location = new System.Drawing.Point(15, 231);
+			this.btn_close.Location = new System.Drawing.Point(15, 257);
 			this.btn_close.Name = "btn_close";
 			this.btn_close.Size = new System.Drawing.Size(75, 23);
 			this.btn_close.TabIndex = 13;
@@ -219,7 +222,7 @@ namespace BetterJoyForCemu {
 			// 
 			// btn_apply
 			// 
-			this.btn_apply.Location = new System.Drawing.Point(105, 231);
+			this.btn_apply.Location = new System.Drawing.Point(105, 257);
 			this.btn_apply.Name = "btn_apply";
 			this.btn_apply.Size = new System.Drawing.Size(75, 23);
 			this.btn_apply.TabIndex = 14;
@@ -245,11 +248,31 @@ namespace BetterJoyForCemu {
 			this.btn_reset_mouse.TabIndex = 15;
 			this.btn_reset_mouse.UseVisualStyleBackColor = true;
 			// 
+			// lbl_activate_gyro
+			// 
+			this.lbl_activate_gyro.AutoSize = true;
+			this.lbl_activate_gyro.Location = new System.Drawing.Point(14, 220);
+			this.lbl_activate_gyro.Name = "lbl_activate_gyro";
+			this.lbl_activate_gyro.Size = new System.Drawing.Size(71, 13);
+			this.lbl_activate_gyro.TabIndex = 17;
+			this.lbl_activate_gyro.Text = "Activate Gyro";
+			this.lbl_activate_gyro.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+			// 
+			// btn_active_gyro
+			// 
+			this.btn_active_gyro.Location = new System.Drawing.Point(105, 215);
+			this.btn_active_gyro.Name = "btn_active_gyro";
+			this.btn_active_gyro.Size = new System.Drawing.Size(75, 23);
+			this.btn_active_gyro.TabIndex = 18;
+			this.btn_active_gyro.UseVisualStyleBackColor = true;
+			// 
 			// Reassign
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(192, 266);
+			this.ClientSize = new System.Drawing.Size(192, 292);
+			this.Controls.Add(this.btn_active_gyro);
+			this.Controls.Add(this.lbl_activate_gyro);
 			this.Controls.Add(this.lbl_reset_mouse);
 			this.Controls.Add(this.btn_reset_mouse);
 			this.Controls.Add(this.btn_apply);
@@ -298,5 +321,7 @@ namespace BetterJoyForCemu {
 		private System.Windows.Forms.ToolTip tip_reassign;
 		private System.Windows.Forms.Label lbl_reset_mouse;
 		private SplitButton btn_reset_mouse;
+		private Label lbl_activate_gyro;
+		private SplitButton btn_active_gyro;
 	}
 }

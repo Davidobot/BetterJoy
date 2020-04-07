@@ -29,7 +29,7 @@ namespace BetterJoyForCemu {
 
 			menu_joy_buttons.ItemClicked += Menu_joy_buttons_ItemClicked;
 
-			foreach (SplitButton c in new SplitButton[] { btn_capture, btn_home, btn_sl_l, btn_sl_r, btn_sr_l, btn_sr_r, btn_reset_mouse }) {
+			foreach (SplitButton c in new SplitButton[] { btn_capture, btn_home, btn_sl_l, btn_sl_r, btn_sr_l, btn_sr_r, btn_reset_mouse , btn_active_gyro}) {
 				c.Tag = c.Name.Substring(4);
 				GetPrettyName(c);
 
@@ -78,6 +78,7 @@ namespace BetterJoyForCemu {
 				Config.SetValue((string)curAssignment.Tag, "mse_" + ((int)e.Data.ButtonDown.Button));
 				AsyncPrettyName(curAssignment);
 				curAssignment = null;
+				e.Next_Hook_Enabled = false;
 			}
 		}
 
@@ -86,6 +87,7 @@ namespace BetterJoyForCemu {
 				Config.SetValue((string)curAssignment.Tag, "key_" + ((int)e.Data.KeyDown.Key));
 				AsyncPrettyName(curAssignment);
 				curAssignment = null;
+				e.Next_Hook_Enabled = false;
 			}
 		}
 

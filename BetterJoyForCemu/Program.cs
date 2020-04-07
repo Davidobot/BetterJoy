@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-using System.Numerics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Timers;
@@ -14,7 +12,6 @@ using System.Diagnostics;
 
 using static BetterJoyForCemu.HIDapi;
 using Nefarius.ViGEm.Client;
-using Nefarius.ViGEm.Client.Targets;
 using System.Net;
 using System.Configuration;
 using System.Net.Http;
@@ -356,6 +353,9 @@ namespace BetterJoyForCemu {
 
 		static public bool useHIDG = Boolean.Parse(ConfigurationManager.AppSettings["UseHIDG"]);
 
+		private static WindowsInput.Events.Sources.IKeyboardEventSource keyboard;
+		private static WindowsInput.Events.Sources.IMouseEventSource mouse;
+
 		public static void Start() {
 			pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
 
@@ -363,17 +363,17 @@ namespace BetterJoyForCemu {
 				try {
 					var HidCerberusService = new ServiceController("HidCerberus Service");
 					if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
-						form.console.Text += "HidGuardian was stopped. Starting...\r\n";
+						form.console.AppendText("HidGuardian was stopped. Starting...\r\n");
 
 						try {
 							HidCerberusService.Start();
 						} catch (Exception e) {
-							form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n";
+							form.console.AppendText("Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n");
 							useHIDG = false;
 						}
 					}
 				} catch (Exception e) {
-					form.console.Text += "Unable to start HidGuardian - everything should work fine without it, but if you need it, install it properly as admin.\r\n";
+					form.console.AppendText("Unable to start HidGuardian - everything should work fine without it, but if you need it, install it properly as admin.\r\n");
 					useHIDG = false;
 				}
 
@@ -382,7 +382,7 @@ namespace BetterJoyForCemu {
 					try {
 						response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
 					} catch (Exception e) {
-						form.console.Text += "Unable to purge whitelist.\r\n";
+						form.console.AppendText("Unable to purge whitelist.\r\n");
 						useHIDG = false;
 					}
 				}
@@ -390,14 +390,20 @@ namespace BetterJoyForCemu {
 				try {
 					response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/add/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
 				} catch (Exception e) {
-					form.console.Text += "Unable to add program to whitelist.\r\n";
+					form.console.AppendText("Unable to add program to whitelist.\r\n");
 					useHIDG = false;
 				}
 			} else {
-				form.console.Text += "HidGuardian is disabled.\r\n";
+				form.console.AppendText("HidGuardian is disabled.\r\n");
 			}
 
-			emClient = new ViGEmClient(); // Manages emulated XInput
+			if (Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"])) {
+				try {
+					emClient = new ViGEmClient(); // Manages emulated XInput
+				} catch (Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException) {
+					form.console.AppendText("Could not start VigemBus. Make sure drivers are installed correctly.\r\n");
+				}
+			}
 
 			foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces()) {
 				// Get local BT host MAC
@@ -421,7 +427,31 @@ namespace BetterJoyForCemu {
 			timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
 			timer.Start();
 
-			form.console.Text += "All systems go\r\n";
+			// Capture keyboard + mouse events for binding's sake
+			keyboard = WindowsInput.Capture.Global.KeyboardAsync();
+			keyboard.KeyEvent += Keyboard_KeyEvent;
+			mouse = WindowsInput.Capture.Global.MouseAsync();
+			mouse.MouseEvent += Mouse_MouseEvent;
+
+			form.console.AppendText("All systems go\r\n");
+		}
+
+		private static void Mouse_MouseEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.MouseEvent> e) {
+			if (e.Data.ButtonDown != null) {
+				string res_val = Config.Value("reset_mouse");
+				if (res_val.StartsWith("mse_"))
+					if ((int)e.Data.ButtonDown.Button == Int32.Parse(res_val.Substring(4)))
+						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+			}
+		}
+
+		private static void Keyboard_KeyEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.KeyboardEvent> e) {
+			if (e.Data.KeyDown != null) {
+				string res_val = Config.Value("reset_mouse");
+				if (res_val.StartsWith("key_"))
+					if ((int)e.Data.KeyDown.Key == Int32.Parse(res_val.Substring(4)))
+						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+			}
 		}
 
 		public static void Stop() {
@@ -429,7 +459,7 @@ namespace BetterJoyForCemu {
 				try {
 					HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse();
 				} catch (Exception e) {
-					form.console.Text += "Unable to remove program from whitelist.\r\n";
+					form.console.AppendText("Unable to remove program from whitelist.\r\n");
 				}
 			}
 
@@ -439,6 +469,7 @@ namespace BetterJoyForCemu {
 				} catch { }
 			}
 
+			keyboard.Dispose(); mouse.Dispose();
 			server.Stop();
 			timer.Stop();
 			mgr.OnApplicationQuit();
