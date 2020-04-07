@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="title.png">
+  <img src="https://raw.githubusercontent.com/Davidobot/BetterJoyForCemu/f0bbe4fbb110069c0485397bf5b01a5d741a6c5d/title.png">
 </p>
 
-# BetterJoyForCemu v6
+# BetterJoy v6
 Allows the Nintendo Switch Pro Controller, Joycons, and Switch SNES controller to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), [Dolphin](https://dolphin-emu.org/), and system-wide with generic XInput support.
 
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
@@ -62,7 +62,7 @@ It's been quite a wild ride, with nearly 110k official download on GitHub and pr
 
 ### v5
 * Progressive scanning
-   * You can keep BetterJoyForCemu running and just connect controllers to your PC - it will detect them.
+   * You can keep BetterJoy running and just connect controllers to your PC - it will detect them.
 * UI rework
    * Buttons for locating controllers through vibration
    * Click on the joycon controller buttons to **toggle single/joint Joycon mode**.
@@ -78,7 +78,7 @@ It's been quite a wild ride, with nearly 110k official download on GitHub and pr
  * Added HidGuardian support.
     * Weird jittering / Windows / steam glitching shouldn't happen anymore
     * Streamlined driver install process
-    * Installs HidGuardian as a Windows process - don't move the BetterJoyForCemu folder after installation without uninstalling first.
+    * Installs HidGuardian as a Windows process - don't move the BetterJoy folder after installation without uninstalling first.
 
 ### v3
 * Added XInput Support using ViGEm.
@@ -120,7 +120,7 @@ It's been quite a wild ride, with nearly 110k official download on GitHub and pr
 1. Install drivers
     1. Run *! Driver Install (Run as Admin).bat*
 2. Run BetterJoyForCemu.exe
-    1. If running for the first time, things might glitch out - just close BetterJoyForCemu normally and restart your computer for the drivers to take effect.
+    1. If running for the first time, things might glitch out - just close BetterJoy normally and restart your computer for the drivers to take effect.
     2. If not, see the __Problems__ section.
 3. Connect your controllers.
 4. Start Cemu and ensure CemuHook has the controller selected.
@@ -172,7 +172,7 @@ Before uninstalling the drivers, navigate to http://localhost:26762/ and remove 
 
 __Make pro controller or Joycons visible to other programs again without uninstalled HidGuardian__
 
-BetterJoyForCemu automatically adds Joycons and Pro Controllers to HidGuardian's blacklist upon start-up.
+BetterJoy automatically adds Joycons and Pro Controllers to HidGuardian's blacklist upon start-up.
 
 However, to manually remove the devices from the blacklist, one can navigate to this page: http://localhost:26762/
 
