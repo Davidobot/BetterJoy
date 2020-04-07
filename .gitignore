@@ -261,3 +261,5 @@ __pycache__/
 *.pyc
 /BetterJoyForCemu/FodyWeavers.xml
 /BetterJoyForCemu/FodyWeavers.xsd
+/title.png
+/title.pdn

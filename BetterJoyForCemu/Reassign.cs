@@ -14,23 +14,44 @@ namespace BetterJoyForCemu {
 		private WindowsInput.Events.Sources.IKeyboardEventSource keyboard;
 		private WindowsInput.Events.Sources.IMouseEventSource mouse;
 
+		ContextMenuStrip menu_joy_buttons = new ContextMenuStrip();
+
 		private Control curAssignment;
 
 		public Reassign() {
 			InitializeComponent();
 
-			foreach (Control c in new Control[] { btn_capture, btn_home, btn_sl_l, btn_sl_r, btn_sr_l, btn_sr_r, btn_reset_mouse }) {
+			foreach (int i in Enum.GetValues(typeof(Joycon.Button))) {
+				ToolStripMenuItem temp = new ToolStripMenuItem(Enum.GetName(typeof(Joycon.Button), i));
+				temp.Tag = i;
+				menu_joy_buttons.Items.Add(temp);
+			}
+
+			menu_joy_buttons.ItemClicked += Menu_joy_buttons_ItemClicked;
+
+			foreach (SplitButton c in new SplitButton[] { btn_capture, btn_home, btn_sl_l, btn_sl_r, btn_sr_l, btn_sr_r, btn_reset_mouse }) {
 				c.Tag = c.Name.Substring(4);
 				GetPrettyName(c);
 
 				tip_reassign.SetToolTip(c, "Left-click to detect input.\r\nMiddle-click to clear to default.\r\nRight-click to see more options.");
 				c.MouseDown += Remap;
+				c.Menu = menu_joy_buttons;
+				c.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			}
 		}
 
+		private void Menu_joy_buttons_ItemClicked(object sender, ToolStripItemClickedEventArgs e) {
+			Control c = sender as Control;
+
+			ToolStripItem clickedItem = e.ClickedItem;
+
+			SplitButton caller = (SplitButton)c.Tag;
+			Config.SetValue((string)caller.Tag, "joy_" + (clickedItem.Tag));
+			GetPrettyName(caller);
+		}
+
 		private void Remap(object sender, MouseEventArgs e) {
-			Button c = sender as Button;
-			Debug.WriteLine(e.Button);
+			SplitButton c = sender as SplitButton;
 			switch (e.Button) {
 				case MouseButtons.Left:
 					c.Text = "...";
@@ -87,6 +108,8 @@ namespace BetterJoyForCemu {
 				case "0":
 					if (c == btn_home)
 						c.Text = "Guide";
+					else
+						c.Text = "";
 					break;
 				default:
 					Type t = val.StartsWith("joy_") ? typeof(Joycon.Button) : (val.StartsWith("key_") ? typeof(WindowsInput.Events.KeyCode) : typeof(WindowsInput.Events.ButtonCode));

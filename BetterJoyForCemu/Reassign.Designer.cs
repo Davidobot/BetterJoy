@@ -1,4 +1,59 @@
-﻿namespace BetterJoyForCemu {
+﻿using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Windows.Forms;
+
+namespace BetterJoyForCemu {
+	public class SplitButton : Button {
+		[DefaultValue(null), Browsable(true),
+		DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+		public ContextMenuStrip Menu { get; set; }
+
+		[DefaultValue(20), Browsable(true),
+		DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+		public int SplitWidth { get; set; }
+
+		public SplitButton() {
+			SplitWidth = 20;
+		}
+
+		protected override void OnMouseDown(MouseEventArgs mevent) {
+			var splitRect = new Rectangle(this.Width - this.SplitWidth, 0, this.SplitWidth, this.Height);
+
+			// Figure out if the button click was on the button itself or the menu split
+			if (Menu != null &&
+				((mevent.Button == MouseButtons.Left &&
+				splitRect.Contains(mevent.Location)) || mevent.Button == MouseButtons.Right)) {
+				Menu.Tag = this;
+				Menu.Show(this, 0, this.Height);    // Shows menu under button
+			} else {
+				base.OnMouseDown(mevent);
+			}
+		}
+
+		protected override void OnPaint(PaintEventArgs pevent) {
+			base.OnPaint(pevent);
+
+			if (this.Menu != null && this.SplitWidth > 0) {
+				// Draw the arrow glyph on the right side of the button
+				int arrowX = ClientRectangle.Width - 14;
+				int arrowY = ClientRectangle.Height / 2 - 1;
+
+				var arrowBrush = Enabled ? SystemBrushes.ControlText : SystemBrushes.ButtonShadow;
+				var arrows = new[] { new Point(arrowX, arrowY), new Point(arrowX + 7, arrowY), new Point(arrowX + 3, arrowY + 4) };
+				pevent.Graphics.FillPolygon(arrowBrush, arrows);
+
+				// Draw a dashed separator on the left of the arrow
+				int lineX = ClientRectangle.Width - this.SplitWidth;
+				int lineYFrom = arrowY - 4;
+				int lineYTo = arrowY + 8;
+				using (var separatorPen = new Pen(Brushes.DarkGray) { DashStyle = DashStyle.Dot }) {
+					pevent.Graphics.DrawLine(separatorPen, lineX, lineYFrom, lineX, lineYTo);
+				}
+			}
+		}
+	}
+
 	partial class Reassign {
 		/// <summary>
 		/// Required designer variable.
@@ -25,23 +80,23 @@
 		private void InitializeComponent() {
 			this.components = new System.ComponentModel.Container();
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Reassign));
-			this.btn_capture = new System.Windows.Forms.Button();
+			this.btn_capture = new SplitButton();
 			this.lbl_capture = new System.Windows.Forms.Label();
 			this.lbl_home = new System.Windows.Forms.Label();
-			this.btn_home = new System.Windows.Forms.Button();
+			this.btn_home = new SplitButton();
 			this.lbl_sl_l = new System.Windows.Forms.Label();
-			this.btn_sl_l = new System.Windows.Forms.Button();
+			this.btn_sl_l = new SplitButton();
 			this.lbl_sr_l = new System.Windows.Forms.Label();
-			this.btn_sr_l = new System.Windows.Forms.Button();
+			this.btn_sr_l = new SplitButton();
 			this.lbl_sl_r = new System.Windows.Forms.Label();
-			this.btn_sl_r = new System.Windows.Forms.Button();
+			this.btn_sl_r = new SplitButton();
 			this.lbl_sr_r = new System.Windows.Forms.Label();
-			this.btn_sr_r = new System.Windows.Forms.Button();
-			this.btn_close = new System.Windows.Forms.Button();
-			this.btn_apply = new System.Windows.Forms.Button();
+			this.btn_sr_r = new SplitButton();
+			this.btn_close = new SplitButton();
+			this.btn_apply = new SplitButton();
 			this.tip_reassign = new System.Windows.Forms.ToolTip(this.components);
 			this.lbl_reset_mouse = new System.Windows.Forms.Label();
-			this.btn_reset_mouse = new System.Windows.Forms.Button();
+			this.btn_reset_mouse = new SplitButton();
 			this.SuspendLayout();
 			// 
 			// btn_capture
@@ -184,7 +239,6 @@
 			// 
 			// btn_reset_mouse
 			// 
-			this.btn_reset_mouse.Enabled = false;
 			this.btn_reset_mouse.Location = new System.Drawing.Point(105, 186);
 			this.btn_reset_mouse.Name = "btn_reset_mouse";
 			this.btn_reset_mouse.Size = new System.Drawing.Size(75, 23);
@@ -227,22 +281,22 @@
 
 		#endregion
 
-		private System.Windows.Forms.Button btn_capture;
+		private SplitButton btn_capture;
 		private System.Windows.Forms.Label lbl_capture;
 		private System.Windows.Forms.Label lbl_home;
-		private System.Windows.Forms.Button btn_home;
+		private SplitButton btn_home;
 		private System.Windows.Forms.Label lbl_sl_l;
-		private System.Windows.Forms.Button btn_sl_l;
+		private SplitButton btn_sl_l;
 		private System.Windows.Forms.Label lbl_sr_l;
-		private System.Windows.Forms.Button btn_sr_l;
+		private SplitButton btn_sr_l;
 		private System.Windows.Forms.Label lbl_sl_r;
-		private System.Windows.Forms.Button btn_sl_r;
+		private SplitButton btn_sl_r;
 		private System.Windows.Forms.Label lbl_sr_r;
-		private System.Windows.Forms.Button btn_sr_r;
-		private System.Windows.Forms.Button btn_close;
-		private System.Windows.Forms.Button btn_apply;
+		private SplitButton btn_sr_r;
+		private SplitButton btn_close;
+		private SplitButton btn_apply;
 		private System.Windows.Forms.ToolTip tip_reassign;
 		private System.Windows.Forms.Label lbl_reset_mouse;
-		private System.Windows.Forms.Button btn_reset_mouse;
+		private SplitButton btn_reset_mouse;
 	}
 }
