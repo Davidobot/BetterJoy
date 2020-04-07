@@ -1,23 +1,21 @@
-# BetterJoyForCemu v5 (v6 Nightly)
-Allows the Nintendo Switch Pro Controller and Joycons to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), and system-wide with generic XInput support.
+<p align="center">
+  <img src="title.png">
+</p>
+
+# BetterJoyForCemu v6
+Allows the Nintendo Switch Pro Controller, Joycons, and Switch SNES controller to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), [Dolphin](https://dolphin-emu.org/), and system-wide with generic XInput support.
+
+It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
 
 If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
 
 #### Personal note
 Thank you for using my software and all the constructive feedback I've been getting about it. I started writing this project a while back and have since then learnt a lot more about programming and software development in general. I don't have too much time to work on this project, but I will try to fix bugs when and if they arise. Thank you for your patience in that regard too!
 
-It's been quite a wild ride, with nearly 90k official download on GitHub and probably many more through the nightlies. I think this project was responsible for both software jobs I landed so far, so I am quite proud of it.
+It's been quite a wild ride, with nearly 110k official download on GitHub and probably many more through the nightlies. I think this project was responsible for both software jobs I landed so far, so I am quite proud of it.
 
-
-## Nightly builds (updated 02/04/20)
-Due to popular request (and my fear of releasing full builds without many new features), I will post newer "unofficial" builds here so you can test out the latest features and fixes.
-* [64-bit](https://drive.google.com/open?id=1FnTqo4ZBte_P6gLRP4dK9t8nXPeu5gfc)
-* [32-bit](https://drive.google.com/open?id=1VQ471LLBd3rqsNpeNGalpHNDYV8Vi5IQ)
-
-### Screenshots
-Collapsed             |  Expanded
-:-------------------------:|:-------------------------:
-![Example](https://user-images.githubusercontent.com/16619943/67919451-bf8e5680-fb76-11e9-995e-7193b87548e1.png)|![Example](./Examples/example3.png)
+### Screenshot
+![Example](https://user-images.githubusercontent.com/16619943/67919451-bf8e5680-fb76-11e9-995e-7193b87548e1.png)
 
 # Changelog
 ### v6
@@ -59,8 +57,8 @@ Collapsed             |  Expanded
 * Improved start-up and shut-down time
    * improves usability immensely
 * Added option to disable motion server
-* Fixed USB lag?
-   * Need confirmation, after - I'll release full v6
+* Fixed USB lag (hopefully)
+* Added option to remap special buttons to keybindings
 
 ### v5
 * Progressive scanning
