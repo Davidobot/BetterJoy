@@ -643,7 +643,7 @@ namespace BetterJoyForCemu {
 					attempts = 0;
 
 					// Needed for USB to not time out; I think USB requires a reply message after every packet sent
-					//if (isUSB)
+					if (isUSB)
 						SendRumble(rumble_obj.GetData());
 				} else if (attempts > 240) {
 					state = state_.DROPPED;
