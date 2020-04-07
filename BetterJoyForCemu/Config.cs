@@ -10,7 +10,7 @@ namespace BetterJoyForCemu {
 		const string PATH = "settings";
 		static Dictionary<string, string> variables = new Dictionary<string, string>();
 
-		const int settingsNum = 9; // currently - ProgressiveScan, StartInTray + special buttons
+		const int settingsNum = 10; // currently - ProgressiveScan, StartInTray + special buttons
 
 		public static string GetDefaultValue(string s) {
 			switch(s) {

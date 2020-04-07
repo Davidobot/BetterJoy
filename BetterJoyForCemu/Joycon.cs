@@ -498,16 +498,19 @@ namespace BetterJoyForCemu {
 					packetCounter++;
 					if (Program.server != null)
 						Program.server.NewReportIncoming(this);
-
-					if (xin != null)
-						try {
-							xin.SendReport(report);
-						} catch (Exception e) {
-							// ignore /shrug
-						}
 				}
 
 				DoThingsWithButtons();
+				SetXInputReportState();
+
+				// no reason to send XInput reports so often
+				if (xin != null) {
+					try {
+						xin.SendReport(report);
+					} catch (Exception e) {
+						// ignore /shrug
+					}
+				}
 
 				if (ts_en == raw_buf[1] && !isSnes) {
 					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
@@ -521,25 +524,35 @@ namespace BetterJoyForCemu {
 
 		private void Simulate(string s, bool click=true, bool up=false) {
 			if (s.StartsWith("key_")) {
+				WindowsInput.Events.KeyCode key = (WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4));
 				if (click) {
-					WindowsInput.Simulate.Events().Click((WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4))).Invoke();
+					WindowsInput.Simulate.Events().Click(key).Invoke();
 				} else {
 					if (up) {
-						WindowsInput.Simulate.Events().Release((WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4))).Invoke();
+						WindowsInput.Simulate.Events().Release(key).Invoke();
 					} else {
-						WindowsInput.Simulate.Events().Hold((WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4))).Invoke();
+						WindowsInput.Simulate.Events().Hold(key).Invoke();
 					}
 				}
 			} else if (s.StartsWith("mse_")) {
+				WindowsInput.Events.ButtonCode button = (WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4));
 				if (click) {
-					WindowsInput.Simulate.Events().Click((WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4))).Invoke();
+					WindowsInput.Simulate.Events().Click(button).Invoke();
 				} else {
 					if (up) {
-						WindowsInput.Simulate.Events().Release((WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4))).Invoke();
+						WindowsInput.Simulate.Events().Release(button).Invoke();
 					} else {
-						WindowsInput.Simulate.Events().Hold((WindowsInput.Events.ButtonCode)Int32.Parse(s.Substring(4))).Invoke();
+						WindowsInput.Simulate.Events().Hold(button).Invoke();
 					}
 				}
+			}
+		}
+
+		// For Joystick->Joystick inputs
+		private void SimulateContinous(int origin, string s) {
+			if (s.StartsWith("joy_")) {
+				int button = Int32.Parse(s.Substring(4));
+				buttons[button] = buttons[origin];
 			}
 		}
 
@@ -550,22 +563,40 @@ namespace BetterJoyForCemu {
 				Simulate(Config.Value("capture"));
 			if (buttons_down[(int)Button.HOME])
 				Simulate(Config.Value("home"));
-			if (isLeft && buttons_down[(int)Button.SL])
-				Simulate(Config.Value("sl_l"), false, false);
-			if (isLeft && buttons_up[(int)Button.SL])
-				Simulate(Config.Value("sl_l"), false, true);
-			if (isLeft && buttons_down[(int)Button.SR])
-				Simulate(Config.Value("sr_l"), false, false);
-			if (isLeft && buttons_up[(int)Button.SR])
-				Simulate(Config.Value("sr_l"), false, true);
-			if (!isLeft && buttons_down[(int)Button.SL])
-				Simulate(Config.Value("sl_r"), false, false);
-			if (!isLeft && buttons_up[(int)Button.SL])
-				Simulate(Config.Value("sl_r"), false, true);
-			if (!isLeft && buttons_down[(int)Button.SR])
-				Simulate(Config.Value("sr_r"), false, false);
-			if (!isLeft && buttons_up[(int)Button.SR])
-				Simulate(Config.Value("sr_r"), false, true);
+			if (buttons[(int)Button.CAPTURE])
+				SimulateContinous((int)Button.CAPTURE, Config.Value("capture"));
+			if (buttons[(int)Button.HOME])
+				SimulateContinous((int)Button.HOME, Config.Value("home"));
+
+			if (isLeft) {
+				if (buttons_down[(int)Button.SL])
+					Simulate(Config.Value("sl_l"), false, false);
+				if (buttons_up[(int)Button.SL])
+					Simulate(Config.Value("sl_l"), false, true);
+				if (buttons_down[(int)Button.SR])
+					Simulate(Config.Value("sr_l"), false, false);
+				if (buttons_up[(int)Button.SR])
+					Simulate(Config.Value("sr_l"), false, true);
+
+				if (buttons[(int)Button.SL])
+					SimulateContinous((int)Button.SL, Config.Value("sl_l"));
+				if (buttons[(int)Button.SR])
+					SimulateContinous((int)Button.SR, Config.Value("sr_l"));
+			} else {
+				if (buttons_down[(int)Button.SL])
+					Simulate(Config.Value("sl_r"), false, false);
+				if (buttons_up[(int)Button.SL])
+					Simulate(Config.Value("sl_r"), false, true);
+				if (buttons_down[(int)Button.SR])
+					Simulate(Config.Value("sr_r"), false, false);
+				if (buttons_up[(int)Button.SR])
+					Simulate(Config.Value("sr_r"), false, true);
+
+				if (buttons[(int)Button.SL])
+					SimulateContinous((int)Button.SL, Config.Value("sl_r"));
+				if (buttons[(int)Button.SR])
+					SimulateContinous((int)Button.SR, Config.Value("sr_r"));
+			}			
 
 			if (extraGyroFeature == "joy") {
 				// TODO
@@ -709,7 +740,7 @@ namespace BetterJoyForCemu {
 				buttons[(int)Button.SR] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x10) != 0;
 				buttons[(int)Button.SL] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x20) != 0;
 
-				if (isPro && xin != null) {
+				if (isPro) {
 					buttons[(int)Button.B] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x01 : 0x04)) != 0;
 					buttons[(int)Button.A] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x04 : 0x08)) != 0;
 					buttons[(int)Button.X] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x02 : 0x02)) != 0;
@@ -718,22 +749,6 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.STICK2] = ((report_buf[4] & (!isLeft ? 0x08 : 0x04)) != 0);
 					buttons[(int)Button.SHOULDER2_1] = (report_buf[3 + (!isLeft ? 2 : 0)] & 0x40) != 0;
 					buttons[(int)Button.SHOULDER2_2] = (report_buf[3 + (!isLeft ? 2 : 0)] & 0x80) != 0;
-
-					report.SetButtonState(Xbox360Buttons.A, buttons[(int)(!swapAB ? Button.B : Button.A)]);
-					report.SetButtonState(Xbox360Buttons.B, buttons[(int)(!swapAB ? Button.A : Button.B)]);
-					report.SetButtonState(Xbox360Buttons.Y, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
-					report.SetButtonState(Xbox360Buttons.X, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
-					report.SetButtonState(Xbox360Buttons.Up, buttons[(int)Button.DPAD_UP]);
-					report.SetButtonState(Xbox360Buttons.Down, buttons[(int)Button.DPAD_DOWN]);
-					report.SetButtonState(Xbox360Buttons.Left, buttons[(int)Button.DPAD_LEFT]);
-					report.SetButtonState(Xbox360Buttons.Right, buttons[(int)Button.DPAD_RIGHT]);
-					report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS]);
-					report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS]);
-					report.SetButtonState(Xbox360Buttons.Guide, buttons[(int)Button.HOME]);
-					report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)Button.SHOULDER_1]);
-					report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)Button.SHOULDER2_1]);
-					report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
-					report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)Button.STICK2]);
 				}
 
 				if (other != null && other != this) {
@@ -756,42 +771,6 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
 				}
 
-				if (!isPro && xin != null) {
-					if (other != null) { // no need for && other != this
-						report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
-						report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
-						report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
-						report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
-						report.SetButtonState(Xbox360Buttons.Up, buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)]);
-						report.SetButtonState(Xbox360Buttons.Down, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)]);
-						report.SetButtonState(Xbox360Buttons.Left, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)]);
-						report.SetButtonState(Xbox360Buttons.Right, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)]);
-						report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS]);
-						report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS]);
-						report.SetButtonState(Xbox360Buttons.Guide, buttons[(int)Button.HOME]);
-						report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
-						report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
-						report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
-						report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
-					} else { // single joycon mode
-						report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
-						report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
-						report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
-						report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
-						report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
-						report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
-
-						report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)Button.SL]);
-						report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)Button.SR]);
-
-						report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
-					}
-				}
-
-				// overwrite guide button if it's custom-mapped
-				if (Config.Value("home") != "0")
-					report.SetButtonState(Xbox360Buttons.Guide, false);
-
 				lock (buttons_up) {
 					lock (buttons_down) {
 						for (int i = 0; i < buttons.Length; ++i) {
@@ -802,23 +781,78 @@ namespace BetterJoyForCemu {
 				}
 			}
 
-			if (xin != null) {
-				if (!isSnes) {
-					if (other != null || isPro) { // no need for && other != this
-						report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
-						report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
-						report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
-						report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
-					} else { // single joycon mode
-						report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
-						report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
-					}
+			return 0;
+		}
+
+		private void SetXInputReportState() {
+			if (xin == null)
+				return;
+
+			if (isPro) {
+				report.SetButtonState(Xbox360Buttons.A, buttons[(int)(!swapAB ? Button.B : Button.A)]);
+				report.SetButtonState(Xbox360Buttons.B, buttons[(int)(!swapAB ? Button.A : Button.B)]);
+				report.SetButtonState(Xbox360Buttons.Y, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
+				report.SetButtonState(Xbox360Buttons.X, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
+				report.SetButtonState(Xbox360Buttons.Up, buttons[(int)Button.DPAD_UP]);
+				report.SetButtonState(Xbox360Buttons.Down, buttons[(int)Button.DPAD_DOWN]);
+				report.SetButtonState(Xbox360Buttons.Left, buttons[(int)Button.DPAD_LEFT]);
+				report.SetButtonState(Xbox360Buttons.Right, buttons[(int)Button.DPAD_RIGHT]);
+				report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS]);
+				report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS]);
+				report.SetButtonState(Xbox360Buttons.Guide, buttons[(int)Button.HOME]);
+				report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)Button.SHOULDER_1]);
+				report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)Button.SHOULDER2_1]);
+				report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
+				report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)Button.STICK2]);
+			} else {
+				if (other != null) { // no need for && other != this
+					report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
+					report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
+					report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
+					report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
+					report.SetButtonState(Xbox360Buttons.Up, buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)]);
+					report.SetButtonState(Xbox360Buttons.Down, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)]);
+					report.SetButtonState(Xbox360Buttons.Left, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)]);
+					report.SetButtonState(Xbox360Buttons.Right, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)]);
+					report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS]);
+					report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS]);
+					report.SetButtonState(Xbox360Buttons.Guide, buttons[(int)Button.HOME]);
+					report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
+					report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
+					report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
+					report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
+				} else { // single joycon mode
+					report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
+					report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
+					report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
+					report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
+					report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
+					report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
+
+					report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)Button.SL]);
+					report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)Button.SR]);
+
+					report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
 				}
-				report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Int16.MaxValue : 0));
-				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
 			}
 
-			return 0;
+			// overwrite guide button if it's custom-mapped
+			if (Config.Value("home") != "0")
+				report.SetButtonState(Xbox360Buttons.Guide, false);
+
+			if (!isSnes) {
+				if (other != null || isPro) { // no need for && other != this
+					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
+					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
+					report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
+					report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
+				} else { // single joycon mode
+					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
+					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
+				}
+			}
+			report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Int16.MaxValue : 0));
+			report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
 		}
 
 		// Get Gyro/Accel data
