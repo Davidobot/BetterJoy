@@ -522,6 +522,8 @@ namespace BetterJoyForCemu {
 			return ret;
 		}
 
+		bool dragToggle = Boolean.Parse(ConfigurationManager.AppSettings["DragToggle"]);
+		Dictionary<int, bool> mouse_toggle_btn = new Dictionary<int, bool>();
 		private void Simulate(string s, bool click=true, bool up=false) {
 			if (s.StartsWith("key_")) {
 				WindowsInput.Events.KeyCode key = (WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4));
@@ -539,10 +541,22 @@ namespace BetterJoyForCemu {
 				if (click) {
 					WindowsInput.Simulate.Events().Click(button).Invoke();
 				} else {
-					if (up) {
-						WindowsInput.Simulate.Events().Release(button).Invoke();
+					if (dragToggle) {
+						if (!up) {
+							bool release;
+							mouse_toggle_btn.TryGetValue((int)button, out release);
+							if (release)
+								WindowsInput.Simulate.Events().Release(button).Invoke();
+							else
+								WindowsInput.Simulate.Events().Hold(button).Invoke();
+							mouse_toggle_btn[(int)button] = !release;
+						}
 					} else {
-						WindowsInput.Simulate.Events().Hold(button).Invoke();
+						if (up) {
+							WindowsInput.Simulate.Events().Release(button).Invoke();
+						} else {
+							WindowsInput.Simulate.Events().Hold(button).Invoke();
+						}
 					}
 				}
 			}
@@ -552,7 +566,7 @@ namespace BetterJoyForCemu {
 		private void SimulateContinous(int origin, string s) {
 			if (s.StartsWith("joy_")) {
 				int button = Int32.Parse(s.Substring(4));
-				buttons[button] = buttons[origin];
+				buttons[button] |= buttons[origin];
 			}
 		}
 
@@ -720,6 +734,8 @@ namespace BetterJoyForCemu {
 						down_[i] = buttons[i];
 					}
 				}
+				buttons = new bool[20];
+
 				buttons[(int)Button.DPAD_DOWN] = (report_buf[3 + (isLeft ? 2 : 0)] & (isLeft ? 0x01 : 0x04)) != 0;
 				buttons[(int)Button.DPAD_RIGHT] = (report_buf[3 + (isLeft ? 2 : 0)] & (isLeft ? 0x04 : 0x08)) != 0;
 				buttons[(int)Button.DPAD_UP] = (report_buf[3 + (isLeft ? 2 : 0)] & (isLeft ? 0x02 : 0x02)) != 0;
