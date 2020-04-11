@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Davidobot/BetterJoyForCemu/f0bbe4fbb110069c0485397bf5b01a5d741a6c5d/title.png">
+  <img src="title.png">
 </p>
 
 # BetterJoy v6
@@ -163,6 +163,7 @@ Current settings are:
   * "mouse" allows you to use gyro input as mouse input. Press stick buttons to reset
 * GyroMouseSensitivity                  *(default: 50)*
 * GyroMouseLeftHanded                   *(default: false)*
+* DragToggle                            *(default: false)*
 # Problems
 __Make sure you installed the drivers!!__
 
