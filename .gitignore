@@ -263,3 +263,5 @@ __pycache__/
 /BetterJoyForCemu/FodyWeavers.xsd
 /title.png
 /title.pdn
+/Drivers
+/! Install the drivers in the Drivers folder

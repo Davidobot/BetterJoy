@@ -93,8 +93,8 @@ namespace BetterJoyForCemu {
 			this.btn_sl_r = new BetterJoyForCemu.SplitButton();
 			this.lbl_sr_r = new System.Windows.Forms.Label();
 			this.btn_sr_r = new BetterJoyForCemu.SplitButton();
-			this.btn_close = new BetterJoyForCemu.SplitButton();
-			this.btn_apply = new BetterJoyForCemu.SplitButton();
+			this.btn_close = new Button();
+			this.btn_apply = new Button();
 			this.tip_reassign = new System.Windows.Forms.ToolTip(this.components);
 			this.lbl_reset_mouse = new System.Windows.Forms.Label();
 			this.btn_reset_mouse = new BetterJoyForCemu.SplitButton();
@@ -316,8 +316,8 @@ namespace BetterJoyForCemu {
 		private SplitButton btn_sl_r;
 		private System.Windows.Forms.Label lbl_sr_r;
 		private SplitButton btn_sr_r;
-		private SplitButton btn_close;
-		private SplitButton btn_apply;
+		private Button btn_close;
+		private Button btn_apply;
 		private System.Windows.Forms.ToolTip tip_reassign;
 		private System.Windows.Forms.Label lbl_reset_mouse;
 		private SplitButton btn_reset_mouse;
