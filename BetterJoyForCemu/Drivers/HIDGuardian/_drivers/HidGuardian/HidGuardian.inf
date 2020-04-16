@@ -1,0 +1,77 @@
+;
+; HidGuardian.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%ManufacturerName%
+CatalogFile=HidGuardian.cat
+DriverVer = 06/17/2017,1.9.0.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+HidGuardian_Device_CoInstaller_CopyFiles = 11
+
+; ================= Class section =====================
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+HidGuardian.sys  = 1,,
+WdfCoInstaller01009.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%HidGuardian.DeviceDesc%=HidGuardian_Device, Root\HidGuardian
+
+[HidGuardian_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+HidGuardian.sys
+
+;-------------- Service installation
+[HidGuardian_Device.NT.Services]
+AddService = HidGuardian,%SPSVCINST_ASSOCSERVICE%, HidGuardian_Service_Inst
+
+; -------------- HidGuardian driver install sections
+[HidGuardian_Service_Inst]
+DisplayName    = %HidGuardian.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\HidGuardian.sys
+
+;
+;--- HidGuardian_Device Coinstaller installation ------
+;
+
+[HidGuardian_Device.NT.CoInstallers]
+AddReg=HidGuardian_Device_CoInstaller_AddReg
+CopyFiles=HidGuardian_Device_CoInstaller_CopyFiles
+
+[HidGuardian_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller01009.dll,WdfCoInstaller"
+
+[HidGuardian_Device_CoInstaller_CopyFiles]
+WdfCoInstaller01009.dll
+
+[HidGuardian_Device.NT.Wdf]
+KmdfService =  HidGuardian, HidGuardian_wdfsect
+[HidGuardian_wdfsect]
+KmdfLibraryVersion = 1.9
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Benjamin Höglinger-Stelzer"
+DiskName = "HidGuardian Installation Disk"
+HidGuardian.DeviceDesc = "HidGuardian Virtual Device"
+HidGuardian.SVCDESC = "HidGuardian Service"

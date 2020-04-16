@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>HidGuardian Configuration</title>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="/Content/dep/jquery-3.2.1.min.js"></script>
+    <script src="/Content/dep/jquery.form.min.js"></script>
+    <link rel="stylesheet" href="/Content/dep/bootstrap.min.css">
+    <link rel="stylesheet" href="/Content/dep/bootstrap-theme.min.css">
+    <script src="/Content/dep/bootstrap.min.js"></script>
+    <script src="/Content/dep/knockout-min.js"></script>
+    <script src="/Content/dep/knockout.mapping.min.js"></script>
+
+    <script src="Content/custom/api-requests.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <h1>HidGuardian Configuration</h1>
+        <p>Heya, you've found the HidCerberus Service configuration page.</p>
+        <p>Here you can change settings affecting HidGuardian and view what's going on under the hood.</p>
+
+        <!-- List affected devices -->
+        <div class="panel panel-default">
+            <div class="panel-heading">Currently affected devices</div>
+            <div class="panel-body" id="affected-devices">
+                <p>
+                    <span class="pull-right">
+                        <button id="purge-affected-devices" type="submit" class="btn btn-danger btn-sm">Remove all</button>
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <!-- List/add available devices -->
+        <div class="panel panel-default">
+            <div class="panel-heading">Available USB/Bluetooth/HID devices</div>
+            <div class="panel-body" id="available-devices">
+                <ul class="list-group" data-bind="foreach: hidDevices">
+                    <li class="list-group-item">
+                        <h4 class="list-group-item-heading">
+                            <span data-bind="text: manufacturer"></span>
+                            <span data-bind="if: (!manufacturer)">Unknown</span>
+                            <span data-bind="text: productName"></span>
+                            <span data-bind="if: (!productName)">Unknown</span>
+                            <span class="pull-right">
+                                <button type="button" class="available-hide btn btn-success btn-xs" data-bind="click: $parent.hideDevice">Hide</button>
+                            </span>
+                        </h4>
+                        <p class="list-group-item-text">
+                            <span class="label label-default" data-bind="text: hardwareId"></span>
+                        </p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Add affected devices -->
+        <div class="panel panel-default">
+            <div class="panel-heading">Add affected devices</div>
+            <div class="panel-body">
+                <form id="add-affected-devices" method="post" action="/v1/hidguardian/affected/add">
+                    <div class="form-group">
+                        <label for="hwids">Enter Hardware IDs below (one line per ID)</label>
+                        <textarea class="form-control" name="hwids" id="hwids" rows="5"
+                                  placeholder="HID\VID_0079&amp;PID_0011&amp;REV_0106&#10;HID\{00001124-0000-1000-8000-00805f9b34fb}_VID&amp;0002054c_PID&amp;05c4"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- List whitelisted PIDs -->
+        <div class="panel panel-default">
+            <div class="panel-heading">Currently whitelisted process IDs</div>
+            <div class="panel-body" id="whitelisted-pids">
+                <p>
+                    <span class="pull-right">
+                        <button id="purge-whitelisted-pids" type="submit" class="btn btn-danger btn-sm">Remove all</button>
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <div id="submitted-hide-dialog" class="modal fade" role="dialog">
+            <div class="modal-dialog">
+
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Device added to blocklist successfully</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Access to the selected device is now blocked from any process which is not whitelisted.
+                            For the changes to take effect <strong>you have to unplug the device and plug it back in</strong>.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default hide-dialog-close" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <p class="text-muted">This software is part of the <a href="http://vigem.org/">Virtual Gamepad Emulation Framework</a>.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="Content/custom/viewmodels.js"></script>
+</body>
+</html>

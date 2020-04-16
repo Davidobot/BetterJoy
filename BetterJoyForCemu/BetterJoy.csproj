@@ -166,10 +166,30 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Drivers\HIDGuardian\HIDGuardian Install %28Run as Admin%29.bat" />
+    <None Include="Drivers\HIDGuardian\HIDGuardian Uninstall %28Run as Admin%29.bat" />
+    <None Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\HidCerberus.Srv.exe.config" />
+    <None Include="Drivers\HIDGuardian\_drivers\HidGuardian\hidguardian.cat" />
+    <None Include="Drivers\HIDGuardian\_drivers\HidGuardian\HidGuardian.sys" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".nuget\mouse-keyboard-hook-logo.png" />
+    <Content Include="Drivers\HIDGuardian\_drivers\devcon.exe" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Lib.dll" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\custom\api-requests.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\custom\viewmodels.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\bootstrap-theme.min.css" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\bootstrap.min.css" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\bootstrap.min.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\jquery-3.2.1.min.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\jquery.form.min.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\knockout-min.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\knockout.mapping.min.js" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\HidCerberus.Srv.exe" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\index.html" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidGuardian\HidGuardian.inf" />
+    <Content Include="Drivers\HIDGuardian\_drivers\HidGuardian\WdfCoinstaller01009.dll" />
     <Content Include="Drivers\README.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -216,6 +236,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

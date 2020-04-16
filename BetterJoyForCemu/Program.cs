@@ -360,6 +360,7 @@ namespace BetterJoyForCemu {
 			pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
 
 			if (useHIDG) {
+				form.console.AppendText("HidGuardian is enabled.\r\n");
 				try {
 					var HidCerberusService = new ServiceController("HidCerberus Service");
 					if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
@@ -393,8 +394,6 @@ namespace BetterJoyForCemu {
 					form.console.AppendText("Unable to add program to whitelist.\r\n");
 					useHIDG = false;
 				}
-			} else {
-				form.console.AppendText("HidGuardian is disabled.\r\n");
 			}
 
 			if (Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"])) {
