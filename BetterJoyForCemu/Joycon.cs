@@ -14,26 +14,9 @@ using Nefarius.ViGEm.Client.Targets.Xbox360;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WindowsInput;
+using Nefarius.ViGEm.Client.Targets.DualShock4;
 
 namespace BetterJoyForCemu {
-	// For mouse movement
-	public class Win32 {
-		[DllImport("User32.Dll")]
-		public static extern long SetCursorPos(int x, int y);
-
-		[DllImport("User32.dll")]
-		public static extern bool GetCursorPos(out POINT lpPoint);
-
-		[DllImport("User32.Dll")]
-		public static extern bool ClientToScreen(IntPtr hWnd, ref POINT point);
-
-		[StructLayout(LayoutKind.Sequential)]
-		public struct POINT {
-			public int x;
-			public int y;
-		}
-	}
-
 	public class Joycon {
 		float timing = 120.0f;
 
@@ -240,6 +223,8 @@ namespace BetterJoyForCemu {
 
 		public Xbox360Controller xin;
 		public Xbox360Report report;
+		public DualShock4Controller ds4;
+		public DualShock4Report ds4_report;
 
 		int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
 		int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
@@ -248,6 +233,7 @@ namespace BetterJoyForCemu {
 		bool toRumble = Boolean.Parse(ConfigurationManager.AppSettings["EnableRumble"]);
 
 		bool showAsXInput = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]);
+		bool showAsDS4 = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsDS4"]);
 
 		public MainForm form;
 
@@ -284,6 +270,21 @@ namespace BetterJoyForCemu {
 					xin.FeedbackReceived += ReceiveRumble;
 				report = new Xbox360Report();
 			}
+
+			if (showAsDS4) {
+				ds4 = new DualShock4Controller(Program.emClient);
+
+				if (toRumble)
+					ds4.FeedbackReceived += Ds4_FeedbackReceived;
+				ds4_report = new DualShock4Report();
+			}
+		}
+
+		private void Ds4_FeedbackReceived(object sender, DualShock4FeedbackReceivedEventArgs e) {
+			SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
+
+			if (other != null && other != this)
+				other.SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
 		}
 
 		public void getActiveData() {
@@ -451,6 +452,10 @@ namespace BetterJoyForCemu {
 				xin.Disconnect(); xin.Dispose();
 			}
 
+			if (ds4 != null) {
+				ds4.Disconnect(); ds4.Dispose();
+			}
+
 			if (state > state_.NO_JOYCONS) {
 				HIDapi.hid_set_nonblocking(handle, 0);
 
@@ -502,11 +507,21 @@ namespace BetterJoyForCemu {
 
 				DoThingsWithButtons();
 				SetXInputReportState();
+				SetDS4ReportState();
 
 				// no reason to send XInput reports so often
 				if (xin != null) {
 					try {
 						xin.SendReport(report);
+
+					} catch (Exception e) {
+						// ignore /shrug
+					}
+				}
+
+				if (ds4 != null) {
+					try {
+						ds4.SendReport(ds4_report);
 					} catch (Exception e) {
 						// ignore /shrug
 					}
@@ -863,12 +878,127 @@ namespace BetterJoyForCemu {
 				}
 			}
 
-			if (other != null) {
+			if (other != null || isPro) {
 				report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Int16.MaxValue : 0));
 				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
 			} else {
 				report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Int16.MaxValue : 0));
 				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
+			}
+		}
+
+		// TODO: Check sticks AND/OR DPAD - wrong translation
+		private void SetDS4ReportState() {
+			if (ds4 == null)
+				return;
+
+			if (isPro) {
+				ds4_report.SetButtonState(DualShock4Buttons.Cross, buttons[(int)(!swapAB ? Button.B : Button.A)]);
+				ds4_report.SetButtonState(DualShock4Buttons.Circle, buttons[(int)(!swapAB ? Button.A : Button.B)]);
+				ds4_report.SetButtonState(DualShock4Buttons.Triangle, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
+				ds4_report.SetButtonState(DualShock4Buttons.Square, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
+
+				ds4_report.SetDPad(DualShock4DPadValues.None);
+				if (buttons[(int)Button.DPAD_UP]) {
+					if (buttons[(int)Button.DPAD_LEFT])
+						ds4_report.SetDPad(DualShock4DPadValues.Northwest);
+					else if (buttons[(int)Button.DPAD_RIGHT])
+						ds4_report.SetDPad(DualShock4DPadValues.Northeast);
+					else
+						ds4_report.SetDPad(DualShock4DPadValues.North);
+				}
+				if (buttons[(int)Button.DPAD_DOWN]) {
+					if (buttons[(int)Button.DPAD_LEFT])
+						ds4_report.SetDPad(DualShock4DPadValues.Southwest);
+					else if (buttons[(int)Button.DPAD_RIGHT])
+						ds4_report.SetDPad(DualShock4DPadValues.Southeast);
+					else
+						ds4_report.SetDPad(DualShock4DPadValues.South);
+				}
+				if (buttons[(int)Button.DPAD_LEFT])
+					ds4_report.SetDPad(DualShock4DPadValues.West);
+				if (buttons[(int)Button.DPAD_RIGHT])
+					ds4_report.SetDPad(DualShock4DPadValues.East);
+
+				ds4_report.SetButtonState(DualShock4Buttons.Share, buttons[(int)Button.MINUS]);
+				ds4_report.SetButtonState(DualShock4Buttons.Options, buttons[(int)Button.PLUS]);
+				ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Ps, buttons[(int)Button.HOME]);
+				ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Touchpad, buttons[(int)Button.CAPTURE]);
+				ds4_report.SetButtonState(DualShock4Buttons.ShoulderLeft, buttons[(int)Button.SHOULDER_1]);
+				ds4_report.SetButtonState(DualShock4Buttons.ShoulderRight, buttons[(int)Button.SHOULDER2_1]);
+				ds4_report.SetButtonState(DualShock4Buttons.ThumbLeft, buttons[(int)Button.STICK]);
+				ds4_report.SetButtonState(DualShock4Buttons.ThumbRight, buttons[(int)Button.STICK2]);
+			} else {
+				if (other != null) { // no need for && other != this
+					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Cross : DualShock4Buttons.Circle, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
+					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Circle : DualShock4Buttons.Cross, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
+					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Triangle : DualShock4Buttons.Square, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
+					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Square : DualShock4Buttons.Triangle, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
+
+					if (buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)])
+						if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
+							ds4_report.SetDPad(DualShock4DPadValues.Northwest);
+						else if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
+							ds4_report.SetDPad(DualShock4DPadValues.Northeast);
+						else
+							ds4_report.SetDPad(DualShock4DPadValues.North);
+					if (buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)])
+						if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
+							ds4_report.SetDPad(DualShock4DPadValues.Southwest);
+						else if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
+							ds4_report.SetDPad(DualShock4DPadValues.Southeast);
+						else
+							ds4_report.SetDPad(DualShock4DPadValues.South);
+					if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
+						ds4_report.SetDPad(DualShock4DPadValues.West);
+					if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
+						ds4_report.SetDPad(DualShock4DPadValues.East);
+
+					ds4_report.SetButtonState(DualShock4Buttons.Share, buttons[(int)Button.MINUS]);
+					ds4_report.SetButtonState(DualShock4Buttons.Options, buttons[(int)Button.PLUS]);
+					ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Ps, buttons[(int)Button.HOME]);
+					ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Touchpad, buttons[(int)Button.CAPTURE]);
+					ds4_report.SetButtonState(DualShock4Buttons.ShoulderLeft, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
+					ds4_report.SetButtonState(DualShock4Buttons.ShoulderRight, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
+					ds4_report.SetButtonState(DualShock4Buttons.ThumbLeft, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
+					ds4_report.SetButtonState(DualShock4Buttons.ThumbRight, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
+				} else { // single joycon mode
+					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Cross : DualShock4Buttons.Circle, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
+					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Circle : DualShock4Buttons.Cross, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
+					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Triangle : DualShock4Buttons.Square, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
+					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Square : DualShock4Buttons.Triangle, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
+					ds4_report.SetButtonState(DualShock4Buttons.Share, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
+					ds4_report.SetButtonState(DualShock4Buttons.Options, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
+
+					ds4_report.SetButtonState(DualShock4Buttons.ShoulderLeft, buttons[(int)Button.SL]);
+					ds4_report.SetButtonState(DualShock4Buttons.ShoulderRight, buttons[(int)Button.SR]);
+
+					ds4_report.SetButtonState(DualShock4Buttons.ThumbLeft, buttons[(int)Button.STICK]);
+				}
+			}
+
+			// overwrite guide button if it's custom-mapped
+			if (Config.Value("home") != "0")
+				ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Ps, false);
+
+			if (!isSnes) {
+				if (other != null || isPro) { // no need for && other != this
+					ds4_report.SetAxis(DualShock4Axes.LeftThumbX, CastStickValueByte((other == this && !isLeft) ? -stick2[0] : -stick[0]));
+					ds4_report.SetAxis(DualShock4Axes.LeftThumbY, CastStickValueByte((other == this && !isLeft) ? stick2[1] : stick[1]));
+					ds4_report.SetAxis(DualShock4Axes.RightThumbX, CastStickValueByte((other == this && !isLeft) ? -stick[0] : -stick2[0]));
+					ds4_report.SetAxis(DualShock4Axes.RightThumbY, CastStickValueByte((other == this && !isLeft) ? stick[1] : stick2[1]));
+				} else { // single joycon mode
+					ds4_report.SetAxis(DualShock4Axes.LeftThumbY, CastStickValueByte((isLeft ? 1 : -1) * stick[0]));
+					ds4_report.SetAxis(DualShock4Axes.LeftThumbX, CastStickValueByte((isLeft ? -1 : 1) * stick[1]));
+				}
+			}
+
+			if (other != null || isPro) {
+				ds4_report.SetAxis(DualShock4Axes.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Byte.MaxValue : 0));
+				ds4_report.SetAxis(DualShock4Axes.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
+			} else {
+				ds4_report.SetAxis(DualShock4Axes.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
+				ds4_report.SetAxis(DualShock4Axes.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			}
 		}
 
@@ -986,6 +1116,10 @@ namespace BetterJoyForCemu {
 
 		private short CastStickValue(float stick_value) {
 			return (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick_value * (stick_value > 0 ? Int16.MaxValue : -Int16.MinValue)));
+		}
+
+		private byte CastStickValueByte(float stick_value) {
+			return (byte)Math.Max(Byte.MinValue, Math.Min(Byte.MaxValue, 127 - stick_value * Byte.MaxValue));
 		}
 
 		public void SetRumble(float low_freq, float high_freq, float amp, int time = 0) {

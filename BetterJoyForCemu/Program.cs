@@ -239,8 +239,12 @@ namespace BetterJoyForCemu {
 							temp.SetPlayerLED(led);
 							v.SetPlayerLED(led);
 
-							temp.xin.Dispose();
+							if (temp.xin != null)
+								temp.xin.Dispose();
+							if (temp.ds4 != null)
+								temp.ds4.Dispose();
 							temp.xin = null;
+							temp.ds4 = null;
 
 							foreach (Button b in form.con)
 								if (b.Tag == v || b.Tag == temp) {
@@ -260,6 +264,8 @@ namespace BetterJoyForCemu {
 				if (jc.state == Joycon.state_.NOT_ATTACHED) {
 					if (jc.xin != null)
 						jc.xin.Connect();
+					if (jc.ds4 != null)
+						jc.ds4.Connect();
 
 					jc.Attach(leds_: jc.LED);
 
@@ -289,6 +295,11 @@ namespace BetterJoyForCemu {
 				if (v.xin != null) {
 					v.xin.Disconnect();
 					v.xin.Dispose();
+				}
+
+				if (v.ds4 != null) {
+					v.ds4.Disconnect();
+					v.ds4.Dispose();
 				}
 			}
 
@@ -396,7 +407,7 @@ namespace BetterJoyForCemu {
 				}
 			}
 
-			if (Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"])) {
+			if (Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]) || Boolean.Parse(ConfigurationManager.AppSettings["ShowAsDS4"])) {
 				try {
 					emClient = new ViGEmClient(); // Manages emulated XInput
 				} catch (Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException) {
