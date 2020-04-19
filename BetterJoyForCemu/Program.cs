@@ -240,9 +240,9 @@ namespace BetterJoyForCemu {
 							v.SetPlayerLED(led);
 
 							if (temp.xin != null)
-								temp.xin.Dispose();
+								temp.xin.Disconnect();
 							if (temp.ds4 != null)
-								temp.ds4.Dispose();
+								temp.ds4.Disconnect();
 							temp.xin = null;
 							temp.ds4 = null;
 
@@ -294,12 +294,10 @@ namespace BetterJoyForCemu {
 
 				if (v.xin != null) {
 					v.xin.Disconnect();
-					v.xin.Dispose();
 				}
 
 				if (v.ds4 != null) {
 					v.ds4.Disconnect();
-					v.ds4.Dispose();
 				}
 			}
 

@@ -221,10 +221,8 @@ namespace BetterJoyForCemu {
 		public ulong Timestamp = 0;
 		public int packetCounter = 0;
 
-		public Xbox360Controller xin;
-		public Xbox360Report report;
-		public DualShock4Controller ds4;
-		public DualShock4Report ds4_report;
+		public IXbox360Controller xin;
+		public IDualShock4Controller ds4;
 
 		int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
 		int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
@@ -264,19 +262,19 @@ namespace BetterJoyForCemu {
 			connection = isUSB ? 0x01 : 0x02;
 
 			if (showAsXInput) {
-				xin = new Xbox360Controller(Program.emClient);
+				xin = Program.emClient.CreateXbox360Controller();
+				xin.AutoSubmitReport = false;
 
 				if (toRumble)
 					xin.FeedbackReceived += ReceiveRumble;
-				report = new Xbox360Report();
 			}
 
 			if (showAsDS4) {
-				ds4 = new DualShock4Controller(Program.emClient);
+				ds4 = Program.emClient.CreateDualShock4Controller();
+				ds4.AutoSubmitReport = false;
 
 				if (toRumble)
 					ds4.FeedbackReceived += Ds4_FeedbackReceived;
-				ds4_report = new DualShock4Report();
 			}
 		}
 
@@ -449,11 +447,11 @@ namespace BetterJoyForCemu {
 			stop_polling = true;
 
 			if (xin != null) {
-				xin.Disconnect(); xin.Dispose();
+				xin.Disconnect();
 			}
 
 			if (ds4 != null) {
-				ds4.Disconnect(); ds4.Dispose();
+				ds4.Disconnect();
 			}
 
 			if (state > state_.NO_JOYCONS) {
@@ -512,8 +510,7 @@ namespace BetterJoyForCemu {
 				// no reason to send XInput reports so often
 				if (xin != null) {
 					try {
-						xin.SendReport(report);
-
+						xin.SubmitReport();
 					} catch (Exception e) {
 						// ignore /shrug
 					}
@@ -521,7 +518,7 @@ namespace BetterJoyForCemu {
 
 				if (ds4 != null) {
 					try {
-						ds4.SendReport(ds4_report);
+						ds4.SubmitReport();
 					} catch (Exception e) {
 						// ignore /shrug
 					}
@@ -815,75 +812,75 @@ namespace BetterJoyForCemu {
 				return;
 
 			if (isPro) {
-				report.SetButtonState(Xbox360Buttons.A, buttons[(int)(!swapAB ? Button.B : Button.A)]);
-				report.SetButtonState(Xbox360Buttons.B, buttons[(int)(!swapAB ? Button.A : Button.B)]);
-				report.SetButtonState(Xbox360Buttons.Y, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
-				report.SetButtonState(Xbox360Buttons.X, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
-				report.SetButtonState(Xbox360Buttons.Up, buttons[(int)Button.DPAD_UP]);
-				report.SetButtonState(Xbox360Buttons.Down, buttons[(int)Button.DPAD_DOWN]);
-				report.SetButtonState(Xbox360Buttons.Left, buttons[(int)Button.DPAD_LEFT]);
-				report.SetButtonState(Xbox360Buttons.Right, buttons[(int)Button.DPAD_RIGHT]);
-				report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS]);
-				report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS]);
-				report.SetButtonState(Xbox360Buttons.Guide, buttons[(int)Button.HOME]);
-				report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)Button.SHOULDER_1]);
-				report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)Button.SHOULDER2_1]);
-				report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
-				report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)Button.STICK2]);
+				xin.SetButtonState(Xbox360Button.A, buttons[(int)(!swapAB ? Button.B : Button.A)]);
+				xin.SetButtonState(Xbox360Button.B, buttons[(int)(!swapAB ? Button.A : Button.B)]);
+				xin.SetButtonState(Xbox360Button.Y, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
+				xin.SetButtonState(Xbox360Button.X, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
+				xin.SetButtonState(Xbox360Button.Up, buttons[(int)Button.DPAD_UP]);
+				xin.SetButtonState(Xbox360Button.Down, buttons[(int)Button.DPAD_DOWN]);
+				xin.SetButtonState(Xbox360Button.Left, buttons[(int)Button.DPAD_LEFT]);
+				xin.SetButtonState(Xbox360Button.Right, buttons[(int)Button.DPAD_RIGHT]);
+				xin.SetButtonState(Xbox360Button.Back, buttons[(int)Button.MINUS]);
+				xin.SetButtonState(Xbox360Button.Start, buttons[(int)Button.PLUS]);
+				xin.SetButtonState(Xbox360Button.Guide, buttons[(int)Button.HOME]);
+				xin.SetButtonState(Xbox360Button.LeftShoulder, buttons[(int)Button.SHOULDER_1]);
+				xin.SetButtonState(Xbox360Button.RightShoulder, buttons[(int)Button.SHOULDER2_1]);
+				xin.SetButtonState(Xbox360Button.LeftThumb, buttons[(int)Button.STICK]);
+				xin.SetButtonState(Xbox360Button.RightThumb, buttons[(int)Button.STICK2]);
 			} else {
 				if (other != null) { // no need for && other != this
-					report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
-					report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
-					report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
-					report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
-					report.SetButtonState(Xbox360Buttons.Up, buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)]);
-					report.SetButtonState(Xbox360Buttons.Down, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)]);
-					report.SetButtonState(Xbox360Buttons.Left, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)]);
-					report.SetButtonState(Xbox360Buttons.Right, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)]);
-					report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS]);
-					report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS]);
-					report.SetButtonState(Xbox360Buttons.Guide, buttons[(int)Button.HOME]);
-					report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
-					report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
-					report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
-					report.SetButtonState(Xbox360Buttons.RightThumb, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
+					xin.SetButtonState(!swapAB ? Xbox360Button.A : Xbox360Button.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
+					xin.SetButtonState(!swapAB ? Xbox360Button.B : Xbox360Button.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
+					xin.SetButtonState(!swapXY ? Xbox360Button.Y : Xbox360Button.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
+					xin.SetButtonState(!swapXY ? Xbox360Button.X : Xbox360Button.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
+					xin.SetButtonState(Xbox360Button.Up, buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)]);
+					xin.SetButtonState(Xbox360Button.Down, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)]);
+					xin.SetButtonState(Xbox360Button.Left, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)]);
+					xin.SetButtonState(Xbox360Button.Right, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)]);
+					xin.SetButtonState(Xbox360Button.Back, buttons[(int)Button.MINUS]);
+					xin.SetButtonState(Xbox360Button.Start, buttons[(int)Button.PLUS]);
+					xin.SetButtonState(Xbox360Button.Guide, buttons[(int)Button.HOME]);
+					xin.SetButtonState(Xbox360Button.LeftShoulder, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
+					xin.SetButtonState(Xbox360Button.RightShoulder, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
+					xin.SetButtonState(Xbox360Button.LeftThumb, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
+					xin.SetButtonState(Xbox360Button.RightThumb, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
 				} else { // single joycon mode
-					report.SetButtonState(!swapAB ? Xbox360Buttons.A : Xbox360Buttons.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
-					report.SetButtonState(!swapAB ? Xbox360Buttons.B : Xbox360Buttons.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
-					report.SetButtonState(!swapXY ? Xbox360Buttons.Y : Xbox360Buttons.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
-					report.SetButtonState(!swapXY ? Xbox360Buttons.X : Xbox360Buttons.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
-					report.SetButtonState(Xbox360Buttons.Back, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
-					report.SetButtonState(Xbox360Buttons.Start, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
+					xin.SetButtonState(!swapAB ? Xbox360Button.A : Xbox360Button.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
+					xin.SetButtonState(!swapAB ? Xbox360Button.B : Xbox360Button.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
+					xin.SetButtonState(!swapXY ? Xbox360Button.Y : Xbox360Button.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
+					xin.SetButtonState(!swapXY ? Xbox360Button.X : Xbox360Button.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
+					xin.SetButtonState(Xbox360Button.Back, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
+					xin.SetButtonState(Xbox360Button.Start, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
 
-					report.SetButtonState(Xbox360Buttons.LeftShoulder, buttons[(int)Button.SL]);
-					report.SetButtonState(Xbox360Buttons.RightShoulder, buttons[(int)Button.SR]);
+					xin.SetButtonState(Xbox360Button.LeftShoulder, buttons[(int)Button.SL]);
+					xin.SetButtonState(Xbox360Button.RightShoulder, buttons[(int)Button.SR]);
 
-					report.SetButtonState(Xbox360Buttons.LeftThumb, buttons[(int)Button.STICK]);
+					xin.SetButtonState(Xbox360Button.LeftThumb, buttons[(int)Button.STICK]);
 				}
 			}
 
 			// overwrite guide button if it's custom-mapped
 			if (Config.Value("home") != "0")
-				report.SetButtonState(Xbox360Buttons.Guide, false);
+				xin.SetButtonState(Xbox360Button.Guide, false);
 
 			if (!isSnes) {
 				if (other != null || isPro) { // no need for && other != this
-					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
-					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
-					report.SetAxis(Xbox360Axes.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
-					report.SetAxis(Xbox360Axes.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
+					xin.SetAxisValue(Xbox360Axis.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
+					xin.SetAxisValue(Xbox360Axis.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
+					xin.SetAxisValue(Xbox360Axis.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
+					xin.SetAxisValue(Xbox360Axis.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
 				} else { // single joycon mode
-					report.SetAxis(Xbox360Axes.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
-					report.SetAxis(Xbox360Axes.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
+					xin.SetAxisValue(Xbox360Axis.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
+					xin.SetAxisValue(Xbox360Axis.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
 				}
 			}
 
 			if (other != null || isPro) {
-				report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Int16.MaxValue : 0));
-				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
+				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Byte.MaxValue : 0));
+				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			} else {
-				report.SetAxis(Xbox360Axes.LeftTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Int16.MaxValue : 0));
-				report.SetAxis(Xbox360Axes.RightTrigger, (short)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Int16.MaxValue : 0));
+				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
+				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			}
 		}
 
@@ -893,112 +890,112 @@ namespace BetterJoyForCemu {
 				return;
 
 			if (isPro) {
-				ds4_report.SetButtonState(DualShock4Buttons.Cross, buttons[(int)(!swapAB ? Button.B : Button.A)]);
-				ds4_report.SetButtonState(DualShock4Buttons.Circle, buttons[(int)(!swapAB ? Button.A : Button.B)]);
-				ds4_report.SetButtonState(DualShock4Buttons.Triangle, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
-				ds4_report.SetButtonState(DualShock4Buttons.Square, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
+				ds4.SetButtonState(DualShock4Button.Cross, buttons[(int)(!swapAB ? Button.B : Button.A)]);
+				ds4.SetButtonState(DualShock4Button.Circle, buttons[(int)(!swapAB ? Button.A : Button.B)]);
+				ds4.SetButtonState(DualShock4Button.Triangle, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
+				ds4.SetButtonState(DualShock4Button.Square, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
 
-				ds4_report.SetDPad(DualShock4DPadValues.None);
+				ds4.SetDPadDirection(DualShock4DPadDirection.None);
+				if (buttons[(int)Button.DPAD_LEFT])
+					ds4.SetDPadDirection(DualShock4DPadDirection.West);
+				if (buttons[(int)Button.DPAD_RIGHT])
+					ds4.SetDPadDirection(DualShock4DPadDirection.East);
 				if (buttons[(int)Button.DPAD_UP]) {
 					if (buttons[(int)Button.DPAD_LEFT])
-						ds4_report.SetDPad(DualShock4DPadValues.Northwest);
+						ds4.SetDPadDirection(DualShock4DPadDirection.Northwest);
 					else if (buttons[(int)Button.DPAD_RIGHT])
-						ds4_report.SetDPad(DualShock4DPadValues.Northeast);
+						ds4.SetDPadDirection(DualShock4DPadDirection.Northeast);
 					else
-						ds4_report.SetDPad(DualShock4DPadValues.North);
+						ds4.SetDPadDirection(DualShock4DPadDirection.North);
 				}
 				if (buttons[(int)Button.DPAD_DOWN]) {
 					if (buttons[(int)Button.DPAD_LEFT])
-						ds4_report.SetDPad(DualShock4DPadValues.Southwest);
+						ds4.SetDPadDirection(DualShock4DPadDirection.Southwest);
 					else if (buttons[(int)Button.DPAD_RIGHT])
-						ds4_report.SetDPad(DualShock4DPadValues.Southeast);
+						ds4.SetDPadDirection(DualShock4DPadDirection.Southeast);
 					else
-						ds4_report.SetDPad(DualShock4DPadValues.South);
+						ds4.SetDPadDirection(DualShock4DPadDirection.South);
 				}
-				if (buttons[(int)Button.DPAD_LEFT])
-					ds4_report.SetDPad(DualShock4DPadValues.West);
-				if (buttons[(int)Button.DPAD_RIGHT])
-					ds4_report.SetDPad(DualShock4DPadValues.East);
 
-				ds4_report.SetButtonState(DualShock4Buttons.Share, buttons[(int)Button.MINUS]);
-				ds4_report.SetButtonState(DualShock4Buttons.Options, buttons[(int)Button.PLUS]);
-				ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Ps, buttons[(int)Button.HOME]);
-				ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Touchpad, buttons[(int)Button.CAPTURE]);
-				ds4_report.SetButtonState(DualShock4Buttons.ShoulderLeft, buttons[(int)Button.SHOULDER_1]);
-				ds4_report.SetButtonState(DualShock4Buttons.ShoulderRight, buttons[(int)Button.SHOULDER2_1]);
-				ds4_report.SetButtonState(DualShock4Buttons.ThumbLeft, buttons[(int)Button.STICK]);
-				ds4_report.SetButtonState(DualShock4Buttons.ThumbRight, buttons[(int)Button.STICK2]);
+				ds4.SetButtonState(DualShock4Button.Share, buttons[(int)Button.MINUS]);
+				ds4.SetButtonState(DualShock4Button.Options, buttons[(int)Button.PLUS]);
+				ds4.SetButtonState(DualShock4SpecialButton.Ps, buttons[(int)Button.HOME]);
+				ds4.SetButtonState(DualShock4SpecialButton.Touchpad, buttons[(int)Button.CAPTURE]);
+				ds4.SetButtonState(DualShock4Button.ShoulderLeft, buttons[(int)Button.SHOULDER_1]);
+				ds4.SetButtonState(DualShock4Button.ShoulderRight, buttons[(int)Button.SHOULDER2_1]);
+				ds4.SetButtonState(DualShock4Button.ThumbLeft, buttons[(int)Button.STICK]);
+				ds4.SetButtonState(DualShock4Button.ThumbRight, buttons[(int)Button.STICK2]);
 			} else {
 				if (other != null) { // no need for && other != this
-					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Cross : DualShock4Buttons.Circle, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
-					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Circle : DualShock4Buttons.Cross, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
-					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Triangle : DualShock4Buttons.Square, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
-					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Square : DualShock4Buttons.Triangle, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
+					ds4.SetButtonState(!swapAB ? DualShock4Button.Cross : DualShock4Button.Circle, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
+					ds4.SetButtonState(!swapAB ? DualShock4Button.Circle : DualShock4Button.Cross, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
+					ds4.SetButtonState(!swapXY ? DualShock4Button.Triangle : DualShock4Button.Square, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
+					ds4.SetButtonState(!swapXY ? DualShock4Button.Square : DualShock4Button.Triangle, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
 
 					if (buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)])
 						if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
-							ds4_report.SetDPad(DualShock4DPadValues.Northwest);
+							ds4.SetDPadDirection(DualShock4DPadDirection.Northwest);
 						else if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
-							ds4_report.SetDPad(DualShock4DPadValues.Northeast);
+							ds4.SetDPadDirection(DualShock4DPadDirection.Northeast);
 						else
-							ds4_report.SetDPad(DualShock4DPadValues.North);
+							ds4.SetDPadDirection(DualShock4DPadDirection.North);
 					if (buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)])
 						if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
-							ds4_report.SetDPad(DualShock4DPadValues.Southwest);
+							ds4.SetDPadDirection(DualShock4DPadDirection.Southwest);
 						else if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
-							ds4_report.SetDPad(DualShock4DPadValues.Southeast);
+							ds4.SetDPadDirection(DualShock4DPadDirection.Southeast);
 						else
-							ds4_report.SetDPad(DualShock4DPadValues.South);
+							ds4.SetDPadDirection(DualShock4DPadDirection.South);
 					if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
-						ds4_report.SetDPad(DualShock4DPadValues.West);
+						ds4.SetDPadDirection(DualShock4DPadDirection.West);
 					if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
-						ds4_report.SetDPad(DualShock4DPadValues.East);
+						ds4.SetDPadDirection(DualShock4DPadDirection.East);
 
-					ds4_report.SetButtonState(DualShock4Buttons.Share, buttons[(int)Button.MINUS]);
-					ds4_report.SetButtonState(DualShock4Buttons.Options, buttons[(int)Button.PLUS]);
-					ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Ps, buttons[(int)Button.HOME]);
-					ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Touchpad, buttons[(int)Button.CAPTURE]);
-					ds4_report.SetButtonState(DualShock4Buttons.ShoulderLeft, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
-					ds4_report.SetButtonState(DualShock4Buttons.ShoulderRight, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
-					ds4_report.SetButtonState(DualShock4Buttons.ThumbLeft, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
-					ds4_report.SetButtonState(DualShock4Buttons.ThumbRight, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
+					ds4.SetButtonState(DualShock4Button.Share, buttons[(int)Button.MINUS]);
+					ds4.SetButtonState(DualShock4Button.Options, buttons[(int)Button.PLUS]);
+					ds4.SetButtonState(DualShock4SpecialButton.Ps, buttons[(int)Button.HOME]);
+					ds4.SetButtonState(DualShock4SpecialButton.Touchpad, buttons[(int)Button.CAPTURE]);
+					ds4.SetButtonState(DualShock4Button.ShoulderLeft, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
+					ds4.SetButtonState(DualShock4Button.ShoulderRight, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
+					ds4.SetButtonState(DualShock4Button.ThumbLeft, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
+					ds4.SetButtonState(DualShock4Button.ThumbRight, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
 				} else { // single joycon mode
-					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Cross : DualShock4Buttons.Circle, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
-					ds4_report.SetButtonState(!swapAB ? DualShock4Buttons.Circle : DualShock4Buttons.Cross, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
-					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Triangle : DualShock4Buttons.Square, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
-					ds4_report.SetButtonState(!swapXY ? DualShock4Buttons.Square : DualShock4Buttons.Triangle, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
-					ds4_report.SetButtonState(DualShock4Buttons.Share, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
-					ds4_report.SetButtonState(DualShock4Buttons.Options, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
+					ds4.SetButtonState(!swapAB ? DualShock4Button.Cross : DualShock4Button.Circle, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
+					ds4.SetButtonState(!swapAB ? DualShock4Button.Circle : DualShock4Button.Cross, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
+					ds4.SetButtonState(!swapXY ? DualShock4Button.Triangle : DualShock4Button.Square, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
+					ds4.SetButtonState(!swapXY ? DualShock4Button.Square : DualShock4Button.Triangle, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
+					ds4.SetButtonState(DualShock4Button.Share, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
+					ds4.SetButtonState(DualShock4Button.Options, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
 
-					ds4_report.SetButtonState(DualShock4Buttons.ShoulderLeft, buttons[(int)Button.SL]);
-					ds4_report.SetButtonState(DualShock4Buttons.ShoulderRight, buttons[(int)Button.SR]);
+					ds4.SetButtonState(DualShock4Button.ShoulderLeft, buttons[(int)Button.SL]);
+					ds4.SetButtonState(DualShock4Button.ShoulderRight, buttons[(int)Button.SR]);
 
-					ds4_report.SetButtonState(DualShock4Buttons.ThumbLeft, buttons[(int)Button.STICK]);
+					ds4.SetButtonState(DualShock4Button.ThumbLeft, buttons[(int)Button.STICK]);
 				}
 			}
 
 			// overwrite guide button if it's custom-mapped
 			if (Config.Value("home") != "0")
-				ds4_report.SetSpecialButtonState(DualShock4SpecialButtons.Ps, false);
+				ds4.SetButtonState(DualShock4SpecialButton.Ps, false);
 
 			if (!isSnes) {
 				if (other != null || isPro) { // no need for && other != this
-					ds4_report.SetAxis(DualShock4Axes.LeftThumbX, CastStickValueByte((other == this && !isLeft) ? -stick2[0] : -stick[0]));
-					ds4_report.SetAxis(DualShock4Axes.LeftThumbY, CastStickValueByte((other == this && !isLeft) ? stick2[1] : stick[1]));
-					ds4_report.SetAxis(DualShock4Axes.RightThumbX, CastStickValueByte((other == this && !isLeft) ? -stick[0] : -stick2[0]));
-					ds4_report.SetAxis(DualShock4Axes.RightThumbY, CastStickValueByte((other == this && !isLeft) ? stick[1] : stick2[1]));
+					ds4.SetAxisValue(DualShock4Axis.LeftThumbX, CastStickValueByte((other == this && !isLeft) ? -stick2[0] : -stick[0]));
+					ds4.SetAxisValue(DualShock4Axis.LeftThumbY, CastStickValueByte((other == this && !isLeft) ? stick2[1] : stick[1]));
+					ds4.SetAxisValue(DualShock4Axis.RightThumbX, CastStickValueByte((other == this && !isLeft) ? -stick[0] : -stick2[0]));
+					ds4.SetAxisValue(DualShock4Axis.RightThumbY, CastStickValueByte((other == this && !isLeft) ? stick[1] : stick2[1]));
 				} else { // single joycon mode
-					ds4_report.SetAxis(DualShock4Axes.LeftThumbY, CastStickValueByte((isLeft ? 1 : -1) * stick[0]));
-					ds4_report.SetAxis(DualShock4Axes.LeftThumbX, CastStickValueByte((isLeft ? -1 : 1) * stick[1]));
+					ds4.SetAxisValue(DualShock4Axis.LeftThumbY, CastStickValueByte((isLeft ? 1 : -1) * stick[0]));
+					ds4.SetAxisValue(DualShock4Axis.LeftThumbX, CastStickValueByte((isLeft ? -1 : 1) * stick[1]));
 				}
 			}
 
 			if (other != null || isPro) {
-				ds4_report.SetAxis(DualShock4Axes.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Byte.MaxValue : 0));
-				ds4_report.SetAxis(DualShock4Axes.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
+				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Byte.MaxValue : 0));
+				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			} else {
-				ds4_report.SetAxis(DualShock4Axes.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
-				ds4_report.SetAxis(DualShock4Axes.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
+				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
+				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			}
 		}
 

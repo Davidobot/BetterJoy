@@ -177,7 +177,7 @@ namespace BetterJoyForCemu {
 							jc.SetPlayerLED(led);
 							v.SetPlayerLED(led);
 
-								v.xin.Dispose();
+								v.xin.Disconnect();
 								v.xin = null;
 
 								// setting the other joycon's button image
@@ -261,11 +261,10 @@ namespace BetterJoyForCemu {
 
 		void ReenableXinput(Joycon v) {
 			if (showAsXInput) {
-				v.xin = new Xbox360Controller(Program.emClient);
+				v.xin = Program.emClient.CreateXbox360Controller();
 
 				if (toRumble)
 					v.xin.FeedbackReceived += v.ReceiveRumble;
-				v.report = new Xbox360Report();
 			}
 		}
 
