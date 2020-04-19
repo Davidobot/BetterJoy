@@ -232,6 +232,7 @@ namespace BetterJoyForCemu {
 
 		bool showAsXInput = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]);
 		bool showAsDS4 = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsDS4"]);
+		bool windowsScreenshot = Boolean.Parse(ConfigurationManager.AppSettings["WindowsScreenshot"]);
 
 		public MainForm form;
 
@@ -540,7 +541,11 @@ namespace BetterJoyForCemu {
 			if (s.StartsWith("key_")) {
 				WindowsInput.Events.KeyCode key = (WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4));
 				if (click) {
-					WindowsInput.Simulate.Events().Click(key).Invoke();
+					if (s == Config.Value("capture") && windowsScreenshot) {
+						WindowsInput.Simulate.Events().ClickChord(WindowsInput.Events.KeyCode.LWin, WindowsInput.Events.KeyCode.PrintScreen).Invoke();
+					} else {
+						WindowsInput.Simulate.Events().Click(key).Invoke();
+					}
 				} else {
 					if (up) {
 						WindowsInput.Simulate.Events().Release(key).Invoke();
