@@ -223,6 +223,7 @@ namespace BetterJoyForCemu {
 
 		public IXbox360Controller xin;
 		public IDualShock4Controller ds4;
+		short ds4_ts = 0;
 
 		int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
 		int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
@@ -932,6 +933,7 @@ namespace BetterJoyForCemu {
 					ds4.SetButtonState(!swapXY ? DualShock4Button.Triangle : DualShock4Button.Square, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
 					ds4.SetButtonState(!swapXY ? DualShock4Button.Square : DualShock4Button.Triangle, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
 
+					ds4.SetDPadDirection(DualShock4DPadDirection.None);
 					if (buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)])
 						if (buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)])
 							ds4.SetDPadDirection(DualShock4DPadDirection.Northwest);
@@ -986,7 +988,7 @@ namespace BetterJoyForCemu {
 					ds4.SetAxisValue(DualShock4Axis.RightThumbY, CastStickValueByte((other == this && !isLeft) ? stick[1] : stick2[1]));
 				} else { // single joycon mode
 					ds4.SetAxisValue(DualShock4Axis.LeftThumbY, CastStickValueByte((isLeft ? 1 : -1) * stick[0]));
-					ds4.SetAxisValue(DualShock4Axis.LeftThumbX, CastStickValueByte((isLeft ? -1 : 1) * stick[1]));
+					ds4.SetAxisValue(DualShock4Axis.LeftThumbX, CastStickValueByte((isLeft ? 1 : -1) * stick[1]));
 				}
 			}
 
@@ -997,6 +999,26 @@ namespace BetterJoyForCemu {
 				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
 				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			}
+
+			// Gyro and accel
+			ds4_ts += 188; // 1.5ms
+			ds4.SetIMUTimestamp(ds4_ts);
+			/*Vector3 gyr = GetGyro() * 1024f;
+			ds4.SetIMUValue(DualShock4IMU.GyroX, (short) gyr.X);
+			ds4.SetIMUValue(DualShock4IMU.GyroY, (short) gyr.Y);
+			ds4.SetIMUValue(DualShock4IMU.GyroZ, (short) gyr.Z);
+			Vector3 acc = GetAccel() * 8192f;
+			ds4.SetIMUValue(DualShock4IMU.AccelX, (short) acc.X);
+			ds4.SetIMUValue(DualShock4IMU.AccelY, (short)-acc.Y);
+			ds4.SetIMUValue(DualShock4IMU.AccelZ, (short)acc.Z);*/
+			ds4_ts = 14;
+			ds4.SetIMUTimestamp(0);
+			ds4.SetIMUValue(DualShock4IMU.GyroX, ds4_ts);
+			ds4.SetIMUValue(DualShock4IMU.GyroY, ds4_ts);
+			ds4.SetIMUValue(DualShock4IMU.GyroZ, ds4_ts);
+			ds4.SetIMUValue(DualShock4IMU.AccelX, ds4_ts);
+			ds4.SetIMUValue(DualShock4IMU.AccelY, ds4_ts);
+			ds4.SetIMUValue(DualShock4IMU.AccelZ, ds4_ts);
 		}
 
 		// Get Gyro/Accel data
