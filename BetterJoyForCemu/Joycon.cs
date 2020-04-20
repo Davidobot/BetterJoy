@@ -986,7 +986,7 @@ namespace BetterJoyForCemu {
 					ds4.SetAxisValue(DualShock4Axis.RightThumbY, CastStickValueByte((other == this && !isLeft) ? stick[1] : stick2[1]));
 				} else { // single joycon mode
 					ds4.SetAxisValue(DualShock4Axis.LeftThumbY, CastStickValueByte((isLeft ? 1 : -1) * stick[0]));
-					ds4.SetAxisValue(DualShock4Axis.LeftThumbX, CastStickValueByte((isLeft ? -1 : 1) * stick[1]));
+					ds4.SetAxisValue(DualShock4Axis.LeftThumbX, CastStickValueByte((isLeft ? 1 : -1) * stick[1]));
 				}
 			}
 

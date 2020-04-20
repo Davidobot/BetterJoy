@@ -239,6 +239,7 @@
     <Content Include="Drivers\ViGEmBus_Setup_1.16.116.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="FodyWeavers.xml" />
     <Content Include="Icons\snes.png" />
     <None Include="Properties\app.manifest" />
     <Content Include="Icons\betterjoyforcemu_icon.ico" />
