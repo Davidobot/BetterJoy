@@ -224,6 +224,7 @@ namespace BetterJoyForCemu {
 		public IXbox360Controller xin;
 		public IDualShock4Controller ds4;
 		ushort ds4_ts = 0;
+		ulong lag;
 
 		int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
 		int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
@@ -492,6 +493,9 @@ namespace BetterJoyForCemu {
 						Timestamp += (ulong)lag * 5000; // add lag once
 						ProcessButtonsAndStick(raw_buf);
 
+						// process buttons here to have them affect DS4
+						DoThingsWithButtons();
+
 						int newbat = battery;
 						battery = (raw_buf[2] >> 4) / 2;
 						if (newbat != battery)
@@ -502,12 +506,19 @@ namespace BetterJoyForCemu {
 					packetCounter++;
 					if (Program.server != null)
 						Program.server.NewReportIncoming(this);
+
+					SetDS4ReportState(n);
+					if (ds4 != null) {
+						try {
+							ds4.SubmitReport();
+						} catch (Exception e) {
+							// ignore /shrug
+						}
+					}
 				}
 
-				DoThingsWithButtons();
 				SetXInputReportState();
-				SetDS4ReportState();
-
+				
 				// no reason to send XInput reports so often
 				if (xin != null) {
 					try {
@@ -517,13 +528,6 @@ namespace BetterJoyForCemu {
 					}
 				}
 
-				if (ds4 != null) {
-					try {
-						ds4.SubmitReport();
-					} catch (Exception e) {
-						// ignore /shrug
-					}
-				}
 
 				if (ts_en == raw_buf[1] && !isSnes) {
 					form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
@@ -886,7 +890,7 @@ namespace BetterJoyForCemu {
 		}
 
 		// TODO: Check sticks AND/OR DPAD - wrong translation
-		private void SetDS4ReportState() {
+		private void SetDS4ReportState(int n) {
 			if (ds4 == null)
 				return;
 
@@ -1001,16 +1005,20 @@ namespace BetterJoyForCemu {
 			}
 
 			// Gyro and accel
-			ds4_ts += 188; // 1.5ms
+			// Timestamp is in us. DS4 is in 5.33us
+			ushort dt = (ushort) ((Timestamp - lag)/1000);
+			ds4_ts += (ushort) ((n == 0) ? 5 : 4);
 			ds4.SetIMUTimestamp(ds4_ts);
-			Vector3 gyr = GetGyro(); //* 1024f;
-			ds4.SetIMUValue(DualShock4IMU.GyroX, (short) gyr.X);
-			ds4.SetIMUValue(DualShock4IMU.GyroY, (short) gyr.Y);
-			ds4.SetIMUValue(DualShock4IMU.GyroZ, (short) gyr.Z);
+			Vector3 gyr = GetGyro() * 16;
+			ds4.SetIMUValue(DualShock4IMU.GyroX, (short) gyr.Y);
+			ds4.SetIMUValue(DualShock4IMU.GyroY, (short) -gyr.Z);
+			ds4.SetIMUValue(DualShock4IMU.GyroZ, (short) -gyr.X);
 			Vector3 acc = GetAccel() * 8192f;
-			ds4.SetIMUValue(DualShock4IMU.AccelX, (short) acc.X);
-			ds4.SetIMUValue(DualShock4IMU.AccelY, (short)-acc.Y);
-			ds4.SetIMUValue(DualShock4IMU.AccelZ, (short)acc.Z);
+			ds4.SetIMUValue(DualShock4IMU.AccelX, (short) -acc.Y);
+			ds4.SetIMUValue(DualShock4IMU.AccelY, (short) acc.Z);
+			ds4.SetIMUValue(DualShock4IMU.AccelZ, (short) -acc.X);
+
+			lag = Timestamp;
 		}
 
 		// Get Gyro/Accel data
