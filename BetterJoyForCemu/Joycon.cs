@@ -223,7 +223,7 @@ namespace BetterJoyForCemu {
 
 		public IXbox360Controller xin;
 		public IDualShock4Controller ds4;
-		short ds4_ts = 0;
+		ushort ds4_ts = 0;
 
 		int rumblePeriod = Int32.Parse(ConfigurationManager.AppSettings["RumblePeriod"]);
 		int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
@@ -1003,22 +1003,14 @@ namespace BetterJoyForCemu {
 			// Gyro and accel
 			ds4_ts += 188; // 1.5ms
 			ds4.SetIMUTimestamp(ds4_ts);
-			/*Vector3 gyr = GetGyro() * 1024f;
+			Vector3 gyr = GetGyro(); //* 1024f;
 			ds4.SetIMUValue(DualShock4IMU.GyroX, (short) gyr.X);
 			ds4.SetIMUValue(DualShock4IMU.GyroY, (short) gyr.Y);
 			ds4.SetIMUValue(DualShock4IMU.GyroZ, (short) gyr.Z);
 			Vector3 acc = GetAccel() * 8192f;
 			ds4.SetIMUValue(DualShock4IMU.AccelX, (short) acc.X);
 			ds4.SetIMUValue(DualShock4IMU.AccelY, (short)-acc.Y);
-			ds4.SetIMUValue(DualShock4IMU.AccelZ, (short)acc.Z);*/
-			ds4_ts = 14;
-			ds4.SetIMUTimestamp(0);
-			ds4.SetIMUValue(DualShock4IMU.GyroX, ds4_ts);
-			ds4.SetIMUValue(DualShock4IMU.GyroY, ds4_ts);
-			ds4.SetIMUValue(DualShock4IMU.GyroZ, ds4_ts);
-			ds4.SetIMUValue(DualShock4IMU.AccelX, ds4_ts);
-			ds4.SetIMUValue(DualShock4IMU.AccelY, ds4_ts);
-			ds4.SetIMUValue(DualShock4IMU.AccelZ, ds4_ts);
+			ds4.SetIMUValue(DualShock4IMU.AccelZ, (short)acc.Z);
 		}
 
 		// Get Gyro/Accel data
