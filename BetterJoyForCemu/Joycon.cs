@@ -1006,9 +1006,10 @@ namespace BetterJoyForCemu {
 
 			// Gyro and accel
 			// Timestamp is in us. DS4 is in 5.33us
-			ushort dt = (ushort) ((Timestamp - lag)/1000);
-			ds4_ts += (ushort) ((n == 0) ? 5 : 4);
+			ushort dt = (ushort)((Timestamp - lag) * 3 / 16);
+			ds4_ts += dt;
 			ds4.SetIMUTimestamp(ds4_ts);
+
 			Vector3 gyr = GetGyro() * 16;
 			ds4.SetIMUValue(DualShock4IMU.GyroX, (short) gyr.Y);
 			ds4.SetIMUValue(DualShock4IMU.GyroY, (short) -gyr.Z);
