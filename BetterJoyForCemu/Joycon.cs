@@ -1003,23 +1003,6 @@ namespace BetterJoyForCemu {
 				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
 				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			}
-
-			// Gyro and accel
-			// Timestamp is in us. DS4 is in 5.33us
-			ushort dt = (ushort)((Timestamp - lag) * 3 / 16);
-			ds4_ts += dt;
-			ds4.SetIMUTimestamp(ds4_ts);
-
-			Vector3 gyr = GetGyro() * 16;
-			ds4.SetIMUValue(DualShock4IMU.GyroX, (short) gyr.Y);
-			ds4.SetIMUValue(DualShock4IMU.GyroY, (short) -gyr.Z);
-			ds4.SetIMUValue(DualShock4IMU.GyroZ, (short) -gyr.X);
-			Vector3 acc = GetAccel() * 8192f;
-			ds4.SetIMUValue(DualShock4IMU.AccelX, (short) -acc.Y);
-			ds4.SetIMUValue(DualShock4IMU.AccelY, (short) acc.Z);
-			ds4.SetIMUValue(DualShock4IMU.AccelZ, (short) -acc.X);
-
-			lag = Timestamp;
 		}
 
 		// Get Gyro/Accel data
