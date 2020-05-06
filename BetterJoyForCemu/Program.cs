@@ -239,10 +239,20 @@ namespace BetterJoyForCemu {
 							temp.SetPlayerLED(led);
 							v.SetPlayerLED(led);
 
-							if (temp.xin != null)
-								temp.xin.Disconnect();
-							if (temp.ds4 != null)
-								temp.ds4.Disconnect();
+							if (temp.xin != null) {
+								try {
+									temp.xin.Disconnect();
+								} catch (Exception e) {
+									// it wasn't connected in the first place, go figure
+								}
+							}
+							if (temp.ds4 != null) {
+								try {
+									temp.ds4.Disconnect();
+								} catch (Exception e) {
+									// it wasn't connected in the first place, go figure
+								}
+							}
 							temp.xin = null;
 							temp.ds4 = null;
 

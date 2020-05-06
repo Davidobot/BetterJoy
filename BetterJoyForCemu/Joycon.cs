@@ -1144,9 +1144,7 @@ namespace BetterJoyForCemu {
 
 		public void SetRumble(float low_freq, float high_freq, float amp, int time = 0) {
 			if (state <= Joycon.state_.ATTACHED) return;
-			//if (rumble_obj.timed_rumble == false || rumble_obj.t < 0) {
-			rumble_obj = new Rumble(low_freq, high_freq, amp, time);
-			//}
+			rumble_obj.set_vals(low_freq, high_freq, amp, time);
 		}
 
 		private void SendRumble(byte[] buf) {
