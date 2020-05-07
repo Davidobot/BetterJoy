@@ -284,7 +284,7 @@ namespace BetterJoyForCemu {
 			SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
-				other.SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
+				other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 		}
 
 		public void getActiveData() {
@@ -295,7 +295,7 @@ namespace BetterJoyForCemu {
 			SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
-				other.SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
+				other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 		}
 
 		public void DebugPrint(String s, DebugType d) {
@@ -628,9 +628,10 @@ namespace BetterJoyForCemu {
 			} else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
 				string res_val = Config.Value("active_gyro");
 				if (res_val.StartsWith("joy_")){
-					if (buttons_down[Int32.Parse(res_val.Substring(4))] || (other != null && other.buttons_down[Int32.Parse(res_val.Substring(4))]))
+					int i = Int32.Parse(res_val.Substring(4));
+					if (buttons_down[i] || (other != null && other.buttons_down[i]))
 						active_gyro = true;
-					else if (buttons_up[Int32.Parse(res_val.Substring(4))] || (other != null && other.buttons_up[Int32.Parse(res_val.Substring(4))]))
+					else if (buttons_up[i] || (other != null && other.buttons_up[i]))
 						active_gyro = false;
 				}
 
@@ -646,9 +647,11 @@ namespace BetterJoyForCemu {
 
 				// reset mouse position to centre of primary monitor
 				res_val = Config.Value("reset_mouse");
-				if (res_val.StartsWith("joy_"))
-					if (buttons_down[Int32.Parse(res_val.Substring(4))] || (other != null && other.buttons_down[Int32.Parse(res_val.Substring(4))]))
+				if (res_val.StartsWith("joy_")) {
+					int i = Int32.Parse(res_val.Substring(4));
+					if (buttons_down[i] || (other != null && other.buttons_down[i]))
 						WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+				}
 			}
 		}
 
