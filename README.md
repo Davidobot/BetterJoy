@@ -2,7 +2,7 @@
   <img src="title.png">
 </p>
 
-# BetterJoy v6
+# BetterJoy v6.1
 Allows the Nintendo Switch Pro Controller, Joycons, and Switch SNES controller to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), [Dolphin](https://dolphin-emu.org/), and system-wide with generic XInput support.
 
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
@@ -16,6 +16,9 @@ It's been quite a wild ride, with nearly 110k official download on GitHub and pr
 
 ### Screenshot
 ![Example](https://user-images.githubusercontent.com/16619943/67919451-bf8e5680-fb76-11e9-995e-7193b87548e1.png)
+
+# Downloads
+Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
 
 # How to use
 1. Install drivers
