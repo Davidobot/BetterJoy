@@ -76,6 +76,7 @@ namespace BetterJoyForCemu {
 		private bool[] buttons_up = new bool[20];
 		private bool[] buttons = new bool[20];
 		private bool[] down_ = new bool[20];
+		private long[] buttons_down_timestamp = new long[20];
 
 		private float[] stick = { 0, 0 };
 		private float[] stick2 = { 0, 0 };
@@ -250,6 +251,8 @@ namespace BetterJoyForCemu {
 			imu_enabled = imu;
 			do_localize = localize;
 			rumble_obj = new Rumble(160, 320, 0);
+			for (int i = 0; i < buttons_down_timestamp.Length; i++)
+				buttons_down_timestamp[i] = -1;
 			filterweight = alpha;
 			isLeft = left;
 
@@ -802,11 +805,15 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
 				}
 
+				long timestamp = Stopwatch.GetTimestamp();
+
 				lock (buttons_up) {
 					lock (buttons_down) {
 						for (int i = 0; i < buttons.Length; ++i) {
 							buttons_up[i] = (down_[i] & !buttons[i]);
 							buttons_down[i] = (!down_[i] & buttons[i]);
+							if (down_[i] != buttons[i])
+								buttons_down_timestamp[i] = (buttons[i] ? timestamp : -1);
 						}
 					}
 				}
