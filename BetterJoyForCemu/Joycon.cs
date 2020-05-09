@@ -76,6 +76,7 @@ namespace BetterJoyForCemu {
 		private bool[] buttons_up = new bool[20];
 		private bool[] buttons = new bool[20];
 		private bool[] down_ = new bool[20];
+		private long[] buttons_down_timestamp = new long[20];
 
 		private float[] stick = { 0, 0 };
 		private float[] stick2 = { 0, 0 };
@@ -250,6 +251,8 @@ namespace BetterJoyForCemu {
 			imu_enabled = imu;
 			do_localize = localize;
 			rumble_obj = new Rumble(160, 320, 0);
+			for (int i = 0; i < buttons_down_timestamp.Length; i++)
+				buttons_down_timestamp[i] = -1;
 			filterweight = alpha;
 			isLeft = left;
 
@@ -416,6 +419,18 @@ namespace BetterJoyForCemu {
             }
             Subcommand(0x38, a, 25, false);
         }
+
+		private void SetHCIState(byte state) {
+			byte[] a = { state };
+			Subcommand(0x06, a, 1, false);
+		}
+
+		public void PowerOff() {
+			if (state > state_.DROPPED) {
+				SetHCIState(0x00);
+				state = state_.DROPPED;
+			}
+		}
 
 		private void BatteryChanged() { // battery changed level
 			foreach (var v in form.con) {
@@ -590,6 +605,18 @@ namespace BetterJoyForCemu {
 		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
 		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
 		private void DoThingsWithButtons() {
+			int powerOffButton = (int)((!isLeft || other != null) ? Button.HOME : Button.CAPTURE);
+
+			if (buttons[powerOffButton]) {
+				long timestamp = Stopwatch.GetTimestamp();
+				if ((timestamp - buttons_down_timestamp[powerOffButton]) / 10000 > 2000.0) {
+					PowerOff();
+					if (other != null)
+						other.PowerOff();
+					return;
+				}
+			}
+
 			if (buttons_down[(int)Button.CAPTURE])
 				Simulate(Config.Value("capture"));
 			if (buttons_down[(int)Button.HOME])
@@ -802,11 +829,15 @@ namespace BetterJoyForCemu {
 					buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
 				}
 
+				long timestamp = Stopwatch.GetTimestamp();
+
 				lock (buttons_up) {
 					lock (buttons_down) {
 						for (int i = 0; i < buttons.Length; ++i) {
 							buttons_up[i] = (down_[i] & !buttons[i]);
 							buttons_down[i] = (!down_[i] & buttons[i]);
+							if (down_[i] != buttons[i])
+								buttons_down_timestamp[i] = (buttons[i] ? timestamp : -1);
 						}
 					}
 				}
