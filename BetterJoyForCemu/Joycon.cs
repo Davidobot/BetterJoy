@@ -375,6 +375,14 @@ namespace BetterJoyForCemu {
 				dump_calibration_data();
 			}
 
+			// Bluetooth manual pairing
+			byte[] btmac_host = Program.btMAC.GetAddressBytes();
+			// send host MAC and acquire Joycon MAC
+			//byte[] reply = Subcommand(0x01, new byte[] { 0x01, btmac_host[5], btmac_host[4], btmac_host[3], btmac_host[2], btmac_host[1], btmac_host[0] }, 7, true);
+			//byte[] LTKhash = Subcommand(0x01, new byte[] { 0x02 }, 1, true);
+			// save pairing info
+			//Subcommand(0x01, new byte[] { 0x03 }, 1, true);
+
 			BlinkHomeLight();
 
 			a[0] = leds_;
@@ -427,6 +435,7 @@ namespace BetterJoyForCemu {
 
 		public void PowerOff() {
 			if (state > state_.DROPPED) {
+				HIDapi.hid_set_nonblocking(handle, 0);
 				SetHCIState(0x00);
 				state = state_.DROPPED;
 			}
@@ -604,15 +613,16 @@ namespace BetterJoyForCemu {
 
 		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
 		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
+		bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
 		private void DoThingsWithButtons() {
-			int powerOffButton = (int)((!isLeft || other != null) ? Button.HOME : Button.CAPTURE);
+			int powerOffButton = (int)((isPro || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
 
-			if (buttons[powerOffButton]) {
+			if (HomeLongPowerOff && buttons[powerOffButton]) {
 				long timestamp = Stopwatch.GetTimestamp();
 				if ((timestamp - buttons_down_timestamp[powerOffButton]) / 10000 > 2000.0) {
-					PowerOff();
 					if (other != null)
 						other.PowerOff();
+					PowerOff();
 					return;
 				}
 			}
