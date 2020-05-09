@@ -281,7 +281,7 @@ namespace BetterJoyForCemu {
 		}
 
 		private void Ds4_FeedbackReceived(object sender, DualShock4FeedbackReceivedEventArgs e) {
-			SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
+			SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
 				other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
@@ -292,7 +292,7 @@ namespace BetterJoyForCemu {
 		}
 
 		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
-			SetRumble(lowFreq, highFreq, (float)e.LargeMotor / (float)255, rumblePeriod);
+			SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
 				other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
