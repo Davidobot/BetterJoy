@@ -420,6 +420,18 @@ namespace BetterJoyForCemu {
             Subcommand(0x38, a, 25, false);
         }
 
+		private void SetHCIState(byte state) {
+			byte[] a = { state };
+			Subcommand(0x06, a, 1, false);
+		}
+
+		public void PowerOff() {
+			if (state > state_.DROPPED) {
+				SetHCIState(0x00);
+				state = state_.DROPPED;
+			}
+		}
+
 		private void BatteryChanged() { // battery changed level
 			foreach (var v in form.con) {
 				if (v.Tag == this) {
@@ -593,6 +605,18 @@ namespace BetterJoyForCemu {
 		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
 		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
 		private void DoThingsWithButtons() {
+			int powerOffButton = (int)((!isLeft || other != null) ? Button.HOME : Button.CAPTURE);
+
+			if (buttons[powerOffButton]) {
+				long timestamp = Stopwatch.GetTimestamp();
+				if ((timestamp - buttons_down_timestamp[powerOffButton]) / 10000 > 2000.0) {
+					PowerOff();
+					if (other != null)
+						other.PowerOff();
+					return;
+				}
+			}
+
 			if (buttons_down[(int)Button.CAPTURE])
 				Simulate(Config.Value("capture"));
 			if (buttons_down[(int)Button.HOME])

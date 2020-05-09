@@ -300,7 +300,10 @@ namespace BetterJoyForCemu {
 
 		public void OnApplicationQuit() {
 			foreach (Joycon v in j) {
-				v.Detach();
+				if (Boolean.Parse(ConfigurationManager.AppSettings["AutoPowerOff"]))
+					v.PowerOff();
+				else
+					v.Detach();
 
 				if (v.xin != null) {
 					v.xin.Disconnect();

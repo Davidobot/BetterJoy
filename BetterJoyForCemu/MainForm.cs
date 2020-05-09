@@ -255,6 +255,7 @@ namespace BetterJoyForCemu {
 				AppendTextBox("Error writing app settings.\r\n");
 			}
 
+			ConfigurationManager.AppSettings["AutoPowerOff"] = "false";  // Prevent joycons poweroff when applying settings
 			Application.Restart();
 			Environment.Exit(0);
 		}
