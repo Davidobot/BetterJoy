@@ -246,15 +246,15 @@ namespace BetterJoyForCemu {
 									// it wasn't connected in the first place, go figure
 								}
 							}
-							if (temp.ds4 != null) {
+							if (temp.out_ds4 != null) {
 								try {
-									temp.ds4.Disconnect();
+									temp.out_ds4.Disconnect();
 								} catch (Exception e) {
 									// it wasn't connected in the first place, go figure
 								}
 							}
 							temp.out_xbox = null;
-							temp.ds4 = null;
+							temp.out_ds4 = null;
 
 							foreach (Button b in form.con)
 								if (b.Tag == v || b.Tag == temp) {
@@ -274,8 +274,8 @@ namespace BetterJoyForCemu {
 				if (jc.state == Joycon.state_.NOT_ATTACHED) {
 					if (jc.out_xbox != null)
 						jc.out_xbox.Connect();
-					if (jc.ds4 != null)
-						jc.ds4.Connect();
+					if (jc.out_ds4 != null)
+						jc.out_ds4.Connect();
 
 					jc.Attach(leds_: jc.LED);
 
@@ -309,8 +309,8 @@ namespace BetterJoyForCemu {
 					v.out_xbox.Disconnect();
 				}
 
-				if (v.ds4 != null) {
-					v.ds4.Disconnect();
+				if (v.out_ds4 != null) {
+					v.out_ds4.Disconnect();
 				}
 			}
 

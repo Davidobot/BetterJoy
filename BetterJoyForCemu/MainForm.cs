@@ -183,9 +183,9 @@ namespace BetterJoyForCemu {
 									v.out_xbox = null;
 								}
 
-								if (v.ds4 != null) {
-									v.ds4.Disconnect();
-									v.ds4 = null;
+								if (v.out_ds4 != null) {
+									v.out_ds4.Disconnect();
+									v.out_ds4 = null;
 								}
 
 								// setting the other joycon's button image
@@ -270,13 +270,12 @@ namespace BetterJoyForCemu {
 				v.out_xbox.Connect();
 			}
 
-			if (showAsDS4 && v.ds4 == null) {
-				v.ds4 = Program.emClient.CreateDualShock4Controller();
-				v.ds4.AutoSubmitReport = false;
+			if (showAsDS4 && v.out_ds4 == null) {
+				v.out_ds4 = new Controller.OutputControllerDualShock4();
 
 				if (toRumble)
-					v.ds4.FeedbackReceived += v.Ds4_FeedbackReceived;
-				v.ds4.Connect();
+					v.out_ds4.FeedbackReceived += v.Ds4_FeedbackReceived;
+				v.out_ds4.Connect();
 			}
 		}
 

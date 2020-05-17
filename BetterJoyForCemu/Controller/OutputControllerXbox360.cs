@@ -74,7 +74,7 @@ namespace BetterJoyForCemu.Controller
     public class OutputControllerXbox360
     {
         private IXbox360Controller xbox_controller;
-        private OutputControllerXbox360InputState last_input_state;
+        private OutputControllerXbox360InputState current_state;
 
         public delegate void Xbox360FeedbackReceivedEventHandler(Xbox360FeedbackReceivedEventArgs e);
 
@@ -104,7 +104,7 @@ namespace BetterJoyForCemu.Controller
         }
 
         public bool UpdateInput(OutputControllerXbox360InputState new_state) {
-            if (last_input_state.IsEqual(new_state))
+            if (current_state.IsEqual(new_state))
             {
                 return false;
             }
@@ -157,7 +157,7 @@ namespace BetterJoyForCemu.Controller
 
             xbox_controller.SubmitReport();
 
-            last_input_state = new_state;
+            current_state = new_state;
         }
     }
 }
