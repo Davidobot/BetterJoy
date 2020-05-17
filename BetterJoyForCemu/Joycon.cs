@@ -505,8 +505,33 @@ namespace BetterJoyForCemu {
 		private int ReceiveRaw() {
 			if (handle == IntPtr.Zero) return -2;
 			HIDapi.hid_set_nonblocking(handle, 1);
-			byte[] raw_buf = new byte[report_len];
-			int ret = HIDapi.hid_read_timeout(handle, raw_buf, new UIntPtr(report_len), 5000);
+			byte[] raw_buf;
+
+			byte[][] buffers = new byte[][] { new byte[report_len], new byte[report_len] };
+			
+			int ret = HIDapi.hid_read(handle, buffers[0], new UIntPtr(report_len));
+			if (ret == 0) return ret;
+			int ret2;
+
+			// read data until there is no more to read and discard all but the latest data
+			while(true)
+			{
+				ret2 = HIDapi.hid_read(handle, buffers[1], new UIntPtr(report_len));
+				if(ret2 == 0)
+				{
+					raw_buf = buffers[0];
+					break;
+				}
+				ret = HIDapi.hid_read(handle, buffers[1], new UIntPtr(report_len));
+				if(ret == 0)
+				{
+					ret = ret2;
+					raw_buf = buffers[1];
+					break;
+				}
+			}
+
+
 			if (ret > 0) {
 				// Process packets as soon as they come
 				for (int n = 0; n < 3; n++) {
