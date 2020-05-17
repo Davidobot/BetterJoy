@@ -178,9 +178,9 @@ namespace BetterJoyForCemu {
 							jc.SetPlayerLED(led);
 							v.SetPlayerLED(led);
 
-								if (v.xin != null) {
-									v.xin.Disconnect();
-									v.xin = null;
+								if (v.out_xbox != null) {
+									v.out_xbox.Disconnect();
+									v.out_xbox = null;
 								}
 
 								if (v.ds4 != null) {
@@ -262,12 +262,12 @@ namespace BetterJoyForCemu {
 		}
 
 		void ReenableViGEm(Joycon v) {
-			if (showAsXInput && v.xin == null) {
-				v.xin = Program.emClient.CreateXbox360Controller();
+			if (showAsXInput && v.out_xbox == null) {
+				v.out_xbox = new Controller.OutputControllerXbox360();
 
 				if (toRumble)
-					v.xin.FeedbackReceived += v.ReceiveRumble;
-				v.xin.Connect();
+					v.out_xbox.FeedbackReceived += v.ReceiveRumble;
+				v.out_xbox.Connect();
 			}
 
 			if (showAsDS4 && v.ds4 == null) {

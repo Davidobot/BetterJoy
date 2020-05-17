@@ -131,6 +131,7 @@
       <DependentUpon>3rdPartyControllers.cs</DependentUpon>
     </Compile>
     <Compile Include="Config.cs" />
+    <Compile Include="Controller\OutputControllerXbox360.cs" />
     <Compile Include="HIDapi.cs" />
     <Compile Include="Joycon.cs" />
     <Compile Include="MainForm.cs">

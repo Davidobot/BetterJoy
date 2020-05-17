@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WindowsInput;
 using Nefarius.ViGEm.Client.Targets.DualShock4;
+using BetterJoyForCemu.Controller;
 
 namespace BetterJoyForCemu {
 	public class Joycon {
@@ -222,7 +223,7 @@ namespace BetterJoyForCemu {
 		public ulong Timestamp = 0;
 		public int packetCounter = 0;
 
-		public IXbox360Controller xin;
+		public OutputControllerXbox360 out_xbox;
 		public IDualShock4Controller ds4;
 		ushort ds4_ts = 0;
 		ulong lag;
@@ -267,11 +268,8 @@ namespace BetterJoyForCemu {
 			connection = isUSB ? 0x01 : 0x02;
 
 			if (showAsXInput) {
-				xin = Program.emClient.CreateXbox360Controller();
-				xin.AutoSubmitReport = false;
-
-				if (toRumble)
-					xin.FeedbackReceived += ReceiveRumble;
+				out_xbox = new OutputControllerXbox360();
+				out_xbox.FeedbackReceived += ReceiveRumble;
 			}
 
 			if (showAsDS4) {
@@ -287,7 +285,7 @@ namespace BetterJoyForCemu {
 			this.activeData = form.activeCaliData(serial_number);
 		}
 
-		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
+		public void ReceiveRumble(Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
 			SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
@@ -472,8 +470,8 @@ namespace BetterJoyForCemu {
 		public void Detach(bool close = false) {
 			stop_polling = true;
 
-			if (xin != null) {
-				xin.Disconnect();
+			if (out_xbox != null) {
+				out_xbox.Disconnect();
 			}
 
 			if (ds4 != null) {
@@ -564,13 +562,11 @@ namespace BetterJoyForCemu {
 						}
 					}
 				}
-
-				SetXInputReportState();
-				
+								
 				// no reason to send XInput reports so often
-				if (xin != null) {
+				if (out_xbox != null) {
 					try {
-						xin.SubmitReport();
+						out_xbox.UpdateInput(MapToXbox360Input(this));
 					} catch (Exception e) {
 						// ignore /shrug
 					}
@@ -907,85 +903,7 @@ namespace BetterJoyForCemu {
 			return 0;
 		}
 
-		private void SetXInputReportState() {
-			if (xin == null)
-				return;
-
-			if (isPro) {
-				xin.SetButtonState(Xbox360Button.A, buttons[(int)(!swapAB ? Button.B : Button.A)]);
-				xin.SetButtonState(Xbox360Button.B, buttons[(int)(!swapAB ? Button.A : Button.B)]);
-				xin.SetButtonState(Xbox360Button.Y, buttons[(int)(!swapXY ? Button.X : Button.Y)]);
-				xin.SetButtonState(Xbox360Button.X, buttons[(int)(!swapXY ? Button.Y : Button.X)]);
-				xin.SetButtonState(Xbox360Button.Up, buttons[(int)Button.DPAD_UP]);
-				xin.SetButtonState(Xbox360Button.Down, buttons[(int)Button.DPAD_DOWN]);
-				xin.SetButtonState(Xbox360Button.Left, buttons[(int)Button.DPAD_LEFT]);
-				xin.SetButtonState(Xbox360Button.Right, buttons[(int)Button.DPAD_RIGHT]);
-				xin.SetButtonState(Xbox360Button.Back, buttons[(int)Button.MINUS]);
-				xin.SetButtonState(Xbox360Button.Start, buttons[(int)Button.PLUS]);
-				xin.SetButtonState(Xbox360Button.Guide, buttons[(int)Button.HOME]);
-				xin.SetButtonState(Xbox360Button.LeftShoulder, buttons[(int)Button.SHOULDER_1]);
-				xin.SetButtonState(Xbox360Button.RightShoulder, buttons[(int)Button.SHOULDER2_1]);
-				xin.SetButtonState(Xbox360Button.LeftThumb, buttons[(int)Button.STICK]);
-				xin.SetButtonState(Xbox360Button.RightThumb, buttons[(int)Button.STICK2]);
-			} else {
-				if (other != null) { // no need for && other != this
-					xin.SetButtonState(!swapAB ? Xbox360Button.A : Xbox360Button.B, buttons[(int)(isLeft ? Button.B : Button.DPAD_DOWN)]);
-					xin.SetButtonState(!swapAB ? Xbox360Button.B : Xbox360Button.A, buttons[(int)(isLeft ? Button.A : Button.DPAD_RIGHT)]);
-					xin.SetButtonState(!swapXY ? Xbox360Button.Y : Xbox360Button.X, buttons[(int)(isLeft ? Button.X : Button.DPAD_UP)]);
-					xin.SetButtonState(!swapXY ? Xbox360Button.X : Xbox360Button.Y, buttons[(int)(isLeft ? Button.Y : Button.DPAD_LEFT)]);
-					xin.SetButtonState(Xbox360Button.Up, buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)]);
-					xin.SetButtonState(Xbox360Button.Down, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)]);
-					xin.SetButtonState(Xbox360Button.Left, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)]);
-					xin.SetButtonState(Xbox360Button.Right, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)]);
-					xin.SetButtonState(Xbox360Button.Back, buttons[(int)Button.MINUS]);
-					xin.SetButtonState(Xbox360Button.Start, buttons[(int)Button.PLUS]);
-					xin.SetButtonState(Xbox360Button.Guide, buttons[(int)Button.HOME]);
-					xin.SetButtonState(Xbox360Button.LeftShoulder, buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)]);
-					xin.SetButtonState(Xbox360Button.RightShoulder, buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)]);
-					xin.SetButtonState(Xbox360Button.LeftThumb, buttons[(int)(isLeft ? Button.STICK : Button.STICK2)]);
-					xin.SetButtonState(Xbox360Button.RightThumb, buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)]);
-				} else { // single joycon mode
-					xin.SetButtonState(!swapAB ? Xbox360Button.A : Xbox360Button.B, buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT)]);
-					xin.SetButtonState(!swapAB ? Xbox360Button.B : Xbox360Button.A, buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)]);
-					xin.SetButtonState(!swapXY ? Xbox360Button.Y : Xbox360Button.X, buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)]);
-					xin.SetButtonState(!swapXY ? Xbox360Button.X : Xbox360Button.Y, buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)]);
-					xin.SetButtonState(Xbox360Button.Back, buttons[(int)Button.MINUS] | buttons[(int)Button.HOME]);
-					xin.SetButtonState(Xbox360Button.Start, buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE]);
-
-					xin.SetButtonState(Xbox360Button.LeftShoulder, buttons[(int)Button.SL]);
-					xin.SetButtonState(Xbox360Button.RightShoulder, buttons[(int)Button.SR]);
-
-					xin.SetButtonState(Xbox360Button.LeftThumb, buttons[(int)Button.STICK]);
-				}
-			}
-
-			// overwrite guide button if it's custom-mapped
-			if (Config.Value("home") != "0")
-				xin.SetButtonState(Xbox360Button.Guide, false);
-
-			if (!isSnes) {
-				if (other != null || isPro) { // no need for && other != this
-					xin.SetAxisValue(Xbox360Axis.LeftThumbX, CastStickValue((other == this && !isLeft) ? stick2[0] : stick[0]));
-					xin.SetAxisValue(Xbox360Axis.LeftThumbY, CastStickValue((other == this && !isLeft) ? stick2[1] : stick[1]));
-					xin.SetAxisValue(Xbox360Axis.RightThumbX, CastStickValue((other == this && !isLeft) ? stick[0] : stick2[0]));
-					xin.SetAxisValue(Xbox360Axis.RightThumbY, CastStickValue((other == this && !isLeft) ? stick[1] : stick2[1]));
-				} else { // single joycon mode
-					xin.SetAxisValue(Xbox360Axis.LeftThumbY, CastStickValue((isLeft ? 1 : -1) * stick[0]));
-					xin.SetAxisValue(Xbox360Axis.LeftThumbX, CastStickValue((isLeft ? -1 : 1) * stick[1]));
-				}
-			}
-
-			if (other != null || isPro) {
-				byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
-				byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
-				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0));
-				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0));
-			} else {
-				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
-				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
-			}
-		}
-
+		// TODO: Check sticks AND/OR DPAD - wrong translation
 		private void SetDS4ReportState(int n) {
 			if (ds4 == null)
 				return;
@@ -1215,11 +1133,11 @@ namespace BetterJoyForCemu {
 			return s;
 		}
 
-		private short CastStickValue(float stick_value) {
+		private static short CastStickValue(float stick_value) {
 			return (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, stick_value * (stick_value > 0 ? Int16.MaxValue : -Int16.MinValue)));
 		}
 
-		private byte CastStickValueByte(float stick_value) {
+		private static byte CastStickValueByte(float stick_value) {
 			return (byte)Math.Max(Byte.MinValue, Math.Min(Byte.MaxValue, 127 - stick_value * Byte.MaxValue));
 		}
 
@@ -1384,6 +1302,124 @@ namespace BetterJoyForCemu {
 				tostr += string.Format((arr[0] is byte) ? "{0:X2} " : ((arr[0] is float) ? "{0:F} " : "{0:D} "), arr[i + start]);
 			}
 			DebugPrint(string.Format(format, tostr), d);
+		}
+
+		private static OutputControllerXbox360InputState MapToXbox360Input(Joycon input)
+		{
+			var output = new OutputControllerXbox360InputState();
+
+			var swapAB = input.swapAB;
+			var swapXY = input.swapXY;
+
+			var isPro = input.isPro;
+			var isLeft = input.isLeft;
+			var isSnes = input.isSnes;
+			var other = input.other;
+			var GyroAnalogSliders = input.GyroAnalogSliders;
+
+			var buttons = input.buttons;
+			var stick = input.stick;
+			var stick2 = input.stick2;
+			var sliderVal = input.sliderVal;
+
+			if (isPro)
+			{
+				output.a = buttons[(int)(!swapAB ? Button.B : Button.A)];
+				output.b = buttons[(int)(!swapAB ? Button.A : Button.B)];
+				output.y = buttons[(int)(!swapXY ? Button.X : Button.Y)];
+				output.x = buttons[(int)(!swapXY ? Button.Y : Button.X)];
+
+				output.dpad_up = buttons[(int)Button.DPAD_UP];
+				output.dpad_down = buttons[(int)Button.DPAD_DOWN];
+				output.dpad_left = buttons[(int)Button.DPAD_LEFT];
+				output.dpad_right = buttons[(int)Button.DPAD_RIGHT];
+
+				output.back = buttons[(int)Button.MINUS];
+				output.start = buttons[(int)Button.PLUS];
+				output.guide = buttons[(int)Button.HOME];
+
+				output.shoulder_left = buttons[(int)Button.SHOULDER_1];
+				output.shoulder_right = buttons[(int)Button.SHOULDER2_1];
+
+				output.thumb_stick_left = buttons[(int)Button.STICK];
+				output.thumb_stick_right = buttons[(int)Button.STICK2];
+			}
+			else
+			{
+				if (other != null)
+				{ // no need for && other != this
+					output.a = buttons[(int)(!swapAB ? isLeft ? Button.B : Button.DPAD_DOWN : isLeft ? Button.A : Button.DPAD_RIGHT)];
+					output.b = buttons[(int)(swapAB ? isLeft ? Button.B : Button.DPAD_DOWN : isLeft ? Button.A : Button.DPAD_RIGHT)];
+					output.y = buttons[(int)(!swapXY ? isLeft ? Button.X : Button.DPAD_UP : isLeft ? Button.Y : Button.DPAD_LEFT)];
+					output.x = buttons[(int)(swapXY ? isLeft ? Button.X : Button.DPAD_UP : isLeft ? Button.Y : Button.DPAD_LEFT)];
+
+					output.dpad_up = buttons[(int)(isLeft ? Button.DPAD_UP : Button.X)];
+					output.dpad_down = buttons[(int)(isLeft ? Button.DPAD_DOWN : Button.B)];
+					output.dpad_left = buttons[(int)(isLeft ? Button.DPAD_LEFT : Button.Y)];
+					output.dpad_right = buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)];
+
+					output.back = buttons[(int)Button.MINUS];
+					output.start = buttons[(int)Button.PLUS];
+					output.guide = buttons[(int)Button.HOME];
+
+					output.shoulder_left = buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)];
+					output.shoulder_right = buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)];
+
+					output.thumb_stick_left = buttons[(int)(isLeft ? Button.STICK : Button.STICK2)];
+					output.thumb_stick_right = buttons[(int)(isLeft ? Button.STICK2 : Button.STICK)];
+				}
+				else
+				{ // single joycon mode
+					output.a = buttons[(int)(!swapAB ? isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT : isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)];
+					output.b = buttons[(int)(swapAB ? isLeft ? Button.DPAD_LEFT : Button.DPAD_RIGHT : isLeft ? Button.DPAD_DOWN : Button.DPAD_UP)];
+					output.y = buttons[(int)(!swapXY ? isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT : isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)];
+					output.x = buttons[(int)(swapXY ? isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT : isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)];
+
+					output.back = buttons[(int)Button.MINUS] | buttons[(int)Button.HOME];
+					output.start = buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE];
+
+					output.shoulder_left = buttons[(int)Button.SL];
+					output.shoulder_right = buttons[(int)Button.SR];
+
+					output.thumb_stick_left = buttons[(int)Button.STICK];
+				}
+			}
+
+			// overwrite guide button if it's custom-mapped
+			if (Config.Value("home") != "0")
+				output.guide = false;
+
+			if (!isSnes)
+			{
+				if (other != null || isPro)
+				{ // no need for && other != this
+					output.axis_left_x = CastStickValue((other == input && !isLeft) ? stick2[0] : stick[0]);
+					output.axis_left_y = CastStickValue((other == input && !isLeft) ? stick2[1] : stick[1]);
+
+					output.axis_right_x = CastStickValue((other == input && !isLeft) ? stick[0] : stick2[0]);
+					output.axis_right_y = CastStickValue((other == input && !isLeft) ? stick[1] : stick2[1]);
+				}
+				else
+				{ // single joycon mode
+					output.axis_left_x = CastStickValue((isLeft ? 1 : -1) * stick[0]);
+					output.axis_left_y = CastStickValue((isLeft ? -1 : 1) * stick[1]);
+				}
+			}
+
+			if (other != null || isPro)
+			{
+				byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
+				byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
+				output.trigger_left = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0);
+				output.trigger_right = (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0);
+			}
+			else
+			{
+				output.trigger_left = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0);
+				output.trigger_right = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0);
+			}
+
+			return output;
 		}
 	}
 }
