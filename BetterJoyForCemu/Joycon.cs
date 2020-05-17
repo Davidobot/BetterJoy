@@ -283,18 +283,18 @@ namespace BetterJoyForCemu {
 			}
 		}
 
-		private void Ds4_FeedbackReceived(object sender, DualShock4FeedbackReceivedEventArgs e) {
+		public void getActiveData() {
+			this.activeData = form.activeCaliData(serial_number);
+		}
+
+		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
 			SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
 				other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 		}
 
-		public void getActiveData() {
-			this.activeData = form.activeCaliData(serial_number);
-		}
-
-		public void ReceiveRumble(object sender, Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360FeedbackReceivedEventArgs e) {
+		public void Ds4_FeedbackReceived(object sender, DualShock4FeedbackReceivedEventArgs e) {
 			SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
 
 			if (other != null && other != this)
@@ -530,7 +530,6 @@ namespace BetterJoyForCemu {
 					break;
 				}
 			}
-
 
 			if (ret > 0) {
 				// Process packets as soon as they come

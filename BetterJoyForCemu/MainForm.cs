@@ -138,6 +138,7 @@ namespace BetterJoyForCemu {
 
 		bool toRumble = Boolean.Parse(ConfigurationManager.AppSettings["EnableRumble"]);
 		bool showAsXInput = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]);
+		bool showAsDS4 = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsDS4"]);
 
 		public void locBtnClick(object sender, EventArgs e) {
 			Button bb = sender as Button;
@@ -177,8 +178,15 @@ namespace BetterJoyForCemu {
 							jc.SetPlayerLED(led);
 							v.SetPlayerLED(led);
 
-								v.xin.Disconnect();
-								v.xin = null;
+								if (v.xin != null) {
+									v.xin.Disconnect();
+									v.xin = null;
+								}
+
+								if (v.ds4 != null) {
+									v.ds4.Disconnect();
+									v.ds4 = null;
+								}
 
 								// setting the other joycon's button image
 								foreach (Button b in con)
@@ -196,15 +204,8 @@ namespace BetterJoyForCemu {
 							if (b.Tag == v)
 								b.BackgroundImage = v.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
 				} else if (v.other != null && !v.isPro) { // needs disconnecting from other joycon
-					if (v.xin == null) {
-						ReenableXinput(v);
-						v.xin.Connect();
-					}
-
-					if (v.other.xin == null) {
-						ReenableXinput(v.other);
-						v.other.xin.Connect();
-					}
+					ReenableViGEm(v);
+					ReenableViGEm(v.other);
 
 					button.BackgroundImage = v.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
 
@@ -260,12 +261,22 @@ namespace BetterJoyForCemu {
 			Environment.Exit(0);
 		}
 
-		void ReenableXinput(Joycon v) {
-			if (showAsXInput) {
+		void ReenableViGEm(Joycon v) {
+			if (showAsXInput && v.xin == null) {
 				v.xin = Program.emClient.CreateXbox360Controller();
 
 				if (toRumble)
 					v.xin.FeedbackReceived += v.ReceiveRumble;
+				v.xin.Connect();
+			}
+
+			if (showAsDS4 && v.ds4 == null) {
+				v.ds4 = Program.emClient.CreateDualShock4Controller();
+				v.ds4.AutoSubmitReport = false;
+
+				if (toRumble)
+					v.ds4.FeedbackReceived += v.Ds4_FeedbackReceived;
+				v.ds4.Connect();
 			}
 		}
 
