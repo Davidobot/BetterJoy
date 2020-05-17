@@ -2,7 +2,7 @@
   <img src="title.png">
 </p>
 
-# BetterJoy v6.1
+# BetterJoy v6.2
 Allows the Nintendo Switch Pro Controller, Joycons, and Switch SNES controller to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), [Dolphin](https://dolphin-emu.org/), and system-wide with generic XInput support.
 
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
@@ -22,8 +22,9 @@ Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
 
 # How to use
 1. Install drivers
-    1. Run *! Driver Install (Run as Admin).bat*
-2. Run BetterJoyForCemu.exe
+    1. Read the READMEs (they're there for a reason!)
+    1. Run *Drivers/ViGEmBus_Setup_1.16.116.exe*
+2. Run *BetterJoyForCemu.exe*
 3. Connect your controllers.
 4. Start Cemu and ensure CemuHook has the controller selected.
     1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
@@ -40,7 +41,7 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
 ## Bluetooth Mode
  * Hold down the small button (sync) on the top of the controller for 5 seconds - this puts the controller into broadcasting mode.
  * Search for it in your bluetooth settings and pair normally.
- * To disconnect the controller - press the sync button once. To reconnect - press any button on your controller.
+ * To disconnect the controller - hold the home button (or capture button) down for 2 seconds (or press the sync button). To reconnect - press any button on your controller.
 
 ## USB Mode
  * Plug the controller into your computer.
