@@ -70,7 +70,7 @@ namespace BetterJoyForCemu {
 					if (v.other != null)
 						v.other.other = null; // The other of the other is the joycon itself
 
-					v.Detach(); rem.Add(v);
+					v.Detach(true); rem.Add(v);
 
 					foreach (Button b in form.con) {
 						if (b.Enabled & b.Tag == v) {
@@ -83,7 +83,7 @@ namespace BetterJoyForCemu {
 						}
 					}
 
-					form.AppendTextBox("Removed dropped controller to list. Can be reconnected.\r\n");
+					form.AppendTextBox("Removed dropped controller. Can be reconnected.\r\n");
 				}
 			}
 

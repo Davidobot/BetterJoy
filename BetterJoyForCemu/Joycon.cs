@@ -469,7 +469,7 @@ namespace BetterJoyForCemu {
 			filterweight = a;
 		}
 
-		public void Detach() {
+		public void Detach(bool close = false) {
 			stop_polling = true;
 
 			if (xin != null) {
@@ -494,7 +494,7 @@ namespace BetterJoyForCemu {
 					HIDapi.hid_write(handle, a, new UIntPtr(2));
 				}
 			}
-			if (state > state_.DROPPED) {
+			if (close || state > state_.DROPPED) {
 				HIDapi.hid_close(handle);
 			}
 			state = state_.NOT_ATTACHED;
@@ -646,6 +646,7 @@ namespace BetterJoyForCemu {
 				if ((timestamp - buttons_down_timestamp[powerOffButton]) / 10000 > 2000.0) {
 					if (other != null)
 						other.PowerOff();
+					
 					PowerOff();
 					return;
 				}
@@ -728,7 +729,7 @@ namespace BetterJoyForCemu {
 
 				int a = ReceiveRaw();
 
-				if (a > 0) {
+				if (a > 0 && state > state_.DROPPED) {
 					state = state_.IMU_DATA_OK;
 					attempts = 0;
 
