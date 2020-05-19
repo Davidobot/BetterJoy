@@ -775,6 +775,7 @@ namespace BetterJoyForCemu {
 				} else if (a == 0) {
 					// The non-blocking read timed out. No need to sleep.
 					// No need to increase attempts because it's not an error.
+					Thread.Sleep((Int32)5);
 				}
 			}
 		}
