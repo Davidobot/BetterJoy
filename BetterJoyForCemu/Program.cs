@@ -524,11 +524,19 @@ namespace BetterJoyForCemu {
 			mgr.OnApplicationQuit();
 		}
 
+		private static string appGuid = "04450797-3520-462e-a563-107677a483d8"; // randomly-generated
 		static void Main(string[] args) {
-			Application.EnableVisualStyles();
-			Application.SetCompatibleTextRenderingDefault(false);
-			form = new MainForm();
-			Application.Run(form);
+			using (Mutex mutex = new Mutex(false, "Global\\" + appGuid)) {
+				if (!mutex.WaitOne(0, false)) {
+					MessageBox.Show("Instance already running.", "BetterJoy");
+					return;
+				}
+
+				Application.EnableVisualStyles();
+				Application.SetCompatibleTextRenderingDefault(false);
+				form = new MainForm();
+				Application.Run(form);
+			}
 		}
 	}
 }
