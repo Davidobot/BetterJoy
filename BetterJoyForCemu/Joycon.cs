@@ -638,6 +638,10 @@ namespace BetterJoyForCemu {
 		string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
 		int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
 		bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
+
+		bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
+		int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
+		byte[] sliderVal = new byte[] { 0, 0 };
 		private void DoThingsWithButtons() {
 			int powerOffButton = (int)((isPro || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
 
@@ -683,7 +687,28 @@ namespace BetterJoyForCemu {
 
 				SimulateContinous((int)Button.SL, Config.Value("sl_r"));
 				SimulateContinous((int)Button.SR, Config.Value("sr_r"));
-			}			
+			}
+
+			if (GyroAnalogSliders && (other != null || isPro)) {
+				Button leftT = isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2;
+				Button rightT = isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2;
+				float dt = 0.015f; // 15ms
+				Joycon left = isLeft ? this : (isPro ? this : this.other); Joycon right = !isLeft ? this : (isPro ? this : this.other);
+				int ldy = (int)(GyroAnalogSensitivity * (left.gyr_g.Y * dt) * (Math.Abs(left.gyr_g.Y) < 1 ? 0 : 1));
+				int rdy = (int)(GyroAnalogSensitivity * (right.gyr_g.Y * dt) * (Math.Abs(right.gyr_g.Y) < 1 ? 0 : 1));
+
+				if (buttons[(int)leftT]) {
+					sliderVal[0] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[0] + ldy));
+				} else {
+					sliderVal[0] = 0;
+				}
+
+				if (buttons[(int)rightT]) {
+					sliderVal[1] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[1] + rdy));
+				} else {
+					sliderVal[1] = 0;
+				}
+			}
 
 			if (extraGyroFeature == "joy") {
 				// TODO
@@ -950,15 +975,16 @@ namespace BetterJoyForCemu {
 			}
 
 			if (other != null || isPro) {
-				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Byte.MaxValue : 0));
-				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
+				byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
+				byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
+				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0));
+				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0));
 			} else {
 				xin.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
 				xin.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
 			}
 		}
 
-		// TODO: Check sticks AND/OR DPAD - wrong translation
 		private void SetDS4ReportState(int n) {
 			if (ds4 == null)
 				return;
@@ -1066,8 +1092,10 @@ namespace BetterJoyForCemu {
 			}
 
 			if (other != null || isPro) {
-				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? Byte.MaxValue : 0));
-				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
+				byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
+				byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
+				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0));
+				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0));
 			} else {
 				ds4.SetSliderValue(DualShock4Slider.LeftTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0));
 				ds4.SetSliderValue(DualShock4Slider.RightTrigger, (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0));
