@@ -178,14 +178,14 @@ namespace BetterJoyForCemu {
 							jc.SetPlayerLED(led);
 							v.SetPlayerLED(led);
 
-								if (v.xin != null) {
-									v.xin.Disconnect();
-									v.xin = null;
+								if (v.out_xbox != null) {
+									v.out_xbox.Disconnect();
+									v.out_xbox = null;
 								}
 
-								if (v.ds4 != null) {
-									v.ds4.Disconnect();
-									v.ds4 = null;
+								if (v.out_ds4 != null) {
+									v.out_ds4.Disconnect();
+									v.out_ds4 = null;
 								}
 
 								// setting the other joycon's button image
@@ -262,21 +262,20 @@ namespace BetterJoyForCemu {
 		}
 
 		void ReenableViGEm(Joycon v) {
-			if (showAsXInput && v.xin == null) {
-				v.xin = Program.emClient.CreateXbox360Controller();
+			if (showAsXInput && v.out_xbox == null) {
+				v.out_xbox = new Controller.OutputControllerXbox360();
 
 				if (toRumble)
-					v.xin.FeedbackReceived += v.ReceiveRumble;
-				v.xin.Connect();
+					v.out_xbox.FeedbackReceived += v.ReceiveRumble;
+				v.out_xbox.Connect();
 			}
 
-			if (showAsDS4 && v.ds4 == null) {
-				v.ds4 = Program.emClient.CreateDualShock4Controller();
-				v.ds4.AutoSubmitReport = false;
+			if (showAsDS4 && v.out_ds4 == null) {
+				v.out_ds4 = new Controller.OutputControllerDualShock4();
 
 				if (toRumble)
-					v.ds4.FeedbackReceived += v.Ds4_FeedbackReceived;
-				v.ds4.Connect();
+					v.out_ds4.FeedbackReceived += v.Ds4_FeedbackReceived;
+				v.out_ds4.Connect();
 			}
 		}
 
