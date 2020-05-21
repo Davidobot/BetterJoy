@@ -5,7 +5,8 @@
 root = true
 # All files
 [*]
-indent_style = tab
+indent_size = 4
+indent_style = space
 # Code files
 [*.{cs,csx,vb,vbx}]
 indent_size = 4

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace BetterJoyForCemu {
 	public class HIDapi {
 #if LINUX
-		  const string dll = "libhidapi.so";
+	    const string dll = "libhidapi.so";
 #else
 		const string dll = "hidapi.dll";
 #endif

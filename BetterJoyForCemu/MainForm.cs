@@ -171,12 +171,12 @@ namespace BetterJoyForCemu {
 								v.other = jc;
 								jc.other = v;
 
-							//Set both Joycon LEDs to the one with the lowest ID
-							byte led = jc.LED <= v.LED ? jc.LED : v.LED;
-							jc.LED = led;
-							v.LED = led;
-							jc.SetPlayerLED(led);
-							v.SetPlayerLED(led);
+								//Set both Joycon LEDs to the one with the lowest ID
+								byte led = jc.LED <= v.LED ? jc.LED : v.LED;
+								jc.LED = led;
+								v.LED = led;
+								jc.SetPlayerLED(led);
+								v.SetPlayerLED(led);
 
 								if (v.out_xbox != null) {
 									v.out_xbox.Disconnect();
