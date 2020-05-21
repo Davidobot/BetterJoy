@@ -1,24 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using System.Threading;
-using System.Runtime.InteropServices;
-using System.Timers;
-
-using System.Net.NetworkInformation;
-using System.Diagnostics;
-
-using static BetterJoyForCemu.HIDapi;
-using Nefarius.ViGEm.Client;
-using System.Net;
 using System.Configuration;
-using System.Net.Http;
+using System.Diagnostics;
 using System.IO;
-using System.Windows.Forms;
-
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.ServiceProcess;
+using System.Text;
+using System.Threading;
+using System.Timers;
+using System.Windows.Forms;
+using Nefarius.ViGEm.Client;
+using static BetterJoyForCemu.HIDapi;
 
 namespace BetterJoyForCemu {
 	public class JoyconManager {
@@ -112,7 +108,7 @@ namespace BetterJoyForCemu {
 
 				if (enumerate.serial_number == null) {
 					ptr = enumerate.next; // can't believe it took me this long to figure out why USB connections used up so much CPU.
-					// it was getting stuck in an inf loop here!
+										  // it was getting stuck in an inf loop here!
 					continue;
 				}
 
@@ -173,7 +169,7 @@ namespace BetterJoyForCemu {
 					bool isPro = enumerate.product_id == product_pro;
 					bool isSnes = enumerate.product_id == product_snes;
 					j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes));
-					
+
 					foundNew = true;
 					j.Last().form = form;
 
