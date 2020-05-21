@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BetterJoyForCemu {
 	public static class Config { // stores dynamic configuration, including
@@ -13,7 +10,7 @@ namespace BetterJoyForCemu {
 		const int settingsNum = 10; // currently - ProgressiveScan, StartInTray + special buttons
 
 		public static string GetDefaultValue(string s) {
-			switch(s) {
+			switch (s) {
 				case "ProgressiveScan":
 					return "1";
 				case "capture":
@@ -32,7 +29,7 @@ namespace BetterJoyForCemu {
 				int lineNO = 0;
 				using (StreamReader file = new StreamReader(PATH)) {
 					string line = String.Empty;
-					
+
 					while ((line = file.ReadLine()) != null) {
 						string[] vs = line.Split();
 						try {
@@ -56,7 +53,7 @@ namespace BetterJoyForCemu {
 						lineNO++;
 					}
 
-					
+
 				}
 
 				// if old settings

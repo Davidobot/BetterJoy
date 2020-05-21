@@ -1,21 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
-using System.Configuration;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Nefarius.ViGEm.Client;
-using Nefarius.ViGEm.Client.Targets;
-using Nefarius.ViGEm.Client.Targets.Xbox360;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using WindowsInput;
-using Nefarius.ViGEm.Client.Targets.DualShock4;
 using BetterJoyForCemu.Controller;
+using Nefarius.ViGEm.Client.Targets.DualShock4;
+using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace BetterJoyForCemu {
 	public class Joycon {

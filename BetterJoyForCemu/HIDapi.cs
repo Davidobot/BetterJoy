@@ -3,11 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace BetterJoyForCemu {
 	public class HIDapi {
-		#if LINUX
+#if LINUX
 		  const string dll = "libhidapi.so";
-		#else
-			const string dll = "hidapi.dll";
-		#endif
+#else
+		const string dll = "hidapi.dll";
+#endif
 
 		public struct hid_device_info {
 			[MarshalAs(UnmanagedType.LPStr)]
@@ -40,10 +40,10 @@ namespace BetterJoyForCemu {
 		public static extern void hid_free_enumeration(IntPtr phid_device_info);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
-		public static extern IntPtr hid_open(ushort vendor_id, ushort product_id, [MarshalAs(UnmanagedType.LPWStr)]string serial_number);
+		public static extern IntPtr hid_open(ushort vendor_id, ushort product_id, [MarshalAs(UnmanagedType.LPWStr)] string serial_number);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
-		public static extern IntPtr hid_open_path([MarshalAs(UnmanagedType.LPStr)]string path);
+		public static extern IntPtr hid_open_path([MarshalAs(UnmanagedType.LPStr)] string path);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
 		public static extern int hid_write(IntPtr device, byte[] data, UIntPtr length);
@@ -67,16 +67,16 @@ namespace BetterJoyForCemu {
 		public static extern void hid_close(IntPtr device);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
-		public static extern int hid_get_manufacturer_string(IntPtr device, [MarshalAs(UnmanagedType.LPWStr)]string string_, UIntPtr maxlen);
+		public static extern int hid_get_manufacturer_string(IntPtr device, [MarshalAs(UnmanagedType.LPWStr)] string string_, UIntPtr maxlen);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
-		public static extern int hid_get_product_string(IntPtr device, [MarshalAs(UnmanagedType.LPWStr)]string string_, UIntPtr maxlen);
+		public static extern int hid_get_product_string(IntPtr device, [MarshalAs(UnmanagedType.LPWStr)] string string_, UIntPtr maxlen);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
-		public static extern int hid_get_serial_number_string(IntPtr device, [MarshalAs(UnmanagedType.LPWStr)]string string_, UIntPtr maxlen);
+		public static extern int hid_get_serial_number_string(IntPtr device, [MarshalAs(UnmanagedType.LPWStr)] string string_, UIntPtr maxlen);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
-		public static extern int hid_get_indexed_string(IntPtr device, int string_index, [MarshalAs(UnmanagedType.LPWStr)]string string_, UIntPtr maxlen);
+		public static extern int hid_get_indexed_string(IntPtr device, int string_index, [MarshalAs(UnmanagedType.LPWStr)] string string_, UIntPtr maxlen);
 
 		[DllImport(dll, CallingConvention = CallingConvention.Cdecl)]
 		[return: MarshalAs(UnmanagedType.LPWStr)]

@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Force.Crc32;
+using System.Configuration;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Configuration;
+using Force.Crc32;
 
 namespace BetterJoyForCemu {
 	class UdpServer {
