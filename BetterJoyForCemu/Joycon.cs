@@ -22,6 +22,8 @@ namespace BetterJoyForCemu {
         public Joycon other;
         public bool active_gyro = false;
 
+        private long inactivity = Stopwatch.GetTimestamp();
+
         public bool send = true;
 
         public enum DebugType : int {
@@ -601,6 +603,7 @@ namespace BetterJoyForCemu {
         string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
         int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
         bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
+        long PowerOffInactivityMins = Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
 
         bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
         int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
@@ -608,9 +611,19 @@ namespace BetterJoyForCemu {
         private void DoThingsWithButtons() {
             int powerOffButton = (int)((isPro || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
 
+            long timestamp = Stopwatch.GetTimestamp();
             if (HomeLongPowerOff && buttons[powerOffButton]) {
-                long timestamp = Stopwatch.GetTimestamp();
                 if ((timestamp - buttons_down_timestamp[powerOffButton]) / 10000 > 2000.0) {
+                    if (other != null)
+                        other.PowerOff();
+
+                    PowerOff();
+                    return;
+                }
+            }
+
+            if (PowerOffInactivityMins > 0) {
+                if ((timestamp - inactivity) / 10000 > PowerOffInactivityMins * 60 * 1000) {
                     if (other != null)
                         other.PowerOff();
 
@@ -709,8 +722,7 @@ namespace BetterJoyForCemu {
         private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
         private void Poll() {
             int attempts = 0;
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
+
             while (!stop_polling & state > state_.NO_JOYCONS) {
                 if (!isSnes && (rumble_obj.t > 0))
                     SendRumble(rumble_obj.GetData());
@@ -856,12 +868,17 @@ namespace BetterJoyForCemu {
 
                 lock (buttons_up) {
                     lock (buttons_down) {
+                        bool changed = false;
                         for (int i = 0; i < buttons.Length; ++i) {
                             buttons_up[i] = (down_[i] & !buttons[i]);
                             buttons_down[i] = (!down_[i] & buttons[i]);
                             if (down_[i] != buttons[i])
                                 buttons_down_timestamp[i] = (buttons[i] ? timestamp : -1);
+                            if (buttons_up[i] || buttons_down[i])
+                                changed = true;
                         }
+
+                        inactivity = (changed) ? timestamp : inactivity;
                     }
                 }
             }
