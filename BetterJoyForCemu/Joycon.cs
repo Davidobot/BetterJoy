@@ -338,14 +338,7 @@ namespace BetterJoyForCemu {
             byte[] a = { 0x0 };
 
             // Connect
-            if (!isUSB) {
-                // Input report mode
-                Subcommand(0x03, new byte[] { 0x30 }, 1, false);
-
-                a[0] = 0x1;
-                dump_calibration_data();
-            } else {
-
+            if (isUSB) {
                 a = Enumerable.Repeat((byte)0, 64).ToArray();
                 form.AppendTextBox("Using USB.\r\n");
 
@@ -376,8 +369,8 @@ namespace BetterJoyForCemu {
                 HIDapi.hid_write(handle, a, new UIntPtr(2)); // doesn't actually prevent timout...
                 HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
-                dump_calibration_data();
             }
+            dump_calibration_data();
 
             // Bluetooth manual pairing
             byte[] btmac_host = Program.btMAC.GetAddressBytes();
@@ -1030,9 +1023,13 @@ namespace BetterJoyForCemu {
             else ++global_count;
             if (print) { PrintArray(buf_, DebugType.COMMS, len, 11, "Subcommand 0x" + string.Format("{0:X2}", sc) + " sent. Data: 0x{0:S}"); };
             HIDapi.hid_write(handle, buf_, new UIntPtr(len + 11));
-            int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 100);
-            if (res < 1) DebugPrint("No response.", DebugType.COMMS);
-            else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
+            do {
+
+                int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 100);
+                if (res < 1) DebugPrint("No response.", DebugType.COMMS);
+                else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
+            } while (response[0] != 0x21 && response[14] != sc);
+
             return response;
         }
 
