@@ -13,8 +13,6 @@ using Nefarius.ViGEm.Client.Targets.Xbox360;
 
 namespace BetterJoyForCemu {
     public class Joycon {
-        float timing = 120.0f;
-
         public string path = String.Empty;
         public bool isPro = false;
         public bool isSnes = false;
@@ -127,40 +125,50 @@ namespace BetterJoyForCemu {
 
         private struct Rumble {
             private float h_f, l_f;
-            public float t, amp, fullamp;
-            public bool timed_rumble;
+            public float amp, fullamp;
+            public bool controller_informed;
+            public long end_rumble_time_milliseconds;
 
-            public void set_vals(float low_freq, float high_freq, float amplitude, int time = 0) {
+            public void set_vals(float low_freq, float high_freq, float amplitude, int rumble_duration_microseconds = 0) {
                 h_f = high_freq;
                 amp = amplitude;
                 fullamp = amplitude;
                 l_f = low_freq;
-                timed_rumble = false;
-                t = 0;
-                if (time != 0) {
-                    t = time / 1000f;
-                    timed_rumble = true;
+                if (rumble_duration_microseconds != 0) {
+                    end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_microseconds / 1000;
+                } else {
+                    end_rumble_time_milliseconds = 0;
                 }
+
+                controller_informed = false;
             }
-            public Rumble(float low_freq, float high_freq, float amplitude, int time = 0) {
+            public Rumble(float low_freq, float high_freq, float amplitude, int rumble_duration_microseconds = 0) {
                 h_f = high_freq;
                 amp = amplitude;
                 fullamp = amplitude;
                 l_f = low_freq;
-                timed_rumble = false;
-                t = 0;
-                if (time != 0) {
-                    t = time / 1000f;
-                    timed_rumble = true;
+                if (rumble_duration_microseconds != 0) {
+                    end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_microseconds / 1000;
+                } else {
+                    end_rumble_time_milliseconds = 0;
                 }
+                controller_informed = false;
             }
             private float clamp(float x, float min, float max) {
                 if (x < min) return min;
                 if (x > max) return max;
                 return x;
             }
+            public void Update() {
+                if (end_rumble_time_milliseconds != 0 && DateTimeOffset.Now.ToUnixTimeMilliseconds() > end_rumble_time_milliseconds) {
+                    controller_informed = false;
+                    end_rumble_time_milliseconds = 0;
+                    amp = 0;
+                }
+            }
             public byte[] GetData() {
                 byte[] rumble_data = new byte[8];
+
                 if (amp == 0.0f) {
                     rumble_data[0] = 0x0;
                     rumble_data[1] = 0x1;
@@ -337,7 +345,6 @@ namespace BetterJoyForCemu {
                 a[0] = 0x1;
                 dump_calibration_data();
             } else {
-                Subcommand(0x03, new byte[] { 0x3f }, 1, false);
 
                 a = Enumerable.Repeat((byte)0, 64).ToArray();
                 form.AppendTextBox("Using USB.\r\n");
@@ -345,9 +352,9 @@ namespace BetterJoyForCemu {
                 a[0] = 0x80;
                 a[1] = 0x1;
                 HIDapi.hid_write(handle, a, new UIntPtr(2));
-                HIDapi.hid_read(handle, a, new UIntPtr(64));
+                HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
-                if (a[2] != 0x3) {
+                if (a[3] == 0x3) {
                     PadMacAddress = new PhysicalAddress(new byte[] { a[9], a[8], a[7], a[6], a[5], a[4] });
                 }
 
@@ -355,15 +362,19 @@ namespace BetterJoyForCemu {
                 a = Enumerable.Repeat((byte)0, 64).ToArray();
                 a[0] = 0x80; a[1] = 0x2; // Handshake
                 HIDapi.hid_write(handle, a, new UIntPtr(2));
+                HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
                 a[0] = 0x80; a[1] = 0x3; // 3Mbit baud rate
                 HIDapi.hid_write(handle, a, new UIntPtr(2));
+                HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
                 a[0] = 0x80; a[1] = 0x2; // Handshake at new baud rate
                 HIDapi.hid_write(handle, a, new UIntPtr(2));
+                HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
                 a[0] = 0x80; a[1] = 0x4; // Prevent HID timeout
                 HIDapi.hid_write(handle, a, new UIntPtr(2)); // doesn't actually prevent timout...
+                HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
                 dump_calibration_data();
             }
@@ -381,18 +392,14 @@ namespace BetterJoyForCemu {
             a[0] = leds_;
             Subcommand(0x30, a, 1);
             Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1, true);
-            Subcommand(0x3, new byte[] { 0x30 }, 1, true);
             Subcommand(0x48, new byte[] { 0x01 }, 1, true);
 
             Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
 
+            Subcommand(0x3, new byte[] { 0x30 }, 1, true);
             DebugPrint("Done with init.", DebugType.COMMS);
 
             HIDapi.hid_set_nonblocking(handle, 1);
-
-            // send ping to USB to not time out instantly
-            if (isUSB)
-                SendRumble(rumble_obj.GetData());
 
             return 0;
         }
@@ -496,9 +503,11 @@ namespace BetterJoyForCemu {
         private byte ts_en;
         private int ReceiveRaw() {
             if (handle == IntPtr.Zero) return -2;
-            HIDapi.hid_set_nonblocking(handle, 1);
             byte[] raw_buf = new byte[report_len];
             int ret = HIDapi.hid_read_timeout(handle, raw_buf, new UIntPtr(report_len), 5);
+
+
+
             if (ret > 0) {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
@@ -722,20 +731,20 @@ namespace BetterJoyForCemu {
         private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
         private void Poll() {
             int attempts = 0;
-
             while (!stop_polling & state > state_.NO_JOYCONS) {
-                if (!isSnes && (rumble_obj.t > 0))
+                rumble_obj.Update();
+                if (!rumble_obj.controller_informed) {
                     SendRumble(rumble_obj.GetData());
-
+                    rumble_obj.controller_informed = true;
+                }
                 int a = ReceiveRaw();
 
                 if (a > 0 && state > state_.DROPPED) {
+
+
                     state = state_.IMU_DATA_OK;
                     attempts = 0;
 
-                    // Needed for USB to not time out; I think USB requires a reply message after every packet sent
-                    if (isUSB)
-                        SendRumble(rumble_obj.GetData());
                 } else if (attempts > 240) {
                     state = state_.DROPPED;
                     form.AppendTextBox("Dropped.\r\n");
@@ -750,19 +759,6 @@ namespace BetterJoyForCemu {
                 } else if (a == 0) {
                     // The non-blocking read timed out. No need to sleep.
                     // No need to increase attempts because it's not an error.
-                }
-            }
-        }
-
-        public void Update() {
-            if (state > state_.NO_JOYCONS) {
-                if (rumble_obj.timed_rumble) {
-                    if (rumble_obj.t < 0) {
-                        rumble_obj.set_vals(lowFreq, highFreq, 0, 0);
-                    } else {
-                        rumble_obj.t -= (1 / timing);
-                        //rumble_obj.amp = (float) Math.Sin(((timing - rumble_obj.t * 1000f) / timing) * Math.PI) * rumble_obj.fullamp;
-                    }
                 }
             }
         }
@@ -1006,9 +1002,9 @@ namespace BetterJoyForCemu {
             return (byte)Math.Max(Byte.MinValue, Math.Min(Byte.MaxValue, 127 - stick_value * Byte.MaxValue));
         }
 
-        public void SetRumble(float low_freq, float high_freq, float amp, int time = 0) {
+        public void SetRumble(float low_freq, float high_freq, float amp, int rumble_duration_microseconds = 0) {
             if (state <= Joycon.state_.ATTACHED) return;
-            rumble_obj.set_vals(low_freq, high_freq, amp, time);
+            rumble_obj.set_vals(low_freq, high_freq, amp, rumble_duration_microseconds);
         }
 
         private void SendRumble(byte[] buf) {
@@ -1034,7 +1030,7 @@ namespace BetterJoyForCemu {
             else ++global_count;
             if (print) { PrintArray(buf_, DebugType.COMMS, len, 11, "Subcommand 0x" + string.Format("{0:X2}", sc) + " sent. Data: 0x{0:S}"); };
             HIDapi.hid_write(handle, buf_, new UIntPtr(len + 11));
-            int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 50);
+            int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 100);
             if (res < 1) DebugPrint("No response.", DebugType.COMMS);
             else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
             return response;
