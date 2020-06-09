@@ -129,26 +129,26 @@ namespace BetterJoyForCemu {
             public bool controller_informed;
             public long end_rumble_time_milliseconds;
 
-            public void set_vals(float low_freq, float high_freq, float amplitude, int rumble_duration_microseconds = 0) {
+            public void set_vals(float low_freq, float high_freq, float amplitude, int rumble_duration_ms = 0) {
                 h_f = high_freq;
                 amp = amplitude;
                 fullamp = amplitude;
                 l_f = low_freq;
-                if (rumble_duration_microseconds != 0) {
-                    end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_microseconds / 1000;
+                if (rumble_duration_ms != 0) {
+                    end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_ms;
                 } else {
                     end_rumble_time_milliseconds = 0;
                 }
 
                 controller_informed = false;
             }
-            public Rumble(float low_freq, float high_freq, float amplitude, int rumble_duration_microseconds = 0) {
+            public Rumble(float low_freq, float high_freq, float amplitude, int rumble_duration_ms = 0) {
                 h_f = high_freq;
                 amp = amplitude;
                 fullamp = amplitude;
                 l_f = low_freq;
-                if (rumble_duration_microseconds != 0) {
-                    end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_microseconds / 1000;
+                if (rumble_duration_ms != 0) {
+                    end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_ms;
                 } else {
                     end_rumble_time_milliseconds = 0;
                 }
@@ -995,9 +995,9 @@ namespace BetterJoyForCemu {
             return (byte)Math.Max(Byte.MinValue, Math.Min(Byte.MaxValue, 127 - stick_value * Byte.MaxValue));
         }
 
-        public void SetRumble(float low_freq, float high_freq, float amp, int rumble_duration_microseconds = 0) {
+        public void SetRumble(float low_freq, float high_freq, float amp, int rumble_duration_ms = 0) {
             if (state <= Joycon.state_.ATTACHED) return;
-            rumble_obj.set_vals(low_freq, high_freq, amp, rumble_duration_microseconds);
+            rumble_obj.set_vals(low_freq, high_freq, amp, rumble_duration_ms);
         }
 
         private void SendRumble(byte[] buf) {
