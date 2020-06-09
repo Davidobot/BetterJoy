@@ -289,11 +289,6 @@ namespace BetterJoyForCemu {
             }
         }
 
-        public void Update() {
-            for (int i = 0; i < j.Count; ++i)
-                j[i].Update();
-        }
-
         public void OnApplicationQuit() {
             foreach (Joycon v in j) {
                 if (Boolean.Parse(ConfigurationManager.AppSettings["AutoPowerOff"]))
@@ -364,7 +359,6 @@ namespace BetterJoyForCemu {
         private static readonly HttpClient client = new HttpClient();
 
         public static JoyconManager mgr;
-        static HighResTimer timer;
         static string pid;
 
         static MainForm form;
@@ -441,8 +435,6 @@ namespace BetterJoyForCemu {
             server.form = form;
 
             server.Start(IPAddress.Parse(ConfigurationManager.AppSettings["IP"]), Int32.Parse(ConfigurationManager.AppSettings["Port"]));
-            timer = new HighResTimer(pollsPerSecond, new HighResTimer.ActionDelegate(mgr.Update));
-            timer.Start();
 
             // Capture keyboard + mouse events for binding's sake
             keyboard = WindowsInput.Capture.Global.KeyboardAsync();
@@ -516,7 +508,6 @@ namespace BetterJoyForCemu {
 
             keyboard.Dispose(); mouse.Dispose();
             server.Stop();
-            timer.Stop();
             mgr.OnApplicationQuit();
         }
 
