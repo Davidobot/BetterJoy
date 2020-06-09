@@ -90,7 +90,7 @@ namespace BetterJoyForCemu {
         private UInt16 deadzone2;
         private UInt16[] stick2_precal = { 0, 0 };
 
-        private bool stop_polling = false;
+        private bool stop_polling = true;
         private int timestamp;
         private bool first_imu_packet = true;
         private bool imu_enabled = false;
@@ -417,7 +417,7 @@ namespace BetterJoyForCemu {
                 a[0] = 0x10;
                 a[1] = 0x01;
             }
-            Subcommand(0x38, a, 25, false);
+            Subcommand(0x38, a, 25, true, false);
         }
 
         private void SetHCIState(byte state) {
@@ -723,6 +723,7 @@ namespace BetterJoyForCemu {
         // TODO: Fix?
         private Thread PollThreadObj; // pro times out over time randomly if it was USB and then bluetooth??
         private void Poll() {
+            stop_polling = false;
             int attempts = 0;
             while (!stop_polling & state > state_.NO_JOYCONS) {
                 rumble_obj.Update();
@@ -761,7 +762,7 @@ namespace BetterJoyForCemu {
         bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
         bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
         private int ProcessButtonsAndStick(byte[] report_buf) {
-            if (report_buf[0] == 0x00) return -1;
+            if (report_buf[0] == 0x00) throw new ArgumentException("received undefined report. This is probably a bug");
             if (!isSnes) {
                 stick_raw[0] = report_buf[6 + (isLeft ? 0 : 3)];
                 stick_raw[1] = report_buf[7 + (isLeft ? 0 : 3)];
@@ -1011,7 +1012,7 @@ namespace BetterJoyForCemu {
             HIDapi.hid_write(handle, buf_, new UIntPtr(report_len));
         }
 
-        private byte[] Subcommand(byte sc, byte[] buf, uint len, bool print = true) {
+        private byte[] Subcommand(byte sc, byte[] buf, uint len, bool ignoreResponse = true, bool print = true) {
             byte[] buf_ = new byte[report_len];
             byte[] response = new byte[report_len];
             Array.Copy(default_buf, 0, buf_, 2, 8);
@@ -1023,11 +1024,21 @@ namespace BetterJoyForCemu {
             else ++global_count;
             if (print) { PrintArray(buf_, DebugType.COMMS, len, 11, "Subcommand 0x" + string.Format("{0:X2}", sc) + " sent. Data: 0x{0:S}"); };
             HIDapi.hid_write(handle, buf_, new UIntPtr(len + 11));
+            if (ignoreResponse) {
+                return response;
+            }
+            if (stop_polling == false) {
+                throw new ArgumentException("Can't request response while poll is running as it could eat the response.");
+            }
+            int tries = 0;
             do {
 
                 int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 100);
                 if (res < 1) DebugPrint("No response.", DebugType.COMMS);
                 else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
+                tries++;
+
+                if (tries > 20) throw new InvalidOperationException("we should be able to find our response, where could it be?");
             } while (response[0] != 0x21 && response[14] != sc);
 
             return response;
@@ -1142,7 +1153,7 @@ namespace BetterJoyForCemu {
             byte[] buf_ = new byte[len + 20];
 
             for (int i = 0; i < 100; ++i) {
-                buf_ = Subcommand(0x10, buf, 5, false);
+                buf_ = Subcommand(0x10, buf, 5, false, false);
                 if (buf_[15] == addr2 && buf_[16] == addr1) {
                     break;
                 }
