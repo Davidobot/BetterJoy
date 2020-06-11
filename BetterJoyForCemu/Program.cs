@@ -89,14 +89,13 @@ namespace BetterJoyForCemu {
         }
 
         void CheckForNewControllersTime(Object source, ElapsedEventArgs e) {
+            CleanUp();
             if (Config.IntValue("ProgressiveScan") == 1) {
                 CheckForNewControllers();
             }
         }
 
         public void CheckForNewControllers() {
-            CleanUp();
-
             // move all code for initializing devices here and well as the initial code from Start()
             bool isLeft = false;
             IntPtr ptr = HIDapi.hid_enumerate(vendor_id, 0x0);
@@ -299,8 +298,8 @@ namespace BetterJoyForCemu {
             foreach (Joycon v in j) {
                 if (Boolean.Parse(ConfigurationManager.AppSettings["AutoPowerOff"]))
                     v.PowerOff();
-                else
-                    v.Detach();
+
+                v.Detach();
 
                 if (v.out_xbox != null) {
                     v.out_xbox.Disconnect();
@@ -316,49 +315,9 @@ namespace BetterJoyForCemu {
         }
     }
 
-    // Custom timer class because system timers have a limit of 15.6ms
-    class HighResTimer {
-        double interval = 0;
-        double frequency = 0;
-
-        Thread thread;
-
-        public delegate void ActionDelegate();
-        ActionDelegate func;
-
-        bool run = false;
-
-        public HighResTimer(double f, ActionDelegate a) {
-            frequency = f;
-            interval = 1.0 / f;
-
-            func = a;
-        }
-
-        public void Start() {
-            run = true;
-            thread = new Thread(new ThreadStart(Run));
-            thread.IsBackground = true;
-            thread.Start();
-        }
-
-        void Run() {
-            while (run) {
-                func();
-                int timeToSleep = (int)(interval * 1000);
-                Thread.Sleep(timeToSleep);
-            }
-        }
-
-        public void Stop() {
-            run = false;
-        }
-    }
-
     class Program {
         public static PhysicalAddress btMAC = new PhysicalAddress(new byte[] { 0, 0, 0, 0, 0, 0 });
         public static UdpServer server;
-        static double pollsPerSecond = 120.0;
 
         public static ViGEmClient emClient;
 
