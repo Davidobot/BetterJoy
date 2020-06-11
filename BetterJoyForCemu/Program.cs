@@ -12,6 +12,7 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using System.Timers;
+using System.Web.Configuration;
 using System.Windows.Forms;
 using Nefarius.ViGEm.Client;
 using static BetterJoyForCemu.HIDapi;
@@ -273,7 +274,12 @@ namespace BetterJoyForCemu {
                     if (jc.out_ds4 != null)
                         jc.out_ds4.Connect();
 
-                    jc.Attach(leds_: jc.LED);
+                    try {
+                        jc.Attach(leds_: jc.LED);
+                    } catch (Exception e) {
+                        jc.state = Joycon.state_.DROPPED;
+                        continue;
+                    }
 
                     bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
                     foreach (Joycon j in Program.mgr.j) {
