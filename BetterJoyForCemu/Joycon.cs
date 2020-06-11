@@ -599,11 +599,12 @@ namespace BetterJoyForCemu {
             }
         }
 
-        string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
-        int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
         bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
         long PowerOffInactivityMins = Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
 
+        string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
+        int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
+        bool GyroHoldToggle = Boolean.Parse(ConfigurationManager.AppSettings["GyroHoldToggle"]);
         bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
         int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
         byte[] sliderVal = new byte[] { 0, 0 };
@@ -689,12 +690,18 @@ namespace BetterJoyForCemu {
                 // TODO
             } else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
                 string res_val = Config.Value("active_gyro");
+
                 if (res_val.StartsWith("joy_")) {
                     int i = Int32.Parse(res_val.Substring(4));
-                    if (buttons_down[i] || (other != null && other.buttons_down[i]))
-                        active_gyro = true;
-                    else if (buttons_up[i] || (other != null && other.buttons_up[i]))
-                        active_gyro = false;
+                    if (GyroHoldToggle) {
+                        if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                            active_gyro = true;
+                        else if (buttons_up[i] || (other != null && other.buttons_up[i]))
+                            active_gyro = false;
+                    } else {
+                        if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                            active_gyro = !active_gyro;
+                    }
                 }
 
                 float dt = 0.015f; // 15ms
