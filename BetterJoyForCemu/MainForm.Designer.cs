@@ -1,28 +1,28 @@
 ﻿namespace BetterJoyForCemu {
-	partial class MainForm {
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+    partial class MainForm {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
 
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-		protected override void Dispose(bool disposing) {
-			if (disposing && (components != null)) {
-				components.Dispose();
-			}
-			base.Dispose(disposing);
-		}
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing) {
+            if (disposing && (components != null)) {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
-		#region Windows Form Designer generated code
+        #region Windows Form Designer generated code
 
-		/// <summary>
-		/// Required method for Designer support - do not modify
-		/// the contents of this method with the code editor.
-		/// </summary>
-		private void InitializeComponent() {
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent() {
 			this.components = new System.ComponentModel.Container();
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.console = new System.Windows.Forms.TextBox();
@@ -81,10 +81,10 @@
 			// notifyIcon
 			// 
 			this.notifyIcon.BalloonTipText = "Double click the tray icon to maximise";
-			this.notifyIcon.BalloonTipTitle = "BetterJoyForCemu";
+			this.notifyIcon.BalloonTipTitle = "BetterJoy";
 			this.notifyIcon.ContextMenuStrip = this.contextMenu;
 			this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
-			this.notifyIcon.Text = "BetterJoyForCemu";
+			this.notifyIcon.Text = "BetterJoy";
 			this.notifyIcon.Visible = true;
 			this.notifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseDoubleClick);
 			// 
@@ -110,7 +110,7 @@
 			this.version_lbl.Name = "version_lbl";
 			this.version_lbl.Size = new System.Drawing.Size(28, 13);
 			this.version_lbl.TabIndex = 2;
-			this.version_lbl.Text = "v6.3";
+			this.version_lbl.Text = "v6.4";
 			// 
 			// passiveScanBox
 			// 
@@ -379,16 +379,16 @@
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
-		}
+        }
 
-		#endregion
+        #endregion
 
-		public System.Windows.Forms.TextBox console;
-		private System.Windows.Forms.Label console_lbl;
-		private System.Windows.Forms.NotifyIcon notifyIcon;
-		private System.Windows.Forms.Label version_lbl;
-		private System.Windows.Forms.ContextMenuStrip contextMenu;
-		private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
+        public System.Windows.Forms.TextBox console;
+        private System.Windows.Forms.Label console_lbl;
+        private System.Windows.Forms.NotifyIcon notifyIcon;
+        private System.Windows.Forms.Label version_lbl;
+        private System.Windows.Forms.ContextMenuStrip contextMenu;
+        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.CheckBox passiveScanBox;
         private System.Windows.Forms.LinkLabel donationLink;
         private System.Windows.Forms.GroupBox conCntrls;
@@ -409,6 +409,6 @@
         private System.Windows.Forms.Button settingsApply;
         private System.Windows.Forms.Label foldLbl;
         private System.Windows.Forms.Button AutoCalibrate;
-		private System.Windows.Forms.Button btn_reassign_open;
-	}
+        private System.Windows.Forms.Button btn_reassign_open;
+    }
 }

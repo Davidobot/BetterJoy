@@ -229,7 +229,7 @@ namespace BetterJoyForCemu {
                             v.other = temp;
 
                             //Set both Joycon LEDs to the one with the lowest ID
-                            byte led = temp.LED <= v.LED ? temp.LED : v.LED;
+                            byte led = Math.Min(temp.LED, v.LED);
                             temp.LED = led;
                             v.LED = led;
                             temp.SetPlayerLED(led);
@@ -476,7 +476,7 @@ namespace BetterJoyForCemu {
             mgr.OnApplicationQuit();
         }
 
-        private static string appGuid = "04450797-3520-462e-a563-107677a483d8"; // randomly-generated
+        private static string appGuid = "1bf709e9-c133-41df-933a-c9ff3f664c7b"; // randomly-generated
         static void Main(string[] args) {
             using (Mutex mutex = new Mutex(false, "Global\\" + appGuid)) {
                 if (!mutex.WaitOne(0, false)) {

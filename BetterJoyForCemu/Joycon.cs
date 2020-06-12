@@ -91,8 +91,6 @@ namespace BetterJoyForCemu {
         private UInt16[] stick2_precal = { 0, 0 };
 
         private bool stop_polling = true;
-        private int timestamp;
-        private bool first_imu_packet = true;
         private bool imu_enabled = false;
         private Int16[] acc_r = { 0, 0, 0 };
         private Int16[] acc_neutral = { 0, 0, 0 };
@@ -381,16 +379,15 @@ namespace BetterJoyForCemu {
             //Subcommand(0x01, new byte[] { 0x03 }, 1, true);
 
             BlinkHomeLight();
-
-            Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1, true);
-            Subcommand(0x48, new byte[] { 0x01 }, 1, true);
-
-            Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4, false); // higher gyro performance rate
-
-            Subcommand(0x3, new byte[] { 0x30 }, 1, true);
-            DebugPrint("Done with init.", DebugType.COMMS);
-
             SetPlayerLED(leds_);
+
+            Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1);
+            Subcommand(0x48, new byte[] { 0x01 }, 1);
+
+            Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4); // higher gyro performance rate
+
+            Subcommand(0x3, new byte[] { 0x30 }, 1);
+            DebugPrint("Done with init.", DebugType.COMMS);
 
             HIDapi.hid_set_nonblocking(handle, 1);
 
@@ -970,10 +967,6 @@ namespace BetterJoyForCemu {
             }
         }
 
-        public void Recenter() {
-            first_imu_packet = true;
-        }
-
         // Should really be called calculating stick data
         private float[] CenterSticks(UInt16[] vals, ushort[] cal, ushort dz) {
             ushort[] t = cal;
@@ -1012,7 +1005,7 @@ namespace BetterJoyForCemu {
             HIDapi.hid_write(handle, buf_, new UIntPtr(report_len));
         }
 
-        private byte[] Subcommand(byte sc, byte[] buf, uint len, bool ignoreResponse = true, bool print = true) {
+        private byte[] Subcommand(byte sc, byte[] buf, uint len, bool print = true) {
             byte[] buf_ = new byte[report_len];
             byte[] response = new byte[report_len];
             Array.Copy(default_buf, 0, buf_, 2, 8);
@@ -1024,12 +1017,6 @@ namespace BetterJoyForCemu {
             else ++global_count;
             if (print) { PrintArray(buf_, DebugType.COMMS, len, 11, "Subcommand 0x" + string.Format("{0:X2}", sc) + " sent. Data: 0x{0:S}"); };
             HIDapi.hid_write(handle, buf_, new UIntPtr(len + 11));
-            if (ignoreResponse) {
-                return response;
-            }
-            if (stop_polling == false) {
-                throw new ArgumentException("Can't request response while poll is running as it could eat the response.");
-            }
             int tries = 0;
             do {
 
@@ -1037,17 +1024,40 @@ namespace BetterJoyForCemu {
                 if (res < 1) DebugPrint("No response.", DebugType.COMMS);
                 else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }
                 tries++;
-
-                if (tries > 20) throw new InvalidOperationException("we should be able to find our response, where could it be?");
-            } while (response[0] != 0x21 && response[14] != sc);
+            } while (tries < 10 && response[0] != 0x21 && response[14] != sc);
 
             return response;
         }
 
         private void dump_calibration_data() {
-            if (!isSnes) {
-                byte[] buf_ = ReadSPI(0x80, (isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
-                bool found = false;
+            if (isSnes)
+                return;
+            HIDapi.hid_set_nonblocking(handle, 0);
+            byte[] buf_ = ReadSPI(0x80, (isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
+            bool found = false;
+            for (int i = 0; i < 9; ++i) {
+                if (buf_[i] != 0xff) {
+                    form.AppendTextBox("Using user stick calibration data.\r\n");
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                form.AppendTextBox("Using factory stick calibration data.\r\n");
+                buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
+            }
+            stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
+            stick_cal[isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
+            stick_cal[isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
+            stick_cal[isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
+            stick_cal[isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
+            stick_cal[isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
+
+            PrintArray(stick_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
+
+            if (isPro) {
+                buf_ = ReadSPI(0x80, (!isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
+                found = false;
                 for (int i = 0; i < 9; ++i) {
                     if (buf_[i] != 0xff) {
                         form.AppendTextBox("Using user stick calibration data.\r\n");
@@ -1057,94 +1067,71 @@ namespace BetterJoyForCemu {
                 }
                 if (!found) {
                     form.AppendTextBox("Using factory stick calibration data.\r\n");
-                    buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
+                    buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
                 }
-                stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
-                stick_cal[isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
-                stick_cal[isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
-                stick_cal[isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
-                stick_cal[isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
-                stick_cal[isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
+                stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
+                stick2_cal[!isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
+                stick2_cal[!isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
+                stick2_cal[!isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
+                stick2_cal[!isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
+                stick2_cal[!isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
 
-                PrintArray(stick_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
+                PrintArray(stick2_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
 
-                if (isPro) {
-                    buf_ = ReadSPI(0x80, (!isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
-                    found = false;
-                    for (int i = 0; i < 9; ++i) {
-                        if (buf_[i] != 0xff) {
-                            form.AppendTextBox("Using user stick calibration data.\r\n");
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        form.AppendTextBox("Using factory stick calibration data.\r\n");
-                        buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
-                    }
-                    stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
-                    stick2_cal[!isLeft ? 1 : 3] = (UInt16)((buf_[2] << 4) | (buf_[1] >> 4));  // Y Axis Max above center
-                    stick2_cal[!isLeft ? 2 : 4] = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]); // X Axis Center
-                    stick2_cal[!isLeft ? 3 : 5] = (UInt16)((buf_[5] << 4) | (buf_[4] >> 4));  // Y Axis Center
-                    stick2_cal[!isLeft ? 4 : 0] = (UInt16)((buf_[7] << 8) & 0xF00 | buf_[6]); // X Axis Min below center
-                    stick2_cal[!isLeft ? 5 : 1] = (UInt16)((buf_[8] << 4) | (buf_[7] >> 4));  // Y Axis Min below center
+                buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x86 : (byte)0x98), 16);
+                deadzone2 = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
+            }
 
-                    PrintArray(stick2_cal, len: 6, start: 0, format: "Stick calibration data: {0:S}");
+            buf_ = ReadSPI(0x60, (isLeft ? (byte)0x86 : (byte)0x98), 16);
+            deadzone = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
 
-                    buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x86 : (byte)0x98), 16);
-                    deadzone2 = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
-                }
+            buf_ = ReadSPI(0x80, 0x28, 10);
+            acc_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+            acc_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+            acc_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-                buf_ = ReadSPI(0x60, (isLeft ? (byte)0x86 : (byte)0x98), 16);
-                deadzone = (UInt16)((buf_[4] << 8) & 0xF00 | buf_[3]);
+            buf_ = ReadSPI(0x80, 0x2E, 10);
+            acc_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+            acc_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+            acc_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-                buf_ = ReadSPI(0x80, 0x28, 10);
+            buf_ = ReadSPI(0x80, 0x34, 10);
+            gyr_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+            gyr_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+            gyr_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+
+            buf_ = ReadSPI(0x80, 0x3A, 10);
+            gyr_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
+            gyr_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
+            gyr_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
+
+            PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "User gyro neutral position: {0:S}");
+
+            // This is an extremely messy way of checking to see whether there is user stick calibration data present, but I've seen conflicting user calibration data on blank Joy-Cons. Worth another look eventually.
+            if (gyr_neutral[0] + gyr_neutral[1] + gyr_neutral[2] == -3 || Math.Abs(gyr_neutral[0]) > 100 || Math.Abs(gyr_neutral[1]) > 100 || Math.Abs(gyr_neutral[2]) > 100) {
+                buf_ = ReadSPI(0x60, 0x20, 10);
                 acc_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
                 acc_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
                 acc_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-                buf_ = ReadSPI(0x80, 0x2E, 10);
+                buf_ = ReadSPI(0x60, 0x26, 10);
                 acc_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
                 acc_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
                 acc_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-                buf_ = ReadSPI(0x80, 0x34, 10);
+                buf_ = ReadSPI(0x60, 0x2C, 10);
                 gyr_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
                 gyr_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
                 gyr_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-                buf_ = ReadSPI(0x80, 0x3A, 10);
+                buf_ = ReadSPI(0x60, 0x32, 10);
                 gyr_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
                 gyr_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
                 gyr_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
 
-                PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "User gyro neutral position: {0:S}");
-
-                // This is an extremely messy way of checking to see whether there is user stick calibration data present, but I've seen conflicting user calibration data on blank Joy-Cons. Worth another look eventually.
-                if (gyr_neutral[0] + gyr_neutral[1] + gyr_neutral[2] == -3 || Math.Abs(gyr_neutral[0]) > 100 || Math.Abs(gyr_neutral[1]) > 100 || Math.Abs(gyr_neutral[2]) > 100) {
-                    buf_ = ReadSPI(0x60, 0x20, 10);
-                    acc_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-                    acc_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-                    acc_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
-
-                    buf_ = ReadSPI(0x60, 0x26, 10);
-                    acc_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-                    acc_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-                    acc_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
-
-                    buf_ = ReadSPI(0x60, 0x2C, 10);
-                    gyr_neutral[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-                    gyr_neutral[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-                    gyr_neutral[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
-
-                    buf_ = ReadSPI(0x60, 0x32, 10);
-                    gyr_sensiti[0] = (Int16)(buf_[0] | ((buf_[1] << 8) & 0xff00));
-                    gyr_sensiti[1] = (Int16)(buf_[2] | ((buf_[3] << 8) & 0xff00));
-                    gyr_sensiti[2] = (Int16)(buf_[4] | ((buf_[5] << 8) & 0xff00));
-
-                    PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "Factory gyro neutral position: {0:S}");
-                }
+                PrintArray(gyr_neutral, len: 3, d: DebugType.IMU, format: "Factory gyro neutral position: {0:S}");
             }
+            HIDapi.hid_set_nonblocking(handle, 1);
         }
 
         private byte[] ReadSPI(byte addr1, byte addr2, uint len, bool print = false) {
@@ -1153,7 +1140,7 @@ namespace BetterJoyForCemu {
             byte[] buf_ = new byte[len + 20];
 
             for (int i = 0; i < 100; ++i) {
-                buf_ = Subcommand(0x10, buf, 5, false, false);
+                buf_ = Subcommand(0x10, buf, 5, false);
                 if (buf_[15] == addr2 && buf_[16] == addr1) {
                     break;
                 }
