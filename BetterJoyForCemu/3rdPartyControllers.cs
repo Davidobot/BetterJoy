@@ -89,6 +89,8 @@ namespace BetterJoyForCemu {
             foreach (SController v in a.Items) {
                 if (v == null)
                     continue;
+                if (v.name == null)
+                    continue;
                 if (v.name.Equals(manu))
                     return true;
             }
@@ -98,11 +100,12 @@ namespace BetterJoyForCemu {
         private void RefreshControllerList() {
             list_allControllers.Items.Clear();
             IntPtr ptr = HIDapi.hid_enumerate(0x0, 0x0);
+            IntPtr top_ptr = ptr;
 
             hid_device_info enumerate; // Add device to list
             while (ptr != IntPtr.Zero) {
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
-
+                // TODO: try checking against interface number instead
                 if (!ContainsText(list_customControllers, enumerate.product_string) && !ContainsText(list_allControllers, enumerate.product_string)) {
                     list_allControllers.Items.Add(new SController(enumerate.product_string, enumerate.vendor_id, enumerate.product_id, 0));
                     // 0 type is undefined
@@ -110,6 +113,7 @@ namespace BetterJoyForCemu {
 
                 ptr = enumerate.next;
             }
+            HIDapi.hid_free_enumeration(top_ptr);
         }
 
         private void btn_add_Click(object sender, EventArgs e) {

@@ -271,12 +271,12 @@ namespace BetterJoyForCemu {
 
             if (showAsXInput) {
                 out_xbox = new OutputControllerXbox360();
-                out_xbox.FeedbackReceived += ReceiveRumble;
+                if (toRumble)
+                    out_xbox.FeedbackReceived += ReceiveRumble;
             }
 
             if (showAsDS4) {
                 out_ds4 = new OutputControllerDualShock4();
-
                 if (toRumble)
                     out_ds4.FeedbackReceived += Ds4_FeedbackReceived;
             }
