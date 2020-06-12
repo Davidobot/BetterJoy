@@ -26,7 +26,6 @@
 			this.components = new System.ComponentModel.Container();
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.console = new System.Windows.Forms.TextBox();
-			this.console_lbl = new System.Windows.Forms.Label();
 			this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
 			this.contextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
 			this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -67,16 +66,6 @@
 			this.console.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
 			this.console.Size = new System.Drawing.Size(262, 100);
 			this.console.TabIndex = 2;
-			// 
-			// console_lbl
-			// 
-			this.console_lbl.AutoSize = true;
-			this.console_lbl.Location = new System.Drawing.Point(9, 116);
-			this.console_lbl.Name = "console_lbl";
-			this.console_lbl.Size = new System.Drawing.Size(80, 13);
-			this.console_lbl.TabIndex = 1;
-			this.console_lbl.Text = "Console Output";
-			this.console_lbl.TextAlign = System.Drawing.ContentAlignment.TopCenter;
 			// 
 			// notifyIcon
 			// 
@@ -265,7 +254,7 @@
 			// 
 			// btn_open3rdP
 			// 
-			this.btn_open3rdP.Location = new System.Drawing.Point(188, 112);
+			this.btn_open3rdP.Location = new System.Drawing.Point(93, 112);
 			this.btn_open3rdP.Name = "btn_open3rdP";
 			this.btn_open3rdP.Size = new System.Drawing.Size(86, 20);
 			this.btn_open3rdP.TabIndex = 7;
@@ -337,7 +326,7 @@
 			// 
 			// btn_reassign_open
 			// 
-			this.btn_reassign_open.Location = new System.Drawing.Point(107, 112);
+			this.btn_reassign_open.Location = new System.Drawing.Point(12, 112);
 			this.btn_reassign_open.Name = "btn_reassign_open";
 			this.btn_reassign_open.Size = new System.Drawing.Size(75, 20);
 			this.btn_reassign_open.TabIndex = 13;
@@ -362,7 +351,6 @@
 			this.Controls.Add(this.donationLink);
 			this.Controls.Add(this.passiveScanBox);
 			this.Controls.Add(this.version_lbl);
-			this.Controls.Add(this.console_lbl);
 			this.Controls.Add(this.console);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -384,7 +372,6 @@
         #endregion
 
         public System.Windows.Forms.TextBox console;
-        private System.Windows.Forms.Label console_lbl;
         private System.Windows.Forms.NotifyIcon notifyIcon;
         private System.Windows.Forms.Label version_lbl;
         private System.Windows.Forms.ContextMenuStrip contextMenu;

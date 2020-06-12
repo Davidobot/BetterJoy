@@ -15,6 +15,7 @@ using System.Timers;
 using System.Web.Configuration;
 using System.Windows.Forms;
 using Nefarius.ViGEm.Client;
+using static BetterJoyForCemu._3rdPartyControllers;
 using static BetterJoyForCemu.HIDapi;
 
 namespace BetterJoyForCemu {
@@ -95,15 +96,28 @@ namespace BetterJoyForCemu {
             }
         }
 
+        private ushort TypeToProdId(byte type) {
+            switch (type) {
+                case 1:
+                    return product_pro;
+                case 2:
+                    return product_l;
+                case 3:
+                    return product_r;
+            }
+            return 0;
+        }
+
         public void CheckForNewControllers() {
             // move all code for initializing devices here and well as the initial code from Start()
             bool isLeft = false;
-            IntPtr ptr = HIDapi.hid_enumerate(vendor_id, 0x0);
+            IntPtr ptr = HIDapi.hid_enumerate(0x0, 0x0);
             IntPtr top_ptr = ptr;
 
             hid_device_info enumerate; // Add device to list
             bool foundNew = false;
             while (ptr != IntPtr.Zero) {
+                SController thirdParty = null;
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
 
                 if (enumerate.serial_number == null) {
@@ -117,9 +131,21 @@ namespace BetterJoyForCemu {
                 }
 
                 bool validController = (enumerate.product_id == product_l || enumerate.product_id == product_r ||
-                                        enumerate.product_id == product_pro || enumerate.product_id == product_snes);
+                                        enumerate.product_id == product_pro || enumerate.product_id == product_snes) && enumerate.vendor_id == vendor_id;
+                // check list of custom controllers specified
+                foreach (SController v in Program.thirdPartyCons) {
+                    if (enumerate.vendor_id == v.vendor_id && enumerate.product_id == v.product_id) {
+                        validController = true;
+                        thirdParty = v;
+                        break;
+                    }
+                }
+
+                ushort prod_id = thirdParty == null ? enumerate.product_id : TypeToProdId(thirdParty.type);
+                if (prod_id == 0)
+                    continue; // controller was not assigned a type
                 if (validController && !ControllerAlreadyAdded(enumerate.path)) {
-                    switch (enumerate.product_id) {
+                    switch (prod_id) {
                         case product_l:
                             isLeft = true;
                             form.AppendTextBox("Left Joy-Con connected.\r\n"); break;
@@ -166,8 +192,8 @@ namespace BetterJoyForCemu {
                         break;
                     }
 
-                    bool isPro = enumerate.product_id == product_pro;
-                    bool isSnes = enumerate.product_id == product_snes;
+                    bool isPro = prod_id == product_pro;
+                    bool isSnes = prod_id == product_snes;
                     j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes));
 
                     foundNew = true;
@@ -179,7 +205,7 @@ namespace BetterJoyForCemu {
                             ii++;
                             if (!v.Enabled) {
                                 System.Drawing.Bitmap temp;
-                                switch (enumerate.product_id) {
+                                switch (prod_id) {
                                     case (product_l):
                                         temp = Properties.Resources.jc_left_s; break;
                                     case (product_r):
@@ -210,8 +236,12 @@ namespace BetterJoyForCemu {
                     }
 
                     byte[] mac = new byte[6];
-                    for (int n = 0; n < 6; n++)
-                        mac[n] = byte.Parse(enumerate.serial_number.Substring(n * 2, 2), System.Globalization.NumberStyles.HexNumber);
+                    try {
+                        for (int n = 0; n < 6; n++)
+                            mac[n] = byte.Parse(enumerate.serial_number.Substring(n * 2, 2), System.Globalization.NumberStyles.HexNumber);
+                    } catch (Exception e) {
+                        // could not parse mac address
+                    }
                     j[j.Count - 1].PadMacAddress = new PhysicalAddress(mac);
                 }
 
@@ -330,6 +360,8 @@ namespace BetterJoyForCemu {
 
         static public bool useHIDG = Boolean.Parse(ConfigurationManager.AppSettings["UseHIDG"]);
 
+        public static List<SController> thirdPartyCons = new List<SController>();
+
         private static WindowsInput.Events.Sources.IKeyboardEventSource keyboard;
         private static WindowsInput.Events.Sources.IMouseEventSource mouse;
 
@@ -389,6 +421,10 @@ namespace BetterJoyForCemu {
                     }
                 }
             }
+
+            // a bit hacky
+            _3rdPartyControllers partyForm = new _3rdPartyControllers();
+            partyForm.CopyCustomControllers();
 
             mgr = new JoyconManager();
             mgr.form = form;
