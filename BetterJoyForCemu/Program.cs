@@ -194,7 +194,7 @@ namespace BetterJoyForCemu {
 
                     bool isPro = prod_id == product_pro;
                     bool isSnes = prod_id == product_snes;
-                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes));
+                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes, thirdParty != null));
 
                     foundNew = true;
                     j.Last().form = form;
@@ -362,8 +362,8 @@ namespace BetterJoyForCemu {
 
         public static List<SController> thirdPartyCons = new List<SController>();
 
-        private static WindowsInput.Events.Sources.IKeyboardEventSource keyboard;
-        private static WindowsInput.Events.Sources.IMouseEventSource mouse;
+        private static WindowsInput.EventSources.IKeyboardEventSource keyboard;
+        private static WindowsInput.EventSources.IMouseEventSource mouse;
 
         public static void Start() {
             pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
@@ -446,7 +446,7 @@ namespace BetterJoyForCemu {
             form.console.AppendText("All systems go\r\n");
         }
 
-        private static void Mouse_MouseEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.MouseEvent> e) {
+        private static void Mouse_MouseEvent(object sender, WindowsInput.EventSources.EventSourceEventArgs<WindowsInput.EventSources.MouseEvent> e) {
             if (e.Data.ButtonDown != null) {
                 string res_val = Config.Value("reset_mouse");
                 if (res_val.StartsWith("mse_"))
@@ -469,7 +469,7 @@ namespace BetterJoyForCemu {
             }
         }
 
-        private static void Keyboard_KeyEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.KeyboardEvent> e) {
+        private static void Keyboard_KeyEvent(object sender, WindowsInput.EventSources.EventSourceEventArgs<WindowsInput.EventSources.KeyboardEvent> e) {
             if (e.Data.KeyDown != null) {
                 string res_val = Config.Value("reset_mouse");
                 if (res_val.StartsWith("key_"))

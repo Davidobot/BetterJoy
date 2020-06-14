@@ -244,10 +244,11 @@ namespace BetterJoyForCemu {
         public byte LED = 0x0;
 
         public string serial_number;
+        bool thirdParty = false;
 
         private float[] activeData;
 
-        public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false) {
+        public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false, bool thirdParty = false) {
             serial_number = serialNum;
             activeData = new float[6];
             handle = handle_;
@@ -264,6 +265,7 @@ namespace BetterJoyForCemu {
             this.isPro = isPro || isSnes;
             this.isSnes = isSnes;
             isUSB = serialNum == "000000000001";
+            thirdParty = thirdParty;
 
             this.path = path;
 
@@ -1030,7 +1032,7 @@ namespace BetterJoyForCemu {
         }
 
         private void dump_calibration_data() {
-            if (isSnes)
+            if (isSnes || thirdParty)
                 return;
             HIDapi.hid_set_nonblocking(handle, 0);
             byte[] buf_ = ReadSPI(0x80, (isLeft ? (byte)0x12 : (byte)0x1d), 9); // get user calibration data if possible
