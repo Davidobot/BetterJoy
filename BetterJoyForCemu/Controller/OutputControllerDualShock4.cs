@@ -133,7 +133,7 @@ namespace BetterJoyForCemu.Controller {
 			controller.SetButtonState(DualShock4Button.TriggerRight, new_state.trigger_right);
 
 			controller.SetButtonState(DualShock4Button.ThumbLeft, new_state.thumb_left);
-			controller.SetButtonState(DualShock4Button.ThumbRight, new_state.thumb_left);
+			controller.SetButtonState(DualShock4Button.ThumbRight, new_state.thumb_right);
 
 			controller.SetButtonState(DualShock4Button.Share, new_state.share);
 			controller.SetButtonState(DualShock4Button.Options, new_state.options);
