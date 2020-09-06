@@ -145,7 +145,7 @@ namespace BetterJoyForCemu {
 
                 if (button.Tag.GetType() == typeof(Joycon)) {
                     Joycon v = (Joycon)button.Tag;
-                    v.SetRumble(20.0f, 400.0f, 1.0f, 300);
+                    v.SetRumble(160.0f, 320.0f, 1.0f, 300);
                 }
             }
         }

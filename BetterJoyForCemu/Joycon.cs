@@ -123,14 +123,13 @@ namespace BetterJoyForCemu {
 
         private struct Rumble {
             private float h_f, l_f;
-            public float amp, fullamp;
+            public float amp;
             public bool controller_informed;
             public long end_rumble_time_milliseconds;
 
             public void set_vals(float low_freq, float high_freq, float amplitude, int rumble_duration_ms = 0) {
                 h_f = high_freq;
                 amp = amplitude;
-                fullamp = amplitude;
                 l_f = low_freq;
                 if (rumble_duration_ms != 0) {
                     end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_ms;
@@ -143,7 +142,6 @@ namespace BetterJoyForCemu {
             public Rumble(float low_freq, float high_freq, float amplitude, int rumble_duration_ms = 0) {
                 h_f = high_freq;
                 amp = amplitude;
-                fullamp = amplitude;
                 l_f = low_freq;
                 if (rumble_duration_ms != 0) {
                     end_rumble_time_milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds() + rumble_duration_ms;
@@ -164,6 +162,22 @@ namespace BetterJoyForCemu {
                     amp = 0;
                 }
             }
+
+            private byte EncodeAmp(float amp) {
+                byte en_amp;
+
+                if (amp == 0)
+                    en_amp = 0;
+                else if (amp < 0.117)
+                    en_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) / (5 - Math.Pow(amp, 2)) - 1);
+                else if (amp < 0.23)
+                    en_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) - 0x5c);
+                else
+                    en_amp = (byte)((((Math.Log(amp * 1000, 2) * 32) - 0x60) * 2) - 0xf6);
+
+                return en_amp;
+            }
+
             public byte[] GetData() {
                 byte[] rumble_data = new byte[8];
 
@@ -174,15 +188,13 @@ namespace BetterJoyForCemu {
                     rumble_data[3] = 0x40;
                 } else {
                     l_f = clamp(l_f, 40.875885f, 626.286133f);
-                    amp = clamp(amp, 0.0f, 1.0f);
                     h_f = clamp(h_f, 81.75177f, 1252.572266f);
+
+                    amp = clamp(amp, 0.0f, 1.0f);
+
                     UInt16 hf = (UInt16)((Math.Round(32f * Math.Log(h_f * 0.1f, 2)) - 0x60) * 4);
                     byte lf = (byte)(Math.Round(32f * Math.Log(l_f * 0.1f, 2)) - 0x40);
-                    byte hf_amp;
-                    if (amp == 0) hf_amp = 0;
-                    else if (amp < 0.117) hf_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) / (5 - Math.Pow(amp, 2)) - 1);
-                    else if (amp < 0.23) hf_amp = (byte)(((Math.Log(amp * 1000, 2) * 32) - 0x60) - 0x5c);
-                    else hf_amp = (byte)((((Math.Log(amp * 1000, 2) * 32) - 0x60) * 2) - 0xf6);
+                    byte hf_amp = EncodeAmp(amp);
 
                     UInt16 lf_amp = (UInt16)(Math.Round((double)hf_amp) * .5);
                     byte parity = (byte)(lf_amp % 2);
@@ -193,14 +205,14 @@ namespace BetterJoyForCemu {
                     lf_amp = (UInt16)(lf_amp >> 1);
                     lf_amp += 0x40;
                     if (parity > 0) lf_amp |= 0x8000;
-                    rumble_data = new byte[8];
+
+                    hf_amp = (byte)(hf_amp - (hf_amp % 2)); // make even at all times to prevent weird hum
                     rumble_data[0] = (byte)(hf & 0xff);
-                    rumble_data[1] = (byte)((hf >> 8) & 0xff);
-                    rumble_data[2] = lf;
-                    rumble_data[1] += hf_amp;
-                    rumble_data[2] += (byte)((lf_amp >> 8) & 0xff);
-                    rumble_data[3] += (byte)(lf_amp & 0xff);
+                    rumble_data[1] = (byte)(((hf >> 8) & 0xff) + hf_amp);
+                    rumble_data[2] = (byte)(((lf_amp >> 8) & 0xff) + lf);
+                    rumble_data[3] = (byte)(lf_amp & 0xff);
                 }
+
                 for (int i = 0; i < 4; ++i) {
                     rumble_data[4 + i] = rumble_data[i];
                 }
@@ -254,7 +266,7 @@ namespace BetterJoyForCemu {
             handle = handle_;
             imu_enabled = imu;
             do_localize = localize;
-            rumble_obj = new Rumble(160, 320, 0);
+            rumble_obj = new Rumble(lowFreq, highFreq, 0, 0);
             for (int i = 0; i < buttons_down_timestamp.Length; i++)
                 buttons_down_timestamp[i] = -1;
             filterweight = alpha;
@@ -265,7 +277,7 @@ namespace BetterJoyForCemu {
             this.isPro = isPro || isSnes;
             this.isSnes = isSnes;
             isUSB = serialNum == "000000000001";
-            thirdParty = thirdParty;
+            this.thirdParty = thirdParty;
 
             this.path = path;
 
@@ -289,17 +301,17 @@ namespace BetterJoyForCemu {
         }
 
         public void ReceiveRumble(Xbox360FeedbackReceivedEventArgs e) {
-            SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
+            SetRumble(lowFreq, highFreq, (float)Math.Max(e.LargeMotor, e.SmallMotor) / (float)255, rumblePeriod);
 
             if (other != null && other != this)
-                other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
+                other.SetRumble(lowFreq, highFreq, (float)Math.Max(e.LargeMotor, e.SmallMotor) / (float)255, rumblePeriod);
         }
 
         public void Ds4_FeedbackReceived(DualShock4FeedbackReceivedEventArgs e) {
-            SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
+            SetRumble(lowFreq, highFreq, (float)Math.Max(e.LargeMotor, e.SmallMotor) / (float)255, rumblePeriod);
 
             if (other != null && other != this)
-                other.SetRumble(lowFreq, highFreq, (float)(e.LargeMotor + e.SmallMotor) / (float)255, rumblePeriod);
+                other.SetRumble(lowFreq, highFreq, (float)Math.Max(e.LargeMotor, e.SmallMotor) / (float)255, rumblePeriod);
         }
 
         public void DebugPrint(String s, DebugType d) {
