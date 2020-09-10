@@ -105,6 +105,12 @@ namespace BetterJoyForCemu {
             hid_device_info enumerate; // Add device to list
             while (ptr != IntPtr.Zero) {
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
+
+                if (enumerate.serial_number == null) {
+                    ptr = enumerate.next;
+                    continue;
+                }
+
                 // TODO: try checking against interface number instead
                 if (!ContainsText(list_customControllers, enumerate.product_string) && !ContainsText(list_allControllers, enumerate.product_string)) {
                     list_allControllers.Items.Add(new SController(enumerate.product_string, enumerate.vendor_id, enumerate.product_id, 0));

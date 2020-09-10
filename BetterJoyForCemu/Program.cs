@@ -120,11 +120,11 @@ namespace BetterJoyForCemu {
                 SController thirdParty = null;
                 enumerate = (hid_device_info)Marshal.PtrToStructure(ptr, typeof(hid_device_info));
 
-                /*if (enumerate.serial_number == null) {
+                if (enumerate.serial_number == null) {
                     ptr = enumerate.next; // can't believe it took me this long to figure out why USB connections used up so much CPU.
                                           // it was getting stuck in an inf loop here!
                     continue;
-                }*/
+                }
 
                 if (form.nonOriginal) {
                     enumerate.product_id = product_pro;
