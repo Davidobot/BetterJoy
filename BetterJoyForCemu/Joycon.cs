@@ -359,6 +359,12 @@ namespace BetterJoyForCemu {
                 HIDapi.hid_write(handle, a, new UIntPtr(2));
                 HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
+                if (a[0] != 0x81) { // can occur when USB connection isn't closed properly
+                    form.AppendTextBox("Resetting USB connection.\r\n");
+                    Subcommand(0x06, new byte[] { 0x01 }, 1);
+                    throw new Exception("reset_usb");
+                }
+
                 if (a[3] == 0x3) {
                     PadMacAddress = new PhysicalAddress(new byte[] { a[9], a[8], a[7], a[6], a[5], a[4] });
                 }
@@ -465,6 +471,12 @@ namespace BetterJoyForCemu {
                             break;
                     }
                 }
+            }
+
+            if (battery <= 1) {
+                form.notifyIcon.Visible = true;
+                form.notifyIcon.BalloonTipText = String.Format("Controller {0} ({1}) - low battery notification!", PadId, isPro ? "Pro Controller" : (isSnes ? "SNES Controller" : (isLeft ? "Joycon Left" : "Joycon Right")));
+                form.notifyIcon.ShowBalloonTip(0);
             }
         }
 
@@ -1033,7 +1045,6 @@ namespace BetterJoyForCemu {
             HIDapi.hid_write(handle, buf_, new UIntPtr(len + 11));
             int tries = 0;
             do {
-
                 int res = HIDapi.hid_read_timeout(handle, response, new UIntPtr(report_len), 100);
                 if (res < 1) DebugPrint("No response.", DebugType.COMMS);
                 else if (print) { PrintArray(response, DebugType.COMMS, report_len - 1, 1, "Response ID 0x" + string.Format("{0:X2}", response[0]) + ". Data: 0x{0:S}"); }

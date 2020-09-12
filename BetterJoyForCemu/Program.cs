@@ -24,7 +24,6 @@ namespace BetterJoyForCemu {
         public bool EnableLocalize = false;
 
         private const ushort vendor_id = 0x57e;
-        private const ushort vendor_id_ = 0x057e;
         private const ushort product_l = 0x2006;
         private const ushort product_r = 0x2007;
         private const ushort product_pro = 0x2009;
