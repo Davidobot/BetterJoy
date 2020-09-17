@@ -315,7 +315,7 @@ namespace BetterJoyForCemu {
                     }
 
                     jc.Begin();
-                    if (form.nonOriginal) {
+                    if (form.allowCalibration) {
                         jc.getActiveData();
                     }
 

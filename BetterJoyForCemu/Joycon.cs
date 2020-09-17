@@ -909,7 +909,7 @@ namespace BetterJoyForCemu {
                 acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
                 acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
 
-                if (form.nonOriginal) {
+                if (form.allowCalibration) {
                     for (int i = 0; i < 3; ++i) {
                         switch (i) {
                             case 0:
