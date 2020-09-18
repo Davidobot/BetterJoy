@@ -57,7 +57,7 @@ namespace BetterJoyForCemu {
 				}
 
 				// if old settings
-				if (lineNO < settingsNum) {
+				if (lineNO < settingsNum + 1) {
 					File.Delete(PATH);
 					Init(caliData);
 				}
