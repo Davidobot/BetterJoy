@@ -269,14 +269,14 @@
             this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(227, 242);
+            this.groupBox1.Size = new System.Drawing.Size(304, 242);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Config";
             // 
             // settingsTable
             // 
-            this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.settingsTable.AutoScroll = true;
             this.settingsTable.ColumnCount = 2;
@@ -287,7 +287,7 @@
             this.settingsTable.Name = "settingsTable";
             this.settingsTable.RowCount = 1;
             this.settingsTable.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.settingsTable.Size = new System.Drawing.Size(219, 219);
+            this.settingsTable.Size = new System.Drawing.Size(300, 219);
             this.settingsTable.TabIndex = 1;
             // 
             // rightPanel
@@ -297,7 +297,7 @@
             this.rightPanel.Location = new System.Drawing.Point(289, 1);
             this.rightPanel.Margin = new System.Windows.Forms.Padding(2, 2, 12, 2);
             this.rightPanel.Name = "rightPanel";
-            this.rightPanel.Size = new System.Drawing.Size(231, 273);
+            this.rightPanel.Size = new System.Drawing.Size(312, 273);
             this.rightPanel.TabIndex = 11;
             this.rightPanel.Visible = false;
             // 
@@ -305,7 +305,7 @@
             // 
             this.settingsApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.settingsApply.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.settingsApply.Location = new System.Drawing.Point(165, 252);
+            this.settingsApply.Location = new System.Drawing.Point(246, 252);
             this.settingsApply.Margin = new System.Windows.Forms.Padding(2);
             this.settingsApply.Name = "settingsApply";
             this.settingsApply.Size = new System.Drawing.Size(61, 21);
@@ -340,7 +340,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(615, 308);
             this.Controls.Add(this.btn_reassign_open);
             this.Controls.Add(this.foldLbl);
             this.Controls.Add(this.rightPanel);
