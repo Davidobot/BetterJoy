@@ -31,6 +31,7 @@ namespace BetterJoyForCemu {
             THREADING,
             IMU,
             RUMBLE,
+            SHAKE,
         };
         public DebugType debug_type = DebugType.NONE;
         public bool isLeft;
@@ -525,6 +526,7 @@ namespace BetterJoyForCemu {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
                     ExtractIMUValues(raw_buf, n);
+                    DetectShake();
 
                     byte lag = (byte)Math.Max(0, raw_buf[1] - ts_en - 3);
                     if (n == 0) {
@@ -572,6 +574,38 @@ namespace BetterJoyForCemu {
                 DebugPrint(string.Format("Enqueue. Bytes read: {0:D}. Timestamp: {1:X2}", ret, raw_buf[1]), DebugType.THREADING);
             }
             return ret;
+        }
+
+        private readonly Stopwatch shakeTimer = Stopwatch.StartNew(); //Setup a timer for measuring shake in milliseconds
+        private long shakedTime = 0;
+        private bool hasBeenShaked;
+        void DetectShake() {
+            if (form.shakeInputEnabled) {
+                long currentShakeTime = shakeTimer.ElapsedMilliseconds;
+
+                // Shake detection logic
+                bool isShaking = GetAccel().LengthSquared() >= form.shakeSesitivity;
+                if (isShaking && currentShakeTime >= shakedTime + form.shakeDelay || isShaking && shakedTime == 0) {
+                    shakedTime = currentShakeTime;
+                    hasBeenShaked = true;
+                    DebugPrint("Shaked at time: " + shakedTime.ToString(), DebugType.SHAKE);
+                }
+
+                // Reset shake boolean 
+                if (currentShakeTime >= shakedTime + form.shakeDelay / 2 && hasBeenShaked) {
+                    hasBeenShaked = false;
+                    DebugPrint("Shake completed", DebugType.SHAKE);
+                }
+
+                // Reset shake timer every 10 seconds
+                if (shakeTimer.ElapsedMilliseconds >= 10000) {
+                    shakeTimer.Restart();
+                    shakedTime = -1;
+                }
+            } else {
+                shakeTimer.Stop();
+                return;
+            }
         }
 
         bool dragToggle = Boolean.Parse(ConfigurationManager.AppSettings["DragToggle"]);
@@ -1306,6 +1340,8 @@ namespace BetterJoyForCemu {
             var stick2 = input.stick2;
             var sliderVal = input.sliderVal;
 
+            var hasShaked = input.hasBeenShaked;
+
             if (isPro) {
                 output.cross = buttons[(int)(!swapAB ? Button.B : Button.A)];
                 output.circle = buttons[(int)(!swapAB ? Button.A : Button.B)];
@@ -1335,7 +1371,10 @@ namespace BetterJoyForCemu {
                 output.share = buttons[(int)Button.MINUS];
                 output.options = buttons[(int)Button.PLUS];
                 output.ps = buttons[(int)Button.HOME];
-                output.touchpad = buttons[(int)Button.CAPTURE];
+
+                // Maps shake input to DS4 touchpad (Button 13 on DirectInput)
+                output.touchpad = input.form.shakeInputEnabled ? hasShaked : buttons[(int)Button.CAPTURE];
+
                 output.shoulder_left = buttons[(int)Button.SHOULDER_1];
                 output.shoulder_right = buttons[(int)Button.SHOULDER2_1];
                 output.thumb_left = buttons[(int)Button.STICK];
