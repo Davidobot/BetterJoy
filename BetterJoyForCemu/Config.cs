@@ -7,7 +7,7 @@ namespace BetterJoyForCemu {
 		const string PATH = "settings";
 		static Dictionary<string, string> variables = new Dictionary<string, string>();
 
-		const int settingsNum = 10; // currently - ProgressiveScan, StartInTray + special buttons
+		const int settingsNum = 11; // currently - ProgressiveScan, StartInTray + special buttons
 
 		public static string GetDefaultValue(string s) {
 			switch (s) {
@@ -22,7 +22,7 @@ namespace BetterJoyForCemu {
 		}
 
 		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
-			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "reset_mouse", "active_gyro" })
+			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "shake", "reset_mouse", "active_gyro" })
 				variables[s] = GetDefaultValue(s);
 
 			if (File.Exists(PATH)) {

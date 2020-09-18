@@ -696,6 +696,11 @@ namespace BetterJoyForCemu {
             SimulateContinous((int)Button.CAPTURE, Config.Value("capture"));
             SimulateContinous((int)Button.HOME, Config.Value("home"));
 
+            // Query if controller was shaked, if it has then click on mapped key.
+            if (hasBeenShaked) {
+                Simulate(Config.Value("shake"), true, false);
+            }
+
             if (isLeft) {
                 if (buttons_down[(int)Button.SL])
                     Simulate(Config.Value("sl_l"), false, false);
@@ -1340,7 +1345,6 @@ namespace BetterJoyForCemu {
             var stick2 = input.stick2;
             var sliderVal = input.sliderVal;
 
-            var hasShaked = input.hasBeenShaked;
 
             if (isPro) {
                 output.cross = buttons[(int)(!swapAB ? Button.B : Button.A)];
@@ -1371,10 +1375,7 @@ namespace BetterJoyForCemu {
                 output.share = buttons[(int)Button.MINUS];
                 output.options = buttons[(int)Button.PLUS];
                 output.ps = buttons[(int)Button.HOME];
-
-                // Maps shake input to DS4 touchpad (Button 13 on DirectInput)
-                output.touchpad = input.form.shakeInputEnabled ? hasShaked : buttons[(int)Button.CAPTURE];
-
+                output.touchpad = buttons[(int)Button.CAPTURE];
                 output.shoulder_left = buttons[(int)Button.SHOULDER_1];
                 output.shoulder_right = buttons[(int)Button.SHOULDER2_1];
                 output.thumb_left = buttons[(int)Button.STICK];
