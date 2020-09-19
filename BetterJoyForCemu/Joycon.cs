@@ -589,13 +589,15 @@ namespace BetterJoyForCemu {
                     shakedTime = currentShakeTime;
                     hasShaked = true;
 
+                    // Mapped shake key down
                     Simulate(Config.Value("shake"), false, true);
                     DebugPrint("Shaked at time: " + shakedTime.ToString(), DebugType.SHAKE);
                 }
 
-                // If controller was shaked then click on mapped key, then reset hasShaked
+                // If controller was shaked then release mapped key, then reset hasShaked
                 if (hasShaked) {
 
+                    // Mapped shake key up
                     Simulate(Config.Value("shake"), false, false);
                     DebugPrint("Shake completed", DebugType.SHAKE);
 
