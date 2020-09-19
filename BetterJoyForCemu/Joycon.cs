@@ -578,7 +578,7 @@ namespace BetterJoyForCemu {
 
         private readonly Stopwatch shakeTimer = Stopwatch.StartNew(); //Setup a timer for measuring shake in milliseconds
         private long shakedTime = 0;
-        private bool hasBeenShaked;
+        private bool hasShaked;
         void DetectShake() {
             if (form.shakeInputEnabled) {
                 long currentShakeTime = shakeTimer.ElapsedMilliseconds;
@@ -587,14 +587,16 @@ namespace BetterJoyForCemu {
                 bool isShaking = GetAccel().LengthSquared() >= form.shakeSesitivity;
                 if (isShaking && currentShakeTime >= shakedTime + form.shakeDelay || isShaking && shakedTime == 0) {
                     shakedTime = currentShakeTime;
-                    hasBeenShaked = true;
+                    hasShaked = true;
+                    Simulate(Config.Value("shake"), false, true);
                     DebugPrint("Shaked at time: " + shakedTime.ToString(), DebugType.SHAKE);
                 }
 
-                // Reset shake boolean 
-                if (currentShakeTime >= shakedTime + form.shakeDelay / 2 && hasBeenShaked) {
-                    hasBeenShaked = false;
+                // If controller was shaked then click on mapped key, then reset hasShaked
+                if (hasShaked) {
+                    Simulate(Config.Value("shake"), false, false);
                     DebugPrint("Shake completed", DebugType.SHAKE);
+                    hasShaked = false;
                 }
 
                 // Reset shake timer every 10 seconds
@@ -695,11 +697,6 @@ namespace BetterJoyForCemu {
                 Simulate(Config.Value("home"));
             SimulateContinous((int)Button.CAPTURE, Config.Value("capture"));
             SimulateContinous((int)Button.HOME, Config.Value("home"));
-
-            // Query if controller was shaked, if it has then click on mapped key.
-            if (hasBeenShaked) {
-                Simulate(Config.Value("shake"), true, false);
-            }
 
             if (isLeft) {
                 if (buttons_down[(int)Button.SL])
