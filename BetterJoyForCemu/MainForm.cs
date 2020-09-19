@@ -15,6 +15,7 @@ using System.Xml.Linq;
 
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
+        public bool useOriginalStickCalibration = Boolean.Parse(ConfigurationManager.AppSettings["UseOriginalStickCalibration"]);
         public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
         public List<Button> con, loc;
         public bool calibrate;
