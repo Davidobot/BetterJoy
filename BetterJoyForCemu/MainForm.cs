@@ -15,8 +15,8 @@ using System.Xml.Linq;
 
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
-        public bool useOriginalStickCalibration = Boolean.Parse(ConfigurationManager.AppSettings["UseOriginalStickCalibration"]);
-        public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
+        public bool useControllerStickCalibration;
+        public bool nonOriginal;
         public List<Button> con, loc;
         public bool calibrate;
         public List<KeyValuePair<string, float[]>> caliData;
@@ -24,12 +24,19 @@ namespace BetterJoyForCemu {
         private int count;
         public List<int> xG, yG, zG, xA, yA, zA;
 
+        public enum NonOriginalController : int {
+            Disabled = 0,
+            DefaultCalibration = 1,
+            ControllerCalibration = 2,
+        }
+
         public MainForm() {
             xG = new List<int>(); yG = new List<int>(); zG = new List<int>();
             xA = new List<int>(); yA = new List<int>(); zA = new List<int>();
             caliData = new List<KeyValuePair<string, float[]>> {
                 new KeyValuePair<string, float[]>("0", new float[6] {0,0,0,-710,0,0})
             };
+            SetNonOriginalControllerSettings();
 
             InitializeComponent();
 
@@ -56,6 +63,28 @@ namespace BetterJoyForCemu {
 
                 childControl.MouseClick += cbBox_Changed;
                 settingsTable.Controls.Add(childControl, 1, i);
+            }
+        }
+
+        private void SetNonOriginalControllerSettings() {
+            Enum.TryParse(ConfigurationManager.AppSettings["NonOriginalController"], true, out NonOriginalController nonOriginalController);
+            switch ((int)nonOriginalController) {
+                case 0:
+                    nonOriginal = false;
+                    break;
+                case 1:
+                case 2:
+                    nonOriginal = true;
+                    break;       
+            }
+            switch ((int)nonOriginalController) {
+                case 0:
+                case 2:
+                    useControllerStickCalibration = true;
+                    break;
+                case 1:
+                    useControllerStickCalibration = false;
+                    break;
             }
         }
 
