@@ -26,7 +26,7 @@ namespace BetterJoyForCemu {
 				variables[s] = GetDefaultValue(s);
 
 			if (File.Exists(PATH)) {
-				int lineNO = 0;
+				int lineNO = -1;
 				using (StreamReader file = new StreamReader(PATH)) {
 					string line = String.Empty;
 
@@ -57,7 +57,7 @@ namespace BetterJoyForCemu {
 				}
 
 				// if old settings
-				if (lineNO < settingsNum + 1) {
+				if (lineNO < settingsNum) {
 					File.Delete(PATH);
 					Init(caliData);
 				}

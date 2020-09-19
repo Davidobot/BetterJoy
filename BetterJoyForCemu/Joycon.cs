@@ -604,11 +604,6 @@ namespace BetterJoyForCemu {
                     hasShaked = false;
                 }
 
-                // Reset shake timer every 10 seconds
-                if (shakeTimer.ElapsedMilliseconds >= 10000) {
-                    shakeTimer.Restart();
-                    shakedTime = -1;
-                }
             } else {
                 shakeTimer.Stop();
                 return;
@@ -1346,7 +1341,6 @@ namespace BetterJoyForCemu {
             var stick = input.stick;
             var stick2 = input.stick2;
             var sliderVal = input.sliderVal;
-
 
             if (isPro) {
                 output.cross = buttons[(int)(!swapAB ? Button.B : Button.A)];
