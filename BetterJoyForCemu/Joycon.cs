@@ -806,7 +806,8 @@ namespace BetterJoyForCemu {
                 if (isPro) {
                     stick2_precal[0] = (UInt16)(stick2_raw[0] | ((stick2_raw[1] & 0xf) << 8));
                     stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
-                    stick2 = CenterSticks(stick2_precal, form.useOriginalStickCalibration ? stick2_cal : cal, deadzone2);
+                    ushort dz2 = form.useOriginalStickCalibration ? deadzone2 : (ushort)200;
+                    stick2 = CenterSticks(stick2_precal, form.useOriginalStickCalibration ? stick2_cal : cal, dz2);
                 }
 
                 // Read other Joycon's sticks
