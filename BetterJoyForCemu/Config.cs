@@ -22,6 +22,7 @@ namespace BetterJoyForCemu {
 		}
 
         // Helper function to count how many lines are in a file
+        // https://www.dotnetperls.com/line-count
         static long CountLinesInFile(string f) {
             // Zero based count
             long count = -1;
