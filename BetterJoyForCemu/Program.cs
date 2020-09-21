@@ -141,8 +141,11 @@ namespace BetterJoyForCemu {
                 }
 
                 ushort prod_id = thirdParty == null ? enumerate.product_id : TypeToProdId(thirdParty.type);
-                if (prod_id == 0)
-                    continue; // controller was not assigned a type
+                if (prod_id == 0) {
+                    ptr = enumerate.next; // controller was not assigned a type, but advance ptr anyway
+                    continue;
+                }
+
                 if (validController && !ControllerAlreadyAdded(enumerate.path)) {
                     switch (prod_id) {
                         case product_l:
