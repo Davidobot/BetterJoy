@@ -121,8 +121,8 @@ namespace BetterJoyForCemu {
 				if (i == 0) space = "";
 				caliStr += space + caliData[i].Key + "," + String.Join(",", caliData[i].Value);
 			}
-		    txt[settingsNum] = caliStr;
-		    File.WriteAllLines(PATH, txt);
+            txt[settingsNum] = caliStr;
+            File.WriteAllLines(PATH, txt);
 		}
 
 		public static void Save() {
