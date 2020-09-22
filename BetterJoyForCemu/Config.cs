@@ -21,40 +21,40 @@ namespace BetterJoyForCemu {
 			return "0";
 		}
 
-        // Helper function to count how many lines are in a file
-        // https://www.dotnetperls.com/line-count
-        static long CountLinesInFile(string f) {
-            // Zero based count
-            long count = -1;
-            using (StreamReader r = new StreamReader(f)) {
-                string line;
-                while ((line = r.ReadLine()) != null) {
-                    count++;
-                }
-            }
-            return count;
-        }
+		// Helper function to count how many lines are in a file
+		// https://www.dotnetperls.com/line-count
+		static long CountLinesInFile(string f) {
+			// Zero based count
+			long count = -1;
+			using (StreamReader r = new StreamReader(f)) {
+				string line;
+				while ((line = r.ReadLine()) != null) {
+					count++;
+				}
+			}
+			return count;
+		}
 
-        public static void Init(List<KeyValuePair<string, float[]>> caliData) {
+		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
 			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "shake", "reset_mouse", "active_gyro" })
 				variables[s] = GetDefaultValue(s);
 
-            if (File.Exists(PATH)) {
+			if (File.Exists(PATH)) {
 
-                // Reset settings file if old settings
-                if (CountLinesInFile(PATH) < settingsNum) {
-                    File.Delete(PATH);
-                    Init(caliData);
-                    return;
-                }
+				// Reset settings file if old settings
+				if (CountLinesInFile(PATH) < settingsNum) {
+					File.Delete(PATH);
+					Init(caliData);
+					return;
+				}
 
 				using (StreamReader file = new StreamReader(PATH)) {
 					string line = String.Empty;
-                    int lineNO = 0;
-                    while ((line = file.ReadLine()) != null) {
+					int lineNO = 0;
+					while ((line = file.ReadLine()) != null) {
 						string[] vs = line.Split();
-                        try {
-                            if (lineNO < settingsNum) { // load in basic settings
+						try {
+							if (lineNO < settingsNum) { // load in basic settings
 								variables[vs[0]] = vs[1];
 							} else { // load in calibration presets
 								caliData.Clear();
@@ -71,8 +71,8 @@ namespace BetterJoyForCemu {
 								}
 							}
 						} catch { }
-                        lineNO++;
-                    }
+						lineNO++;
+					}
 				}
 			} else {
 				using (StreamWriter file = new StreamWriter(PATH)) {
@@ -121,8 +121,8 @@ namespace BetterJoyForCemu {
 				if (i == 0) space = "";
 				caliStr += space + caliData[i].Key + "," + String.Join(",", caliData[i].Value);
 			}
-            txt[settingsNum] = caliStr;
-            File.WriteAllLines(PATH, txt);
+			txt[settingsNum] = caliStr;
+			File.WriteAllLines(PATH, txt);
 		}
 
 		public static void Save() {

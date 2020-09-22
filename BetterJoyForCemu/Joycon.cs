@@ -526,7 +526,6 @@ namespace BetterJoyForCemu {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
                     ExtractIMUValues(raw_buf, n);
-                    DetectShake();
 
                     byte lag = (byte)Math.Max(0, raw_buf[1] - ts_en - 3);
                     if (n == 0) {
@@ -596,11 +595,9 @@ namespace BetterJoyForCemu {
 
                 // If controller was shaked then release mapped key after a small delay to simulate a button press, then reset hasShaked
                 if (hasShaked && currentShakeTime >= shakedTime + 10) {
-
                     // Mapped shake key up
                     Simulate(Config.Value("shake"), false, true);
                     DebugPrint("Shake completed", DebugType.SHAKE);
-
                     hasShaked = false;
                 }
 
@@ -690,6 +687,8 @@ namespace BetterJoyForCemu {
                     return;
                 }
             }
+
+            DetectShake();
 
             if (buttons_down[(int)Button.CAPTURE])
                 Simulate(Config.Value("capture"));
