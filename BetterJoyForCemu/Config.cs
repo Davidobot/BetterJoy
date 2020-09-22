@@ -7,7 +7,7 @@ namespace BetterJoyForCemu {
 		const string PATH = "settings";
 		static Dictionary<string, string> variables = new Dictionary<string, string>();
 
-		const int settingsNum = 10; // currently - ProgressiveScan, StartInTray + special buttons
+		const int settingsNum = 11; // currently - ProgressiveScan, StartInTray + special buttons
 
 		public static string GetDefaultValue(string s) {
 			switch (s) {
@@ -21,15 +21,36 @@ namespace BetterJoyForCemu {
 			return "0";
 		}
 
+		// Helper function to count how many lines are in a file
+		// https://www.dotnetperls.com/line-count
+		static long CountLinesInFile(string f) {
+			// Zero based count
+			long count = -1;
+			using (StreamReader r = new StreamReader(f)) {
+				string line;
+				while ((line = r.ReadLine()) != null) {
+					count++;
+				}
+			}
+			return count;
+		}
+
 		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
-			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "reset_mouse", "active_gyro" })
+			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "shake", "reset_mouse", "active_gyro" })
 				variables[s] = GetDefaultValue(s);
 
 			if (File.Exists(PATH)) {
-				int lineNO = 0;
+
+				// Reset settings file if old settings
+				if (CountLinesInFile(PATH) < settingsNum) {
+					File.Delete(PATH);
+					Init(caliData);
+					return;
+				}
+
 				using (StreamReader file = new StreamReader(PATH)) {
 					string line = String.Empty;
-
+					int lineNO = 0;
 					while ((line = file.ReadLine()) != null) {
 						string[] vs = line.Split();
 						try {
@@ -52,14 +73,6 @@ namespace BetterJoyForCemu {
 						} catch { }
 						lineNO++;
 					}
-
-
-				}
-
-				// if old settings
-				if (lineNO < settingsNum) {
-					File.Delete(PATH);
-					Init(caliData);
 				}
 			} else {
 				using (StreamWriter file = new StreamWriter(PATH)) {

@@ -22,6 +22,9 @@ namespace BetterJoyForCemu {
         private Timer countDown;
         private int count;
         public List<int> xG, yG, zG, xA, yA, zA;
+        public bool shakeInputEnabled = Boolean.Parse(ConfigurationManager.AppSettings["EnableShakeInput"]);
+        public float shakeSesitivity = float.Parse(ConfigurationManager.AppSettings["ShakeInputSensitivity"]);
+        public float shakeDelay = float.Parse(ConfigurationManager.AppSettings["ShakeInputDelay"]);
 
         public MainForm() {
             xG = new List<int>(); yG = new List<int>(); zG = new List<int>();
