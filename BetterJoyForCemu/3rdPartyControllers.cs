@@ -40,7 +40,7 @@ namespace BetterJoyForCemu {
             }
 
             public override string ToString() {
-                return name;
+                return name ?? $"Unidentified Device ({this.product_id})";
             }
 
             public string Serialise() {
