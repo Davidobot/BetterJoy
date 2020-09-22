@@ -516,6 +516,10 @@ namespace BetterJoyForCemu {
 
         private static string appGuid = "1bf709e9-c133-41df-933a-c9ff3f664c7b"; // randomly-generated
         static void Main(string[] args) {
+
+            // Set the correct DLL for the current OS
+            SetupDlls();
+
             using (Mutex mutex = new Mutex(false, "Global\\" + appGuid)) {
                 if (!mutex.WaitOne(0, false)) {
                     MessageBox.Show("Instance already running.", "BetterJoy");
@@ -528,5 +532,21 @@ namespace BetterJoyForCemu {
                 Application.Run(form);
             }
         }
+
+        static void SetupDlls() {
+            const int LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
+            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+            AddDllDirectory(Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                Environment.Is64BitProcess ? "x64" : "x86"
+            ));
+        }
+
+        // Helper funtions to set the hidapi dll location acording to the system instruction set.
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SetDefaultDllDirectories(int directoryFlags);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern void AddDllDirectory(string lpPathName);
     }
 }
