@@ -55,7 +55,9 @@ For things related to the original BetterJoy, check out the [wiki](https://githu
 
 # Acknowledgements
 
-ORIGINAAL Acknowledgements
+ORIGINAL Acknowledgements
+
+
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
 
 Also I am very grateful to [mfosse](https://github.com/mfosse/JoyCon-Driver) for pointing me in the right direction and to [Looking-Glass](https://github.com/Looking-Glass/JoyconLib) without whom I would not be able to figure anything out. (being honest here - the joycon code is his)
