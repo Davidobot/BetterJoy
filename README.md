@@ -9,8 +9,9 @@ This version of BetterJoy is intended primarily for use with a GPD Win Max inter
 Allows the GPD Win Max (or any Xinput controller in the first controller slot) to merge with a JoyCon or Pro Controller for rumble and gyro use.
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
 
-If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/RichardGordonson). 
-[or click here to donate to the original BetterJoy Project](https://www.paypal.me/DavidKhachaturov/5). 
+If anyone would like to donate, [you can do so here](https://www.paypal.me/RichardGordonson).
+
+If you want to donate to the original BetterJoy project, [click here](https://www.paypal.me/DavidKhachaturov/5). 
 
 
 ### Screenshot
