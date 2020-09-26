@@ -15,8 +15,7 @@ If you want to donate to the original BetterJoy project, [click here](https://ww
 
 
 ### Screenshot
-This screenshot is of the original BetterJoy, need to replace
-![Example](https://user-images.githubusercontent.com/16619943/67919451-bf8e5680-fb76-11e9-995e-7193b87548e1.png)
+![Example](BetterJoyWM_Screenshot.png)
 
 # Downloads
 Go to the [Releases tab](https://github.com/MYCRAFTisbest/BetterJoy-Win-Max/releases/)!
