@@ -4,6 +4,8 @@
 
 # BetterJoy Win Max v1.0 (based off source code from BetterJoy v6.4α)
 
+This version of BetterJoy is intended primarily for use with a GPD Win Max internal gamepad and a Left Joycon to hijack the Rumble and gyro features from it for use on the GPD Win Max handheld computer.
+
 Allows the GPD Win Max (or any Xinput controller in the first controller slot) to merge with a JoyCon or Pro Controller for rumble and gyro use.
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
 
