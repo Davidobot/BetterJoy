@@ -2,40 +2,39 @@
   <img src="title.png">
 </p>
 
-# BetterJoy v6.4α
-Allows the Nintendo Switch Pro Controller, Joycons, and Switch SNES controller to be used with [Cemu](http://cemu.info/) using [Cemuhook](https://sshnuke.net/cemuhook/), [Citra](https://citra-emu.org/), [Dolphin](https://dolphin-emu.org/), [Yuzu](https://yuzu-emu.org/), and system-wide with generic XInput support.
+# BetterJoy Win Max v1.0 (based off source code from BetterJoy v6.4α)
 
+Allows the GPD Win Max (or any Xinput controller in the first controller slot) to merge with a JoyCon or Pro Controller for rumble and gyro use.
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
 
-If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
+If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/RichardGordonson). 
+[or click here to donate to the original BetterJoy Project](https://www.paypal.me/DavidKhachaturov/5). 
 
-#### Personal note
-Thank you for using my software and all the constructive feedback I've been getting about it. I started writing this project a while back and have since then learnt a lot more about programming and software development in general. I don't have too much time to work on this project, but I will try to fix bugs when and if they arise. Thank you for your patience in that regard too!
-
-It's been quite a wild ride, with nearly 110k official download on GitHub and probably many more through the nightlies. I think this project was responsible for both software jobs I landed so far, so I am quite proud of it.
 
 ### Screenshot
+This screenshot is of the original BetterJoy, need to replace
 ![Example](https://user-images.githubusercontent.com/16619943/67919451-bf8e5680-fb76-11e9-995e-7193b87548e1.png)
 
 # Downloads
-Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
+Go to the [Releases tab](https://github.com/MYCRAFTisbest/BetterJoy-Win-Max/releases/)!
 
 # How to use
+
+[Youtube Tutorial (todo)](https://www.youtube.com/MYCRAFTisbest)
+
 1. Install drivers
     1. Read the READMEs (they're there for a reason!)
     1. Run *Drivers/ViGEmBus_Setup_1.16.116.exe*
 2. Run *BetterJoyForCemu.exe*
 3. Connect your controllers.
-4. Start Cemu and ensure CemuHook has the controller selected.
-    1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
-5. Go into *Input Settings*, choose XInput as a source and assign buttons normally.
-    1. If you don't want to do this for some reason, just have one input profile set up with *Wii U Gamepad* as the controller and enable "Also use for buttons/axes" under *GamePad motion source*. **This is no longer required as of version 3**
-    2. Turn rumble up to 70-80% if you want rumble.
 
-* As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam!
+You can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam!
 
 # More Info
-Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll find all sorts of goodness such as the changelog, description of app settings, the FAQ and Problems page, and info on how to make BetterJoy work with Steam *better*.
+For questions and feedback related to BetterJoy Win Max features, [visit the discord](https://discord.com/invite/XNUFgft)
+
+For things related to the original BetterJoy, check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll find all sorts of goodness such as the changelog, description of app settings, the FAQ and Problems page, and info on how to make BetterJoy work with Steam *better*.
+
 
 # Connecting and Disconnecting the Controller
 ## Bluetooth Mode
@@ -53,6 +52,8 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
 1. Press the "Remove" button
 
 # Acknowledgements
+
+ORIGINAAL Acknowledgements
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
 
 Also I am very grateful to [mfosse](https://github.com/mfosse/JoyCon-Driver) for pointing me in the right direction and to [Looking-Glass](https://github.com/Looking-Glass/JoyconLib) without whom I would not be able to figure anything out. (being honest here - the joycon code is his)
