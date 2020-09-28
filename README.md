@@ -22,7 +22,7 @@ Go to the [Releases tab](https://github.com/MYCRAFTisbest/BetterJoy-Win-Max/rele
 
 # How to use
 
-[Youtube Tutorial (todo)](https://www.youtube.com/MYCRAFTisbest)
+[Youtube Tutorial](https://youtu.be/QpVhH4tMFII)
 
 1. Install drivers
     1. Read the READMEs (they're there for a reason!)
