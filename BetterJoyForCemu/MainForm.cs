@@ -16,6 +16,7 @@ using System.Xml.Linq;
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
         public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
+        public bool proOverride = Boolean.Parse(ConfigurationManager.AppSettings["ProControllerOverride"]);
         public List<Button> con, loc;
         public bool calibrate;
         public List<KeyValuePair<string, float[]>> caliData;
@@ -32,7 +33,7 @@ namespace BetterJoyForCemu {
 
             InitializeComponent();
 
-            if (!nonOriginal)
+            if (!nonOriginal && !proOverride)
                 AutoCalibrate.Hide();
 
             con = new List<Button> { con1, con2, con3, con4 };
@@ -387,6 +388,7 @@ namespace BetterJoyForCemu {
                 Arr[0] = (float)quickselect_median(this.xG, rnd.Next);
                 Arr[1] = (float)quickselect_median(this.yG, rnd.Next);
                 Arr[2] = (float)quickselect_median(this.zG, rnd.Next);
+                Console.WriteLine(Arr[2]);
                 Arr[3] = (float)quickselect_median(this.xA, rnd.Next);
                 Arr[4] = (float)quickselect_median(this.yA, rnd.Next);
                 Arr[5] = (float)quickselect_median(this.zA, rnd.Next) - 4010; //Joycon.cs acc_sen 16384

@@ -101,7 +101,7 @@
             this.version_lbl.Name = "version_lbl";
             this.version_lbl.Size = new System.Drawing.Size(78, 13);
             this.version_lbl.TabIndex = 2;
-            this.version_lbl.Text = "v1.0WM (v6.4)";
+            this.version_lbl.Text = "v1.1WM (v6.4)";
             this.version_lbl.Click += new System.EventHandler(this.version_lbl_Click);
             // 
             // passiveScanBox

@@ -28,6 +28,8 @@ namespace BetterJoyForCemu {
         public int gyroXJoy = 0;
         public int gyroYJoy = 0;
         public bool gyroJoyActive = false;
+        public float xGBuff = 0;//Buffer for gyro joy camera xaxis
+        public float yGBuff = 0;//Buffer for gyro joy camera yaxis
 
         private long inactivity = Stopwatch.GetTimestamp();
 
@@ -812,8 +814,7 @@ namespace BetterJoyForCemu {
             //moved elsewhere to fix dumb. Left comment in case breaks, even dumber
 
             if (extraGyroFeature == "joy") {
-                // TODO
-                    string res_val = Config.Value("active_gyro");
+                string res_val = Config.Value("active_gyro");
 
                     if (res_val.StartsWith("joy_")) {
                         int i = Int32.Parse(res_val.Substring(4));
@@ -832,8 +833,8 @@ namespace BetterJoyForCemu {
 
                     // gyro data is in degrees/s
                     if (Config.Value("active_gyro") == "0" || active_gyro) {
-
-                        if (ModFreeGyro) {
+                        
+                    if (ModFreeGyro) {
                             var tempgyr = gyr_g.X;
                             gyr_g.X = -gyr_g.Y;
                             gyr_g.Y = tempgyr;
@@ -843,8 +844,8 @@ namespace BetterJoyForCemu {
 
                         //This code was originally for dx, changed to dy
                         int dx = (int)-(GyroJoySensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
-                            int dy = (int)-((GyroJoySensitivity) * (gyr_g.X * dt) * (Math.Abs(gyr_g.X) < 1 ? 0 : 1));
-                            int dz = (int)-(GyroJoySensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+                        int dy = (int)-((GyroJoySensitivity) * (gyr_g.X * dt) * (Math.Abs(gyr_g.X) < 1 ? 0 : 1));
+                        int dz = (int)-(GyroJoySensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
 
 
                         //WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
@@ -857,25 +858,42 @@ namespace BetterJoyForCemu {
                                     stick = XInputSticks(gyroXJoy, gyroYJoy);
                         }
                         else {//if (GyroJoyMoveMode == "camera") {
-                                var mDumb = 20;
-                                var minMove = 500;
+                                var mDumb = 20; //Arbitrary scalar value
+                                //var minMove = 1;
                                 var minMoveSpd = 8000;
-                                var xAxis = dx * GyroJoySensitivity * mDumb;
-                                var xAxisAbs = Math.Abs(xAxis);
-                                var yAxis = dy * GyroJoySensitivity * mDumb;
-                                var yAxisAbs = Math.Abs(yAxis);
+                                float xAxis = -gyr_g.Z * GyroJoySensitivity * mDumb;
+                                float xAxisAbs = Math.Abs(xAxis);
+                                float yAxis = -gyr_g.X * GyroJoySensitivity * mDumb;
+                                float yAxisAbs = Math.Abs(yAxis);
+                                float xMove = 0;
+                                float yMove = 0;
+                        Console.WriteLine("dx: " + dx);
+                        Console.WriteLine("X: " + xAxis);
+                        Console.WriteLine("Y: " + yAxis);
+                        Console.WriteLine("XABS: " + xAxisAbs);
+                        //if (xAxisAbs >= minMove) {
+                            xGBuff = xGBuff + xAxis;
+                            if (Math.Abs(xGBuff) >= minMoveSpd) {
+                                xMove = xGBuff;
+                                xGBuff = 0;
+                            }
+                        //}
+                                
 
-                            if (xAxisAbs >= minMove && xAxisAbs < minMoveSpd)
-                                xAxis = (xAxis / xAxisAbs) * minMoveSpd;
+                            //if (yAxisAbs >= minMove) {
+                                yGBuff = yGBuff + yAxis;
+                                if (Math.Abs(yGBuff) >= minMoveSpd) {
+                                    yMove = yGBuff;
+                                    yGBuff = 0;
+                                }
+                                //yAxis = (yAxis / yAxisAbs) * minMoveSpd;
+                            //}
 
-                            if (yAxisAbs >= minMove && yAxisAbs < minMoveSpd)
-                                yAxis = (yAxis / yAxisAbs) * minMoveSpd;
-
-                            //Console.WriteLine(xAxis);
                                 if (GyroJoyStick)
-                                    stick2 = XInputSticks(xAxis, yAxis);
+                                    stick2 = XInputSticks(xMove, yMove);
                                 else
-                                    stick = XInputSticks(dx * GyroJoySensitivity, dy * GyroJoySensitivity * mDumb);
+                                    stick = XInputSticks(xMove, yMove);
+                                    //stick = XInputSticks(dx * GyroJoySensitivity, dy * GyroJoySensitivity * mDumb);
                         }
                     }
 
@@ -1248,7 +1266,7 @@ namespace BetterJoyForCemu {
                 acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
                 acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
 
-                if (form.nonOriginal) {
+                if (form.nonOriginal || form.proOverride) {
                     for (int i = 0; i < 3; ++i) {
                         switch (i) {
                             case 0:
