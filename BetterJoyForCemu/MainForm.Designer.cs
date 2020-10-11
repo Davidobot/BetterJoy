@@ -101,7 +101,7 @@
             this.version_lbl.Name = "version_lbl";
             this.version_lbl.Size = new System.Drawing.Size(78, 13);
             this.version_lbl.TabIndex = 2;
-            this.version_lbl.Text = "v1.1WM (v6.4)";
+            this.version_lbl.Text = "v1.2WM (v6.4)";
             this.version_lbl.Click += new System.EventHandler(this.version_lbl_Click);
             // 
             // passiveScanBox
@@ -219,6 +219,7 @@
             this.con1.TabStop = false;
             this.btnTip.SetToolTip(this.con1, "Click on Joycons to join/split them");
             this.con1.UseVisualStyleBackColor = true;
+            this.con1.Click += new System.EventHandler(this.con1_Click);
             // 
             // foldLbl
             // 

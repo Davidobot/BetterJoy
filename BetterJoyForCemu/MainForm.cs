@@ -154,7 +154,7 @@ namespace BetterJoyForCemu {
             if (button.Tag.GetType() == typeof(Joycon)) {
                 Joycon v = (Joycon)button.Tag;
 
-                if (v.other == null && !v.isPro) { // needs connecting to other joycon (so messy omg)
+                if (v.other == null && (!v.isPro || proOverride)) { // needs connecting to other joycon (so messy omg)
                     bool succ = false;
 
                     if (Program.mgr.j.Count == 1) { // when want to have a single joycon in vertical mode
@@ -162,7 +162,7 @@ namespace BetterJoyForCemu {
                         succ = true;
                     } else {
                         foreach (Joycon jc in Program.mgr.j) {
-                            if (!jc.isPro && jc.isLeft != v.isLeft && jc != v && jc.other == null) {
+                            if ( jc.isLeft != v.isLeft && jc != v && jc.other == null) { //!jc.isPro && removed from start of if stetement  **
                                 v.other = jc;
                                 jc.other = v;
 
@@ -198,15 +198,17 @@ namespace BetterJoyForCemu {
                         foreach (Button b in con)
                             if (b.Tag == v)
                                 b.BackgroundImage = v.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
-                } else if (v.other != null && !v.isPro) { // needs disconnecting from other joycon
+                } else if (v.other != null && (!v.isPro || proOverride)) { //needs disconnecting from other joycon
                     ReenableViGEm(v);
                     ReenableViGEm(v.other);
 
                     button.BackgroundImage = v.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
 
+                    
                     foreach (Button b in con)
                         if (b.Tag == v.other)
                             b.BackgroundImage = v.other.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
+                    
 
                     //Set original Joycon LEDs
                     v.other.LED = (byte)(0x1 << v.other.PadId);
@@ -356,6 +358,10 @@ namespace BetterJoyForCemu {
 
         private void label3_Click(object sender, EventArgs e) {
             System.Diagnostics.Process.Start("https://discord.gg/XNUFgft");
+        }
+
+        private void con1_Click(object sender, EventArgs e) {
+
         }
 
         private void CountDown(object sender, EventArgs e) {

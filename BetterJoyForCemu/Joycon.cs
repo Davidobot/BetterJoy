@@ -12,6 +12,7 @@ using BetterJoyForCemu.Controller;
 using Nefarius.ViGEm.Client.Targets.DualShock4;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
 using SharpDX.XInput;
+using JetBrains.Annotations;
 
 //WARNING: Code is a mess and pretty hacked together changes were made for Win Max stuff -MYCRAFT
 namespace BetterJoyForCemu {
@@ -1042,6 +1043,7 @@ namespace BetterJoyForCemu {
 
         bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
         bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        bool proOverride = Boolean.Parse(ConfigurationManager.AppSettings["ProControllerOverride"]);
         private int ProcessButtonsAndStick(byte[] report_buf) {
             //Console.WriteLine("Well hello!");//*********
             //XInputTest(controller, xState);
@@ -1085,15 +1087,19 @@ namespace BetterJoyForCemu {
                 //Console.WriteLine((float)xState.Gamepad.LeftThumbX);
                 //Console.WriteLine(xState.Gamepad.LeftThumbX);
                 // Read other Joycon's sticks
-                if (isLeft && other != null && other != this) {
-                    stick2 = otherStick;
-                    other.otherStick = stick;
-                }
 
-                if (!isLeft && other != null && other != this) {
-                    Array.Copy(stick, stick2, 2);
-                    stick = otherStick;
-                    other.otherStick = stick2;
+                //Check to fix joining dual joycons for rumble
+                if (!proOverride) { 
+                    if (isLeft && other != null && other != this) {
+                        stick2 = otherStick;
+                        other.otherStick = stick;
+                    }
+
+                    if (!isLeft && other != null && other != this) {
+                        Array.Copy(stick, stick2, 2);
+                        stick = otherStick;
+                        other.otherStick = stick2;
+                    }
                 }
             }
             //
@@ -1146,24 +1152,27 @@ namespace BetterJoyForCemu {
                     //Console.WriteLine(((int)xState.Gamepad.LeftTrigger % 254));
                 }
 
-                if (other != null && other != this) {
-                    buttons[(int)(Button.B)] = other.buttons[(int)Button.DPAD_DOWN];
-                    buttons[(int)(Button.A)] = other.buttons[(int)Button.DPAD_RIGHT];
-                    buttons[(int)(Button.X)] = other.buttons[(int)Button.DPAD_UP];
-                    buttons[(int)(Button.Y)] = other.buttons[(int)Button.DPAD_LEFT];
+                //dual joycons check
+                if (!proOverride) { 
+                    if (other != null && other != this) {
+                        buttons[(int)(Button.B)] = other.buttons[(int)Button.DPAD_DOWN];
+                        buttons[(int)(Button.A)] = other.buttons[(int)Button.DPAD_RIGHT];
+                        buttons[(int)(Button.X)] = other.buttons[(int)Button.DPAD_UP];
+                        buttons[(int)(Button.Y)] = other.buttons[(int)Button.DPAD_LEFT];
 
-                    buttons[(int)Button.STICK2] = other.buttons[(int)Button.STICK];
-                    buttons[(int)Button.SHOULDER2_1] = other.buttons[(int)Button.SHOULDER_1];
-                    buttons[(int)Button.SHOULDER2_2] = other.buttons[(int)Button.SHOULDER_2];
-                }
+                        buttons[(int)Button.STICK2] = other.buttons[(int)Button.STICK];
+                        buttons[(int)Button.SHOULDER2_1] = other.buttons[(int)Button.SHOULDER_1];
+                        buttons[(int)Button.SHOULDER2_2] = other.buttons[(int)Button.SHOULDER_2];
+                    }
 
-                if (isLeft && other != null && other != this) {
-                    buttons[(int)Button.HOME] = other.buttons[(int)Button.HOME];
-                    buttons[(int)Button.PLUS] = other.buttons[(int)Button.PLUS];
-                }
+                    if (isLeft && other != null && other != this) {
+                        buttons[(int)Button.HOME] = other.buttons[(int)Button.HOME];
+                        buttons[(int)Button.PLUS] = other.buttons[(int)Button.PLUS];
+                    }
 
-                if (!isLeft && other != null && other != this) {
-                    buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
+                    if (!isLeft && other != null && other != this) {
+                        buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
+                    }
                 }
 
                 //reconnect Xinput if SR is pressed and setting is not disabled
@@ -1553,7 +1562,7 @@ namespace BetterJoyForCemu {
 
         private static OutputControllerXbox360InputState MapToXbox360Input(Joycon input) {
             var output = new OutputControllerXbox360InputState();
-
+            
             var swapAB = input.swapAB;
             var swapXY = input.swapXY;
 
