@@ -2,7 +2,7 @@
   <img src="title.png">
 </p>
 
-# BetterJoy Win Max v1.0 (based off source code from BetterJoy v6.4α)
+# BetterJoy Win Max v1.2 (based off source code from BetterJoy v6.4α)
 
 This version of BetterJoy is intended primarily for use with a GPD Win Max internal gamepad and a Left Joycon to hijack the Rumble and gyro features from it for use on the GPD Win Max handheld computer.
 
