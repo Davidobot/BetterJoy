@@ -16,15 +16,13 @@ using System.Xml.Linq;
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
         public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
+        public bool proOverride = Boolean.Parse(ConfigurationManager.AppSettings["ProControllerOverride"]);
         public List<Button> con, loc;
         public bool calibrate;
         public List<KeyValuePair<string, float[]>> caliData;
         private Timer countDown;
         private int count;
         public List<int> xG, yG, zG, xA, yA, zA;
-        public bool shakeInputEnabled = Boolean.Parse(ConfigurationManager.AppSettings["EnableShakeInput"]);
-        public float shakeSesitivity = float.Parse(ConfigurationManager.AppSettings["ShakeInputSensitivity"]);
-        public float shakeDelay = float.Parse(ConfigurationManager.AppSettings["ShakeInputDelay"]);
 
         public MainForm() {
             xG = new List<int>(); yG = new List<int>(); zG = new List<int>();
@@ -35,7 +33,7 @@ namespace BetterJoyForCemu {
 
             InitializeComponent();
 
-            if (!nonOriginal)
+            if (!nonOriginal && !proOverride)
                 AutoCalibrate.Hide();
 
             con = new List<Button> { con1, con2, con3, con4 };
@@ -119,10 +117,6 @@ namespace BetterJoyForCemu {
             } catch { }
         }
 
-        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) {
-            donationLink.LinkVisited = true;
-            System.Diagnostics.Process.Start("http://paypal.me/DavidKhachaturov/5");
-        }
 
         private void passiveScanBox_CheckedChanged(object sender, EventArgs e) {
             Config.SetValue("ProgressiveScan", passiveScanBox.Checked ? "1" : "0");
@@ -160,7 +154,7 @@ namespace BetterJoyForCemu {
             if (button.Tag.GetType() == typeof(Joycon)) {
                 Joycon v = (Joycon)button.Tag;
 
-                if (v.other == null && !v.isPro) { // needs connecting to other joycon (so messy omg)
+                if (v.other == null && (!v.isPro || proOverride)) { // needs connecting to other joycon (so messy omg)
                     bool succ = false;
 
                     if (Program.mgr.j.Count == 1) { // when want to have a single joycon in vertical mode
@@ -168,7 +162,7 @@ namespace BetterJoyForCemu {
                         succ = true;
                     } else {
                         foreach (Joycon jc in Program.mgr.j) {
-                            if (!jc.isPro && jc.isLeft != v.isLeft && jc != v && jc.other == null) {
+                            if ( jc.isLeft != v.isLeft && jc != v && jc.other == null) { //!jc.isPro && removed from start of if stetement  **
                                 v.other = jc;
                                 jc.other = v;
 
@@ -204,15 +198,17 @@ namespace BetterJoyForCemu {
                         foreach (Button b in con)
                             if (b.Tag == v)
                                 b.BackgroundImage = v.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
-                } else if (v.other != null && !v.isPro) { // needs disconnecting from other joycon
+                } else if (v.other != null && (!v.isPro || proOverride)) { //needs disconnecting from other joycon
                     ReenableViGEm(v);
                     ReenableViGEm(v.other);
 
                     button.BackgroundImage = v.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
 
+                    
                     foreach (Button b in con)
                         if (b.Tag == v.other)
                             b.BackgroundImage = v.other.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
+                    
 
                     //Set original Joycon LEDs
                     v.other.LED = (byte)(0x1 << v.other.PadId);
@@ -348,6 +344,26 @@ namespace BetterJoyForCemu {
             mapForm.ShowDialog();
         }
 
+        private void version_lbl_Click(object sender, EventArgs e) {
+
+        }
+
+        private void label1_Click(object sender, EventArgs e) {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e) {
+
+        }
+
+        private void label3_Click(object sender, EventArgs e) {
+            System.Diagnostics.Process.Start("https://discord.gg/XNUFgft");
+        }
+
+        private void con1_Click(object sender, EventArgs e) {
+
+        }
+
         private void CountDown(object sender, EventArgs e) {
             if (this.count == 0) {
                 this.console.Text = "Calibrating...";
@@ -378,6 +394,7 @@ namespace BetterJoyForCemu {
                 Arr[0] = (float)quickselect_median(this.xG, rnd.Next);
                 Arr[1] = (float)quickselect_median(this.yG, rnd.Next);
                 Arr[2] = (float)quickselect_median(this.zG, rnd.Next);
+                Console.WriteLine(Arr[2]);
                 Arr[3] = (float)quickselect_median(this.xA, rnd.Next);
                 Arr[4] = (float)quickselect_median(this.yA, rnd.Next);
                 Arr[5] = (float)quickselect_median(this.zA, rnd.Next) - 4010; //Joycon.cs acc_sen 16384

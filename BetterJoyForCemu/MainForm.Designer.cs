@@ -31,7 +31,6 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.version_lbl = new System.Windows.Forms.Label();
             this.passiveScanBox = new System.Windows.Forms.CheckBox();
-            this.donationLink = new System.Windows.Forms.LinkLabel();
             this.conCntrls = new System.Windows.Forms.GroupBox();
             this.loc4 = new System.Windows.Forms.Button();
             this.loc3 = new System.Windows.Forms.Button();
@@ -51,6 +50,9 @@
             this.settingsApply = new System.Windows.Forms.Button();
             this.AutoCalibrate = new System.Windows.Forms.Button();
             this.btn_reassign_open = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
             this.contextMenu.SuspendLayout();
             this.conCntrls.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -70,7 +72,7 @@
             // notifyIcon
             // 
             this.notifyIcon.BalloonTipText = "Double click the tray icon to maximise!";
-            this.notifyIcon.BalloonTipTitle = "BetterJoy";
+            this.notifyIcon.BalloonTipTitle = "BetterJoy Win Max Rumble";
             this.notifyIcon.ContextMenuStrip = this.contextMenu;
             this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
             this.notifyIcon.Text = "BetterJoy";
@@ -95,11 +97,12 @@
             // version_lbl
             // 
             this.version_lbl.AutoSize = true;
-            this.version_lbl.Location = new System.Drawing.Point(246, 239);
+            this.version_lbl.Location = new System.Drawing.Point(201, 238);
             this.version_lbl.Name = "version_lbl";
-            this.version_lbl.Size = new System.Drawing.Size(28, 13);
+            this.version_lbl.Size = new System.Drawing.Size(78, 13);
             this.version_lbl.TabIndex = 2;
-            this.version_lbl.Text = "v6.4";
+            this.version_lbl.Text = "v1.2WM (v6.4)";
+            this.version_lbl.Click += new System.EventHandler(this.version_lbl_Click);
             // 
             // passiveScanBox
             // 
@@ -114,17 +117,6 @@
             this.passiveScanBox.Text = "Passive Scan";
             this.passiveScanBox.UseVisualStyleBackColor = true;
             this.passiveScanBox.CheckedChanged += new System.EventHandler(this.passiveScanBox_CheckedChanged);
-            // 
-            // donationLink
-            // 
-            this.donationLink.AutoSize = true;
-            this.donationLink.Location = new System.Drawing.Point(196, 239);
-            this.donationLink.Name = "donationLink";
-            this.donationLink.Size = new System.Drawing.Size(42, 13);
-            this.donationLink.TabIndex = 5;
-            this.donationLink.TabStop = true;
-            this.donationLink.Text = "Donate";
-            this.donationLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
             // conCntrls
             // 
@@ -227,6 +219,7 @@
             this.con1.TabStop = false;
             this.btnTip.SetToolTip(this.con1, "Click on Joycons to join/split them");
             this.con1.UseVisualStyleBackColor = true;
+            this.con1.Click += new System.EventHandler(this.con1_Click);
             // 
             // foldLbl
             // 
@@ -334,13 +327,50 @@
             this.btn_reassign_open.UseVisualStyleBackColor = true;
             this.btn_reassign_open.Click += new System.EventHandler(this.btn_reassign_open_Click);
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(70, 261);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(139, 13);
+            this.label1.TabIndex = 14;
+            this.label1.Text = "Created by MYCRAFTisbest";
+            this.label1.Click += new System.EventHandler(this.label1_Click);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(65, 274);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(155, 13);
+            this.label2.TabIndex = 15;
+            this.label2.Text = "Original BetterJoy by Davidobot";
+            this.label2.Click += new System.EventHandler(this.label2_Click);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.BackColor = System.Drawing.SystemColors.ButtonFace;
+            this.label3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.label3.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.label3.Location = new System.Drawing.Point(225, 286);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(45, 15);
+            this.label3.TabIndex = 16;
+            this.label3.Text = "Discord";
+            this.label3.Click += new System.EventHandler(this.label3_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.ClientSize = new System.Drawing.Size(615, 308);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.btn_reassign_open);
             this.Controls.Add(this.foldLbl);
             this.Controls.Add(this.rightPanel);
@@ -348,7 +378,6 @@
             this.Controls.Add(this.btn_open3rdP);
             this.Controls.Add(this.startInTrayBox);
             this.Controls.Add(this.conCntrls);
-            this.Controls.Add(this.donationLink);
             this.Controls.Add(this.passiveScanBox);
             this.Controls.Add(this.version_lbl);
             this.Controls.Add(this.console);
@@ -356,7 +385,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
-            this.Text = "BetterJoy";
+            this.Text = "BetterJoy Win Max";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
@@ -377,7 +406,6 @@
         private System.Windows.Forms.ContextMenuStrip contextMenu;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.CheckBox passiveScanBox;
-        private System.Windows.Forms.LinkLabel donationLink;
         private System.Windows.Forms.GroupBox conCntrls;
         private System.Windows.Forms.Button con1;
         private System.Windows.Forms.Button con4;
@@ -397,5 +425,8 @@
         private System.Windows.Forms.Label foldLbl;
         private System.Windows.Forms.Button AutoCalibrate;
         private System.Windows.Forms.Button btn_reassign_open;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
     }
 }

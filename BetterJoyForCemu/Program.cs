@@ -141,11 +141,8 @@ namespace BetterJoyForCemu {
                 }
 
                 ushort prod_id = thirdParty == null ? enumerate.product_id : TypeToProdId(thirdParty.type);
-                if (prod_id == 0) {
-                    ptr = enumerate.next; // controller was not assigned a type, but advance ptr anyway
-                    continue;
-                }
-
+                if (prod_id == 0)
+                    continue; // controller was not assigned a type
                 if (validController && !ControllerAlreadyAdded(enumerate.path)) {
                     switch (prod_id) {
                         case product_l:
@@ -318,7 +315,7 @@ namespace BetterJoyForCemu {
                     }
 
                     jc.Begin();
-                    if (form.nonOriginal) {
+                    if (form.nonOriginal || form.proOverride) {
                         jc.getActiveData();
                     }
 
@@ -352,6 +349,8 @@ namespace BetterJoyForCemu {
         public static UdpServer server;
 
         public static ViGEmClient emClient;
+
+        //public XInputController Xput;
 
         private static readonly HttpClient client = new HttpClient();
 
@@ -452,8 +451,16 @@ namespace BetterJoyForCemu {
             if (e.Data.ButtonDown != null) {
                 string res_val = Config.Value("reset_mouse");
                 if (res_val.StartsWith("mse_"))
-                    if ((int)e.Data.ButtonDown.Button == Int32.Parse(res_val.Substring(4)))
-                        WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+                    if ((int)e.Data.ButtonDown.Button == Int32.Parse(res_val.Substring(4))) {
+                        var rMouse = true;
+                        foreach (var i in mgr.j) {
+                            i.gyroXJoy = 0;
+                            i.gyroYJoy = 0;
+                            rMouse = i.gyroJoyActive;
+                        }
+                        if (!rMouse)
+                            WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+                    }
 
                 res_val = Config.Value("active_gyro");
                 if (res_val.StartsWith("mse_"))
@@ -475,8 +482,16 @@ namespace BetterJoyForCemu {
             if (e.Data.KeyDown != null) {
                 string res_val = Config.Value("reset_mouse");
                 if (res_val.StartsWith("key_"))
-                    if ((int)e.Data.KeyDown.Key == Int32.Parse(res_val.Substring(4)))
-                        WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+                    if ((int)e.Data.KeyDown.Key == Int32.Parse(res_val.Substring(4))) {
+                        var rMouse = true;
+                        foreach (var i in mgr.j) {
+                            i.gyroXJoy = 0;
+                            i.gyroYJoy = 0;
+                            rMouse = i.gyroJoyActive;
+                        }
+                        if(!rMouse)
+                            WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
+                    }
 
                 res_val = Config.Value("active_gyro");
                 if (res_val.StartsWith("key_"))
@@ -516,10 +531,6 @@ namespace BetterJoyForCemu {
 
         private static string appGuid = "1bf709e9-c133-41df-933a-c9ff3f664c7b"; // randomly-generated
         static void Main(string[] args) {
-
-            // Set the correct DLL for the current OS
-            SetupDlls();
-
             using (Mutex mutex = new Mutex(false, "Global\\" + appGuid)) {
                 if (!mutex.WaitOne(0, false)) {
                     MessageBox.Show("Instance already running.", "BetterJoy");
@@ -532,21 +543,5 @@ namespace BetterJoyForCemu {
                 Application.Run(form);
             }
         }
-
-        static void SetupDlls() {
-            const int LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
-            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-            AddDllDirectory(Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                Environment.Is64BitProcess ? "x64" : "x86"
-            ));
-        }
-
-        // Helper funtions to set the hidapi dll location acording to the system instruction set.
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool SetDefaultDllDirectories(int directoryFlags);
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern void AddDllDirectory(string lpPathName);
     }
 }

@@ -7,18 +7,30 @@ using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Threading;
 using System.Windows.Forms;
+using System.Drawing;
 using BetterJoyForCemu.Controller;
 using Nefarius.ViGEm.Client.Targets.DualShock4;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using SharpDX.XInput;
+using JetBrains.Annotations;
 
+//WARNING: Code is a mess and pretty hacked together changes were made for Win Max stuff -MYCRAFT
 namespace BetterJoyForCemu {
     public class Joycon {
+        public SharpDX.XInput.Controller controller = XInputStart();
+        public State xState = new State();
         public string path = String.Empty;
         public bool isPro = false;
         public bool isSnes = false;
         bool isUSB = false;
         public Joycon other;
         public bool active_gyro = false;
+        public int gyroCenterJoy = 0;
+        public int gyroXJoy = 0;
+        public int gyroYJoy = 0;
+        public bool gyroJoyActive = false;
+        public float xGBuff = 0;//Buffer for gyro joy camera xaxis
+        public float yGBuff = 0;//Buffer for gyro joy camera yaxis
 
         private long inactivity = Stopwatch.GetTimestamp();
 
@@ -31,7 +43,6 @@ namespace BetterJoyForCemu {
             THREADING,
             IMU,
             RUMBLE,
-            SHAKE,
         };
         public DebugType debug_type = DebugType.NONE;
         public bool isLeft;
@@ -68,6 +79,25 @@ namespace BetterJoyForCemu {
             SHOULDER2_1 = 18,
             SHOULDER2_2 = 19,
         };
+
+        public enum Xbutton : int {
+            NONE = 0,
+            DPAD_UP = 1,
+            DPAD_DOWN = 2,
+            DPAD_LEFT = 4,
+            DPAD_RIGHT = 8,
+            START = 16,
+            BACK = 32,
+            LEFT_THUMB = 64,
+            RIGHT_THUMB = 128,
+            SHOLDER_L = 256,
+            SHOLDER_R = 512,
+            A = 4096,
+            B = 8192,
+            X = 16384,
+            Y = 32768,
+        };
+
         private bool[] buttons_down = new bool[20];
         private bool[] buttons_up = new bool[20];
         private bool[] buttons = new bool[20];
@@ -277,11 +307,15 @@ namespace BetterJoyForCemu {
             LED = (byte)(0x1 << PadId);
             this.isPro = isPro || isSnes;
             this.isSnes = isSnes;
+            this.isPro = Boolean.Parse(ConfigurationManager.AppSettings["ProControllerOverride"]); //Manual override for XInput, line generally not present
             isUSB = serialNum == "000000000001";
             this.thirdParty = thirdParty;
+            gyroJoyActive = (extraGyroFeature == "joy");
+            //Console.WriteLine(gyroJoyActive);
+
 
             this.path = path;
-
+            
             connection = isUSB ? 0x01 : 0x02;
 
             if (showAsXInput) {
@@ -575,38 +609,6 @@ namespace BetterJoyForCemu {
             return ret;
         }
 
-        private readonly Stopwatch shakeTimer = Stopwatch.StartNew(); //Setup a timer for measuring shake in milliseconds
-        private long shakedTime = 0;
-        private bool hasShaked;
-        void DetectShake() {
-            if (form.shakeInputEnabled) {
-                long currentShakeTime = shakeTimer.ElapsedMilliseconds;
-
-                // Shake detection logic
-                bool isShaking = GetAccel().LengthSquared() >= form.shakeSesitivity;
-                if (isShaking && currentShakeTime >= shakedTime + form.shakeDelay || isShaking && shakedTime == 0) {
-                    shakedTime = currentShakeTime;
-                    hasShaked = true;
-
-                    // Mapped shake key down
-                    Simulate(Config.Value("shake"), false, false);
-                    DebugPrint("Shaked at time: " + shakedTime.ToString(), DebugType.SHAKE);
-                }
-
-                // If controller was shaked then release mapped key after a small delay to simulate a button press, then reset hasShaked
-                if (hasShaked && currentShakeTime >= shakedTime + 10) {
-                    // Mapped shake key up
-                    Simulate(Config.Value("shake"), false, true);
-                    DebugPrint("Shake completed", DebugType.SHAKE);
-                    hasShaked = false;
-                }
-
-            } else {
-                shakeTimer.Stop();
-                return;
-            }
-        }
-
         bool dragToggle = Boolean.Parse(ConfigurationManager.AppSettings["DragToggle"]);
         Dictionary<int, bool> mouse_toggle_btn = new Dictionary<int, bool>();
         private void Simulate(string s, bool click = true, bool up = false) {
@@ -655,15 +657,30 @@ namespace BetterJoyForCemu {
             }
         }
 
+        bool SRReconnectXinput = Boolean.Parse(ConfigurationManager.AppSettings["SRReconnectXinput"]);
+
         bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
         long PowerOffInactivityMins = Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
 
         string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
+        //************OVERRIDE BELOW
+        //string extraGyroFeature = "joy";
+
+        bool ModFreeGyro = Boolean.Parse(ConfigurationManager.AppSettings["ModFreeGyro"]);
+        bool GyroJoyStick = (ConfigurationManager.AppSettings["GyroJoyStick"]=="right");
+        int GyroJoySensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroJoySensitivity"]);
+
+        string GyroJoyMoveMode = ConfigurationManager.AppSettings["GyroJoyMoveMode"];
         int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
         bool GyroHoldToggle = Boolean.Parse(ConfigurationManager.AppSettings["GyroHoldToggle"]);
         bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
         int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
+        string GyroAnalogLeftAxis = ConfigurationManager.AppSettings["GyroAnalogLeftAxis"];
+        bool GyroAnalogInvertLeftAxis = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogInvertLeftAxis"]);
+        string GyroAnalogRightAxis = ConfigurationManager.AppSettings["GyroAnalogRightAxis"];
+        bool GyroAnalogInvertRightAxis = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogInvertRightAxis"]);
         byte[] sliderVal = new byte[] { 0, 0 };
+
         private void DoThingsWithButtons() {
             int powerOffButton = (int)((isPro || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
 
@@ -687,8 +704,6 @@ namespace BetterJoyForCemu {
                     return;
                 }
             }
-
-            DetectShake();
 
             if (buttons_down[(int)Button.CAPTURE])
                 Simulate(Config.Value("capture"));
@@ -728,24 +743,172 @@ namespace BetterJoyForCemu {
                 Button rightT = isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2;
                 float dt = 0.015f; // 15ms
                 Joycon left = isLeft ? this : (isPro ? this : this.other); Joycon right = !isLeft ? this : (isPro ? this : this.other);
-                int ldy = (int)(GyroAnalogSensitivity * (left.gyr_g.Y * dt) * (Math.Abs(left.gyr_g.Y) < 1 ? 0 : 1));
-                int rdy = (int)(GyroAnalogSensitivity * (right.gyr_g.Y * dt) * (Math.Abs(right.gyr_g.Y) < 1 ? 0 : 1));
 
-                if (buttons[(int)leftT]) {
-                    sliderVal[0] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[0] + ldy));
+                //This doesn't work? Commenting out
+                /**
+                if (ModFreeGyro) {
+                    var tempgyr = left.gyr_g.X;
+                    var tempgyr2 = right.gyr_g.X;
+                    left.gyr_g.X = -left.gyr_g.Y;
+                    left.gyr_g.Y = tempgyr;
+                    right.gyr_g.X = -right.gyr_g.Y;
+                    right.gyr_g.Y = tempgyr2;
+                    //Console.WriteLine("ModFreeGyro == True");
+                }
+                **/
+
+                if (GyroAnalogLeftAxis != "none") {
+                    float axisL = 0;
+                    if (GyroAnalogLeftAxis == "x") {
+                        axisL = left.gyr_g.X;
+                    }
+                    else if (GyroAnalogLeftAxis == "y") {
+                        axisL = left.gyr_g.Y;
+                    } else {
+                        axisL = left.gyr_g.Z;
+                    }
+                    if (GyroAnalogInvertLeftAxis)
+                        axisL = -axisL;
+                    
+                    int ldy = (int)(GyroAnalogSensitivity * (axisL * dt) * (Math.Abs(axisL) < 1 ? 0 : 1));
+                    if (buttons[(int)leftT]) {
+                        sliderVal[0] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[0] + ldy));
+                    } else {
+                        sliderVal[0] = 0;
+                    }
                 } else {
-                    sliderVal[0] = 0;
+                    if (buttons[(int)leftT]) {
+                        sliderVal[0] = 255;
+                    } else {
+                        sliderVal[0] = 0;
+                    }
                 }
 
-                if (buttons[(int)rightT]) {
-                    sliderVal[1] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[1] + rdy));
+                if (GyroAnalogRightAxis != "none") {
+                    float axisR = 0;
+                    if (GyroAnalogRightAxis == "x") {
+                        axisR = right.gyr_g.X;
+                    } else if (GyroAnalogRightAxis == "y") {
+                        axisR = right.gyr_g.Y;
+                    } else {
+                        axisR = right.gyr_g.Z;
+                    }
+                    if (GyroAnalogInvertRightAxis)
+                        axisR = -axisR;
+
+                    int rdy = (int)(GyroAnalogSensitivity * (axisR * dt) * (Math.Abs(axisR) < 1 ? 0 : 1));
+                    if (buttons[(int)rightT]) {
+                        sliderVal[1] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[1] + rdy));
+                    } else {
+                        sliderVal[1] = 0;
+                    }
                 } else {
-                    sliderVal[1] = 0;
+                    if (buttons[(int)rightT]) {
+                        sliderVal[1] = 255;
+                    } else {
+                        sliderVal[1] = 0;
+                    }
                 }
             }
 
+            //gyroJoyActive = (extraGyroFeature == "joy"); //really dumb code because should only happen once
+            //moved elsewhere to fix dumb. Left comment in case breaks, even dumber
+
             if (extraGyroFeature == "joy") {
-                // TODO
+                string res_val = Config.Value("active_gyro");
+
+                    if (res_val.StartsWith("joy_")) {
+                        int i = Int32.Parse(res_val.Substring(4));
+                        if (GyroHoldToggle) {
+                            if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                                active_gyro = true;
+                            else if (buttons_up[i] || (other != null && other.buttons_up[i]))
+                                active_gyro = false;
+                        } else {
+                            if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                                active_gyro = !active_gyro;
+                        }
+                    }
+
+                    float dt = 0.015f; // 15ms
+
+                    // gyro data is in degrees/s
+                    if (Config.Value("active_gyro") == "0" || active_gyro) {
+                        
+                    if (ModFreeGyro) {
+                            var tempgyr = gyr_g.X;
+                            gyr_g.X = -gyr_g.Y;
+                            gyr_g.Y = tempgyr;
+                        }
+
+                        //int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+
+                        //This code was originally for dx, changed to dy
+                        int dx = (int)-(GyroJoySensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+                        int dy = (int)-((GyroJoySensitivity) * (gyr_g.X * dt) * (Math.Abs(gyr_g.X) < 1 ? 0 : 1));
+                        int dz = (int)-(GyroJoySensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+
+
+                        //WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
+                        if (GyroJoyMoveMode == "steer") {
+                                gyroXJoy = gyroXJoy + (dz * 20);
+                                gyroYJoy = gyroYJoy - (dy * 20);
+                                if (GyroJoyStick)
+                                    stick2 = XInputSticks(gyroXJoy, gyroYJoy);
+                                else
+                                    stick = XInputSticks(gyroXJoy, gyroYJoy);
+                        }
+                        else {//if (GyroJoyMoveMode == "camera") {
+                                var mDumb = 20; //Arbitrary scalar value
+                                //var minMove = 1;
+                                var minMoveSpd = 8000;
+                                float xAxis = -gyr_g.Z * GyroJoySensitivity * mDumb;
+                                float xAxisAbs = Math.Abs(xAxis);
+                                float yAxis = -gyr_g.X * GyroJoySensitivity * mDumb;
+                                float yAxisAbs = Math.Abs(yAxis);
+                                float xMove = 0;
+                                float yMove = 0;
+                        Console.WriteLine("dx: " + dx);
+                        Console.WriteLine("X: " + xAxis);
+                        Console.WriteLine("Y: " + yAxis);
+                        Console.WriteLine("XABS: " + xAxisAbs);
+                        //if (xAxisAbs >= minMove) {
+                            xGBuff = xGBuff + xAxis;
+                            if (Math.Abs(xGBuff) >= minMoveSpd) {
+                                xMove = xGBuff;
+                                xGBuff = 0;
+                            }
+                        //}
+                                
+
+                            //if (yAxisAbs >= minMove) {
+                                yGBuff = yGBuff + yAxis;
+                                if (Math.Abs(yGBuff) >= minMoveSpd) {
+                                    yMove = yGBuff;
+                                    yGBuff = 0;
+                                }
+                                //yAxis = (yAxis / yAxisAbs) * minMoveSpd;
+                            //}
+
+                                if (GyroJoyStick)
+                                    stick2 = XInputSticks(xMove, yMove);
+                                else
+                                    stick = XInputSticks(xMove, yMove);
+                                    //stick = XInputSticks(dx * GyroJoySensitivity, dy * GyroJoySensitivity * mDumb);
+                        }
+                    }
+
+                    // reset mouse position to centre of primary monitor
+                    res_val = Config.Value("reset_mouse");
+                    if (res_val.StartsWith("joy_")) {
+                        int i = Int32.Parse(res_val.Substring(4));
+                        if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                        {
+                            gyroXJoy = 0;
+                            gyroYJoy = 0;
+                        }
+                    }
+
             } else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
                 string res_val = Config.Value("active_gyro");
 
@@ -766,8 +929,17 @@ namespace BetterJoyForCemu {
 
                 // gyro data is in degrees/s
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
-                    int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
-                    int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+                    if (ModFreeGyro) {
+                        var tempgyr = gyr_g.X;
+                        gyr_g.X = -gyr_g.Y;
+                        gyr_g.Y = tempgyr;
+                    }
+                    //int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+
+                    //This code was originally for dx, changed to dy
+                    int dx = (int)-(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
+                    int dy = (int)((GyroMouseSensitivity/1.5) * (gyr_g.X * dt) * (Math.Abs(gyr_g.X) < 1 ? 0 : 1));
+
 
                     WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
                 }
@@ -780,6 +952,58 @@ namespace BetterJoyForCemu {
                         WindowsInput.Simulate.Events().MoveTo(Screen.PrimaryScreen.Bounds.Width / 2, Screen.PrimaryScreen.Bounds.Height / 2).Invoke();
                 }
             }
+        }
+
+        public static SharpDX.XInput.Controller XInputStart() {
+            Console.WriteLine("Initialize Xinput");
+            // Initialize XInput
+            var controllers = new[] { new SharpDX.XInput.Controller(UserIndex.One), new SharpDX.XInput.Controller(UserIndex.Two), new SharpDX.XInput.Controller(UserIndex.Three), new SharpDX.XInput.Controller(UserIndex.Four) };
+
+            // Get 1st controller available
+            SharpDX.XInput.Controller controller = null;
+            foreach (var selectControler in controllers) {
+                if (selectControler.IsConnected) {
+                    controller = selectControler;
+                    break;
+                }
+            }
+            return controller;
+        }
+
+        public static (State, Boolean) XInputGetState(SharpDX.XInput.Controller controller) {
+            try {
+                if (controller != null)
+                    return (controller.GetState(), true);
+                return (new State(), false);
+            }
+            catch {
+                return (new State(),false);
+            }
+        }
+
+        public static void XInputTest(SharpDX.XInput.Controller controller, State previousState) {
+            //Console.WriteLine("Start XGamepadApp");
+
+            if (controller == null) {
+                Console.WriteLine("No XInput controller installed");
+            } else {
+
+                //Console.WriteLine("Found a XInput controller available");
+                //Console.WriteLine("Press buttons on the controller to display events");
+
+                // Poll events from joystick
+                //var xState = controller.GetState();
+                //while (controller.IsConnected) {
+                var state = controller.GetState();
+                if (previousState.PacketNumber != state.PacketNumber) {
+                    Console.WriteLine(state.Gamepad);
+                    Console.WriteLine((int) state.Gamepad.Buttons);
+                }
+                //xState = state;
+                //Thread.Sleep(8);//8 miliseconds = 125Hz
+            }
+            //}
+            //Console.WriteLine("End XGamepadApp");
         }
 
         private Thread PollThreadObj;
@@ -819,9 +1043,23 @@ namespace BetterJoyForCemu {
 
         bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
         bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        bool proOverride = Boolean.Parse(ConfigurationManager.AppSettings["ProControllerOverride"]);
         private int ProcessButtonsAndStick(byte[] report_buf) {
+            //Console.WriteLine("Well hello!");//*********
+            //XInputTest(controller, xState);
+            var xTemp = XInputGetState(controller);
+            xState = xTemp.Item1;
+            if (!xTemp.Item2) {
+                controller = XInputStart();
+                form.AppendTextBox("Connecting to Xinput controller.\r\n");
+            }
+            //Console.WriteLine((int)xState.Gamepad.Buttons);
+            //Console.WriteLine((int)Xbutton.A);
+            //Console.WriteLine(((int)xState.Gamepad.Buttons & (int)Xbutton.A) != 0);
             if (report_buf[0] == 0x00) throw new ArgumentException("received undefined report. This is probably a bug");
             if (!isSnes) {
+                /*
+                //Joycon Stick Get
                 stick_raw[0] = report_buf[6 + (isLeft ? 0 : 3)];
                 stick_raw[1] = report_buf[7 + (isLeft ? 0 : 3)];
                 stick_raw[2] = report_buf[8 + (isLeft ? 0 : 3)];
@@ -843,17 +1081,25 @@ namespace BetterJoyForCemu {
                     stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
                     stick2 = CenterSticks(stick2_precal, form.nonOriginal ? cal : stick2_cal, deadzone2);
                 }
-
+                */
+                stick = XInputSticks((float)xState.Gamepad.LeftThumbX, (float)xState.Gamepad.LeftThumbY);
+                stick2 = XInputSticks((float)xState.Gamepad.RightThumbX, (float)xState.Gamepad.RightThumbY);
+                //Console.WriteLine((float)xState.Gamepad.LeftThumbX);
+                //Console.WriteLine(xState.Gamepad.LeftThumbX);
                 // Read other Joycon's sticks
-                if (isLeft && other != null && other != this) {
-                    stick2 = otherStick;
-                    other.otherStick = stick;
-                }
 
-                if (!isLeft && other != null && other != this) {
-                    Array.Copy(stick, stick2, 2);
-                    stick = otherStick;
-                    other.otherStick = stick2;
+                //Check to fix joining dual joycons for rumble
+                if (!proOverride) { 
+                    if (isLeft && other != null && other != this) {
+                        stick2 = otherStick;
+                        other.otherStick = stick;
+                    }
+
+                    if (!isLeft && other != null && other != this) {
+                        Array.Copy(stick, stick2, 2);
+                        stick = otherStick;
+                        other.otherStick = stick2;
+                    }
                 }
             }
             //
@@ -865,6 +1111,90 @@ namespace BetterJoyForCemu {
                         down_[i] = buttons[i];
                     }
                 }
+
+                //XInput Mapping
+                buttons = new bool[20];
+
+                buttons[(int)Button.DPAD_DOWN] = ((int)xState.Gamepad.Buttons & (int)Xbutton.DPAD_DOWN) != 0;
+                buttons[(int)Button.DPAD_RIGHT] = ((int)xState.Gamepad.Buttons & (int)Xbutton.DPAD_RIGHT) != 0;
+                buttons[(int)Button.DPAD_UP] = ((int)xState.Gamepad.Buttons & (int)Xbutton.DPAD_UP) != 0;
+                buttons[(int)Button.DPAD_LEFT] = ((int)xState.Gamepad.Buttons & (int)Xbutton.DPAD_LEFT) != 0;
+                buttons[(int)Button.HOME] = ((report_buf[4] & 0x10) != 0);
+                buttons[(int)Button.CAPTURE] = ((report_buf[4] & 0x20) != 0);
+                buttons[(int)Button.MINUS] = ((int)xState.Gamepad.Buttons & (int)Xbutton.BACK) != 0;
+                buttons[(int)Button.PLUS] = ((int)xState.Gamepad.Buttons & (int)Xbutton.START) != 0;
+                buttons[(int)Button.STICK] = ((int)xState.Gamepad.Buttons & (int)Xbutton.LEFT_THUMB) != 0;
+                buttons[(int)Button.SHOULDER_1] = ((int)xState.Gamepad.Buttons & (int)Xbutton.SHOLDER_L) != 0;
+                
+                bool lTrig = false;
+                if (((int)xState.Gamepad.LeftTrigger % 254) == 1)
+                    lTrig = true;
+
+                buttons[(int)Button.SHOULDER_2] = lTrig;
+                buttons[(int)Button.SR] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x10) != 0;
+                buttons[(int)Button.SL] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x20) != 0;
+                //Console.WriteLine(buttons[(int)Button.SR]);
+
+                if (isPro) {
+                    //Console.WriteLine("ISPRO!");
+                    buttons[(int)Button.B] = ((int)xState.Gamepad.Buttons & (int)Xbutton.A) != 0;
+                    buttons[(int)Button.A] = ((int)xState.Gamepad.Buttons & (int)Xbutton.B) != 0;
+                    buttons[(int)Button.X] = ((int)xState.Gamepad.Buttons & (int)Xbutton.Y) != 0;
+                    buttons[(int)Button.Y] = ((int)xState.Gamepad.Buttons & (int)Xbutton.X) != 0;
+
+                    buttons[(int)Button.STICK2] = ((int)xState.Gamepad.Buttons & (int)Xbutton.RIGHT_THUMB) != 0;
+                    buttons[(int)Button.SHOULDER2_1] = ((int)xState.Gamepad.Buttons & (int)Xbutton.SHOLDER_R) != 0;
+                    bool rTrig = false;
+                    if (((int)xState.Gamepad.RightTrigger % 254) == 1)
+                        rTrig = true;
+
+                    buttons[(int)Button.SHOULDER2_2] = rTrig;
+                    //Console.WriteLine(((int)xState.Gamepad.LeftTrigger % 254));
+                }
+
+                //dual joycons check
+                if (!proOverride) { 
+                    if (other != null && other != this) {
+                        buttons[(int)(Button.B)] = other.buttons[(int)Button.DPAD_DOWN];
+                        buttons[(int)(Button.A)] = other.buttons[(int)Button.DPAD_RIGHT];
+                        buttons[(int)(Button.X)] = other.buttons[(int)Button.DPAD_UP];
+                        buttons[(int)(Button.Y)] = other.buttons[(int)Button.DPAD_LEFT];
+
+                        buttons[(int)Button.STICK2] = other.buttons[(int)Button.STICK];
+                        buttons[(int)Button.SHOULDER2_1] = other.buttons[(int)Button.SHOULDER_1];
+                        buttons[(int)Button.SHOULDER2_2] = other.buttons[(int)Button.SHOULDER_2];
+                    }
+
+                    if (isLeft && other != null && other != this) {
+                        buttons[(int)Button.HOME] = other.buttons[(int)Button.HOME];
+                        buttons[(int)Button.PLUS] = other.buttons[(int)Button.PLUS];
+                    }
+
+                    if (!isLeft && other != null && other != this) {
+                        buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
+                    }
+                }
+
+                //reconnect Xinput if SR is pressed and setting is not disabled
+                if(SRReconnectXinput && ((report_buf[3 + (isLeft ? 2 : 0)] & 0x10) != 0)) {
+                    if (out_xbox != null) {
+                        out_xbox.Disconnect();
+                        controller = XInputStart();
+                        form.AppendTextBox("Connecting to Xinput controller.\r\n");
+                        out_xbox.Connect();
+                        Thread.Sleep(1500);//haults code for 1.5 seconds to allow controller reconnect
+                    } else if (out_ds4 != null) {
+                        out_ds4.Disconnect();
+                        controller = XInputStart();
+                        form.AppendTextBox("Connecting to Xinput controller.\r\n");
+                        out_ds4.Connect();
+                        Thread.Sleep(1500);//haults code for 1.5 seconds to allow controller reconnect
+                    }
+                }
+                    
+
+                /*
+                //Joycon mapping
                 buttons = new bool[20];
 
                 buttons[(int)Button.DPAD_DOWN] = (report_buf[3 + (isLeft ? 2 : 0)] & (isLeft ? 0x01 : 0x04)) != 0;
@@ -880,6 +1210,7 @@ namespace BetterJoyForCemu {
                 buttons[(int)Button.SHOULDER_2] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x80) != 0;
                 buttons[(int)Button.SR] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x10) != 0;
                 buttons[(int)Button.SL] = (report_buf[3 + (isLeft ? 2 : 0)] & 0x20) != 0;
+                //Console.WriteLine(buttons[(int)Button.SR]);
 
                 if (isPro) {
                     buttons[(int)Button.B] = (report_buf[3 + (!isLeft ? 2 : 0)] & (!isLeft ? 0x01 : 0x04)) != 0;
@@ -911,7 +1242,7 @@ namespace BetterJoyForCemu {
                 if (!isLeft && other != null && other != this) {
                     buttons[(int)Button.MINUS] = other.buttons[(int)Button.MINUS];
                 }
-
+                */
                 long timestamp = Stopwatch.GetTimestamp();
 
                 lock (buttons_up) {
@@ -944,7 +1275,7 @@ namespace BetterJoyForCemu {
                 acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
                 acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
 
-                if (form.nonOriginal) {
+                if (form.nonOriginal || form.proOverride) {
                     for (int i = 0; i < 3; ++i) {
                         switch (i) {
                             case 0:
@@ -1045,6 +1376,15 @@ namespace BetterJoyForCemu {
 
             s[0] = dx / (dx > 0 ? t[0] : t[4]);
             s[1] = dy / (dy > 0 ? t[1] : t[5]);
+            Console.WriteLine(dx);
+            return s;
+        }
+
+        private float[] XInputSticks(float dx, float dy) {
+            float[] s = { 0, 0 };
+            //-32768 to 32767 needs to become -1 to +1
+            s[0] = dx/32767;
+            s[1] = dy/32767;
             return s;
         }
 
@@ -1228,7 +1568,7 @@ namespace BetterJoyForCemu {
 
         private static OutputControllerXbox360InputState MapToXbox360Input(Joycon input) {
             var output = new OutputControllerXbox360InputState();
-
+            
             var swapAB = input.swapAB;
             var swapXY = input.swapXY;
 

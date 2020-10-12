@@ -323,7 +323,6 @@ namespace BetterJoyForCemu {
             outputData[outIdx] = 0;
 
             bool isLeft = hidReport.isLeft;
-
             if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_LEFT : Joycon.Button.Y)) outputData[outIdx] |= 0x80;
             if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_DOWN : Joycon.Button.B)) outputData[outIdx] |= 0x40;
             if (hidReport.GetButton(isLeft ? Joycon.Button.DPAD_RIGHT : Joycon.Button.A)) outputData[outIdx] |= 0x20;
