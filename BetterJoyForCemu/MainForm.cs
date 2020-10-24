@@ -64,7 +64,7 @@ namespace BetterJoyForCemu {
         private void HideToTray() {
             this.WindowState = FormWindowState.Minimized;
             notifyIcon.Visible = true;
-            notifyIcon.BalloonTipText = "Double click the tray icon to maximise!";
+            notifyIcon.BalloonTipText = "Double click the tray icon to maximize!";
             notifyIcon.ShowBalloonTip(0);
             this.ShowInTaskbar = false;
             this.Hide();
