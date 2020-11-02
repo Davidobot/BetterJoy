@@ -24,7 +24,8 @@ Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
 1. Install drivers
     1. Read the READMEs (they're there for a reason!)
     1. Run *Drivers/ViGEmBus_Setup_1.16.116.exe*
-2. Run *BetterJoyForCemu.exe*
+2. Run *BetterJoyForCemu.exe* 
+    1. Run as Administrator if your keyboard/mouse button mappings don't work
 3. Connect your controllers.
 4. Start Cemu and ensure CemuHook has the controller selected.
     1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.

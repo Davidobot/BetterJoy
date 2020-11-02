@@ -31,6 +31,7 @@ namespace BetterJoyForCemu {
             THREADING,
             IMU,
             RUMBLE,
+            SHAKE,
         };
         public DebugType debug_type = DebugType.NONE;
         public bool isLeft;
@@ -574,6 +575,38 @@ namespace BetterJoyForCemu {
             return ret;
         }
 
+        private readonly Stopwatch shakeTimer = Stopwatch.StartNew(); //Setup a timer for measuring shake in milliseconds
+        private long shakedTime = 0;
+        private bool hasShaked;
+        void DetectShake() {
+            if (form.shakeInputEnabled) {
+                long currentShakeTime = shakeTimer.ElapsedMilliseconds;
+
+                // Shake detection logic
+                bool isShaking = GetAccel().LengthSquared() >= form.shakeSesitivity;
+                if (isShaking && currentShakeTime >= shakedTime + form.shakeDelay || isShaking && shakedTime == 0) {
+                    shakedTime = currentShakeTime;
+                    hasShaked = true;
+
+                    // Mapped shake key down
+                    Simulate(Config.Value("shake"), false, false);
+                    DebugPrint("Shaked at time: " + shakedTime.ToString(), DebugType.SHAKE);
+                }
+
+                // If controller was shaked then release mapped key after a small delay to simulate a button press, then reset hasShaked
+                if (hasShaked && currentShakeTime >= shakedTime + 10) {
+                    // Mapped shake key up
+                    Simulate(Config.Value("shake"), false, true);
+                    DebugPrint("Shake completed", DebugType.SHAKE);
+                    hasShaked = false;
+                }
+
+            } else {
+                shakeTimer.Stop();
+                return;
+            }
+        }
+
         bool dragToggle = Boolean.Parse(ConfigurationManager.AppSettings["DragToggle"]);
         Dictionary<int, bool> mouse_toggle_btn = new Dictionary<int, bool>();
         private void Simulate(string s, bool click = true, bool up = false) {
@@ -654,6 +687,8 @@ namespace BetterJoyForCemu {
                     return;
                 }
             }
+
+            DetectShake();
 
             if (buttons_down[(int)Button.CAPTURE])
                 Simulate(Config.Value("capture"));
@@ -910,7 +945,7 @@ namespace BetterJoyForCemu {
                 acc_r[1] = (Int16)(report_buf[15 + n * 12] | ((report_buf[16 + n * 12] << 8) & 0xff00));
                 acc_r[2] = (Int16)(report_buf[17 + n * 12] | ((report_buf[18 + n * 12] << 8) & 0xff00));
 
-                if (form.nonOriginal) {
+                if (form.allowCalibration) {
                     for (int i = 0; i < 3; ++i) {
                         switch (i) {
                             case 0:
@@ -971,13 +1006,19 @@ namespace BetterJoyForCemu {
                 if (other == null && !isPro) { // single joycon mode; Z do not swap, rest do
                     if (isLeft) {
                         acc_g.X = -acc_g.X;
+                        acc_g.Y = -acc_g.Y;
                         gyr_g.X = -gyr_g.X;
                     } else {
                         gyr_g.Y = -gyr_g.Y;
                     }
 
-                    float temp = acc_g.X; acc_g.X = acc_g.Y; acc_g.Y = temp;
-                    temp = gyr_g.X; gyr_g.X = gyr_g.Y; gyr_g.Y = temp;
+                    float temp = acc_g.X;
+                    acc_g.X = acc_g.Y;
+                    acc_g.Y = -temp;
+
+                    temp = gyr_g.X;
+                    gyr_g.X = gyr_g.Y;
+                    gyr_g.Y = temp;
                 }
             }
         }

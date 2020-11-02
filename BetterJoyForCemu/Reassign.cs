@@ -29,7 +29,7 @@ namespace BetterJoyForCemu {
 
             menu_joy_buttons.ItemClicked += Menu_joy_buttons_ItemClicked;
 
-            foreach (SplitButton c in new SplitButton[] { btn_capture, btn_home, btn_sl_l, btn_sl_r, btn_sr_l, btn_sr_r, btn_reset_mouse, btn_active_gyro }) {
+            foreach (SplitButton c in new SplitButton[] { btn_capture, btn_home, btn_sl_l, btn_sl_r, btn_sr_l, btn_sr_r, btn_shake, btn_reset_mouse, btn_active_gyro }) {
                 c.Tag = c.Name.Substring(4);
                 GetPrettyName(c);
 

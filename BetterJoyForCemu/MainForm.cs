@@ -16,13 +16,17 @@ using System.Xml.Linq;
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
         public bool useControllerStickCalibration;
-        public bool nonOriginal;
+        public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
+        public bool allowCalibration = Boolean.Parse(ConfigurationManager.AppSettings["AllowCalibration"]);
         public List<Button> con, loc;
         public bool calibrate;
         public List<KeyValuePair<string, float[]>> caliData;
         private Timer countDown;
         private int count;
         public List<int> xG, yG, zG, xA, yA, zA;
+        public bool shakeInputEnabled = Boolean.Parse(ConfigurationManager.AppSettings["EnableShakeInput"]);
+        public float shakeSesitivity = float.Parse(ConfigurationManager.AppSettings["ShakeInputSensitivity"]);
+        public float shakeDelay = float.Parse(ConfigurationManager.AppSettings["ShakeInputDelay"]);
 
         public enum NonOriginalController : int {
             Disabled = 0,
@@ -40,7 +44,7 @@ namespace BetterJoyForCemu {
 
             InitializeComponent();
 
-            if (!nonOriginal)
+            if (!allowCalibration)
                 AutoCalibrate.Hide();
 
             con = new List<Button> { con1, con2, con3, con4 };
