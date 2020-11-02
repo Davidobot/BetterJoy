@@ -15,6 +15,7 @@ using System.Xml.Linq;
 
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
+        public bool useControllerStickCalibration;
         public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
         public bool allowCalibration = Boolean.Parse(ConfigurationManager.AppSettings["AllowCalibration"]);
         public List<Button> con, loc;
@@ -27,12 +28,19 @@ namespace BetterJoyForCemu {
         public float shakeSesitivity = float.Parse(ConfigurationManager.AppSettings["ShakeInputSensitivity"]);
         public float shakeDelay = float.Parse(ConfigurationManager.AppSettings["ShakeInputDelay"]);
 
+        public enum NonOriginalController : int {
+            Disabled = 0,
+            DefaultCalibration = 1,
+            ControllerCalibration = 2,
+        }
+
         public MainForm() {
             xG = new List<int>(); yG = new List<int>(); zG = new List<int>();
             xA = new List<int>(); yA = new List<int>(); zA = new List<int>();
             caliData = new List<KeyValuePair<string, float[]>> {
                 new KeyValuePair<string, float[]>("0", new float[6] {0,0,0,-710,0,0})
             };
+            SetNonOriginalControllerSettings();
 
             InitializeComponent();
 
@@ -59,6 +67,28 @@ namespace BetterJoyForCemu {
 
                 childControl.MouseClick += cbBox_Changed;
                 settingsTable.Controls.Add(childControl, 1, i);
+            }
+        }
+
+        private void SetNonOriginalControllerSettings() {
+            Enum.TryParse(ConfigurationManager.AppSettings["NonOriginalController"], true, out NonOriginalController nonOriginalController);
+            switch ((int)nonOriginalController) {
+                case 0:
+                    nonOriginal = false;
+                    break;
+                case 1:
+                case 2:
+                    nonOriginal = true;
+                    break;       
+            }
+            switch ((int)nonOriginalController) {
+                case 0:
+                case 2:
+                    useControllerStickCalibration = true;
+                    break;
+                case 1:
+                    useControllerStickCalibration = false;
+                    break;
             }
         }
 
