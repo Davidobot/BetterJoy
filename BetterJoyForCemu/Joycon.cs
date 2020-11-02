@@ -245,7 +245,7 @@ namespace BetterJoyForCemu {
             handle = handle_;
             imu_enabled = imu;
             do_localize = localize;
-            rumble_obj = new Rumble(new float[] { lowFreq, highFreq, 0 });
+            rumble_obj = new Rumble(new float[] { lowFreq, highFreq, 0});
             for (int i = 0; i < buttons_down_timestamp.Length; i++)
                 buttons_down_timestamp[i] = -1;
             filterweight = alpha;
