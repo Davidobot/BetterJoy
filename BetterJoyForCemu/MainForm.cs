@@ -16,6 +16,7 @@ using System.Xml.Linq;
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
         public bool nonOriginal = Boolean.Parse(ConfigurationManager.AppSettings["NonOriginalController"]);
+        public bool allowCalibration = Boolean.Parse(ConfigurationManager.AppSettings["AllowCalibration"]);
         public List<Button> con, loc;
         public bool calibrate;
         public List<KeyValuePair<string, float[]>> caliData;
@@ -35,7 +36,7 @@ namespace BetterJoyForCemu {
 
             InitializeComponent();
 
-            if (!nonOriginal)
+            if (!allowCalibration)
                 AutoCalibrate.Hide();
 
             con = new List<Button> { con1, con2, con3, con4 };
