@@ -138,9 +138,6 @@ namespace BetterJoyForCemu {
                 if (x > max) return max;
                 return x;
             }
-            public void Update() {
-                //Unused
-            }
 
             private byte EncodeAmp(float amp) {
                 byte en_amp;
