@@ -126,7 +126,7 @@ namespace BetterJoyForCemu {
             public Queue<float[]> queue;
 
             public void set_vals(float low_freq, float high_freq, float amplitude) {
-                float[] rumbleQueue = new float[] { low_freq, high_freq, amplitude };
+                float[] rumbleQueue = new float[] {low_freq, high_freq, amplitude};
                 queue.Enqueue(rumbleQueue);
             }
             public Rumble(float[] rumble_info) {
@@ -245,7 +245,7 @@ namespace BetterJoyForCemu {
             handle = handle_;
             imu_enabled = imu;
             do_localize = localize;
-            rumble_obj = new Rumble(new float[] { lowFreq, highFreq, 0});
+            rumble_obj = new Rumble(new float[] {lowFreq, highFreq, 0});
             for (int i = 0; i < buttons_down_timestamp.Length; i++)
                 buttons_down_timestamp[i] = -1;
             filterweight = alpha;
