@@ -33,7 +33,8 @@ namespace BetterJoyForCemu {
             RUMBLE,
             SHAKE,
         };
-        public DebugType debug_type = DebugType.NONE;
+        public DebugType debug_type = (DebugType)int.Parse(ConfigurationManager.AppSettings["DebugType"]);
+        //public DebugType debug_type = DebugType.NONE; //Keep this for manual debugging during development.
         public bool isLeft;
         public enum state_ : uint {
             NOT_ATTACHED,
