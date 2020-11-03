@@ -128,6 +128,10 @@ namespace BetterJoyForCemu {
 
             public void set_vals(float low_freq, float high_freq, float amplitude) {
                 float[] rumbleQueue = new float[] {low_freq, high_freq, amplitude};
+                // Keep a queue of 15 items, discard oldest item if queue is full.
+                if (queue.Count > 15) {
+                    queue.Dequeue();
+                }
                 queue.Enqueue(rumbleQueue);
             }
             public Rumble(float[] rumble_info) {
@@ -767,10 +771,6 @@ namespace BetterJoyForCemu {
             while (!stop_polling & state > state_.NO_JOYCONS) {
                 if (rumble_obj.queue.Count > 0) {
                     SendRumble(rumble_obj.GetData());
-                    // Keep a queue of 15 items, discard oldest item if queue is full.
-                    if (rumble_obj.queue.Count > 15) {
-                        rumble_obj.queue.Dequeue();
-                    }
                 }
                 int a = ReceiveRaw();
 
