@@ -172,7 +172,7 @@ namespace BetterJoyForCemu {
         bool showAsXInput = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]);
         bool showAsDS4 = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsDS4"]);
 
-        public void locBtnClick(object sender, EventArgs e) {
+        public async void locBtnClickAsync(object sender, EventArgs e) {
             Button bb = sender as Button;
 
             if (bb.Tag.GetType() == typeof(Button)) {
@@ -180,7 +180,9 @@ namespace BetterJoyForCemu {
 
                 if (button.Tag.GetType() == typeof(Joycon)) {
                     Joycon v = (Joycon)button.Tag;
-                    v.SetRumble(160.0f, 320.0f, 1.0f, 300);
+                    v.SetRumble(160.0f, 320.0f, 1.0f);
+                    await Task.Delay(300);
+                    v.SetRumble(160.0f, 320.0f, 0);
                 }
             }
         }
