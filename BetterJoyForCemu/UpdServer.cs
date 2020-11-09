@@ -167,7 +167,7 @@ namespace BetterJoyForCemu {
                     SendPacket(clientEP, outputData, 1001);
                 } else if (messageType == (uint)MessageType.DSUC_ListPorts) {
                     // Requested information on gamepads - return MAC address
-                    int numPadRequests = BitConverter.ToInt32(localMsg, currIdx);
+                    int numPadRequests = Math.Min(BitConverter.ToInt32(localMsg, currIdx), controllers.Count);
                     currIdx += 4;
                     if (numPadRequests < 0 || numPadRequests > 4)
                         return;
