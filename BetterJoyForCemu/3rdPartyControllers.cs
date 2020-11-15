@@ -44,7 +44,7 @@ namespace BetterJoyForCemu {
             }
 
             public string Serialise() {
-                return String.Format("{0}|{1}|{2}|{3}", name, product_id, vendor_id, type);
+                return String.Format("{0}|{1}|{2}|{3}", name, vendor_id, product_id, type);
             }
         }
 
@@ -112,8 +112,9 @@ namespace BetterJoyForCemu {
                 }
 
                 // TODO: try checking against interface number instead
-                if (!ContainsText(list_customControllers, enumerate.product_string) && !ContainsText(list_allControllers, enumerate.product_string)) {
-                    list_allControllers.Items.Add(new SController(enumerate.product_string, enumerate.vendor_id, enumerate.product_id, 0));
+                String name = enumerate.product_string + '(' + enumerate.vendor_id + '-' + enumerate.product_id + ')';
+                if (!ContainsText(list_customControllers, name) && !ContainsText(list_allControllers, name)) {
+                    list_allControllers.Items.Add(new SController(name, enumerate.vendor_id, enumerate.product_id, 0));
                     // 0 type is undefined
                 }
 
