@@ -17,7 +17,7 @@ namespace BetterJoyForCemu {
 
         public MainForm form;
 
-        public UdpServer(List<Joycon> p) {
+        public UdpServer(IList<Joycon> p) {
             controllers = p;
         }
 

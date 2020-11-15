@@ -12,8 +12,8 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using System.Timers;
-using System.Web.Configuration;
 using System.Windows.Forms;
+using BetterJoyForCemu.Collections;
 using Nefarius.ViGEm.Client;
 using static BetterJoyForCemu._3rdPartyControllers;
 using static BetterJoyForCemu.HIDapi;
@@ -29,7 +29,7 @@ namespace BetterJoyForCemu {
         private const ushort product_pro = 0x2009;
         private const ushort product_snes = 0x2017;
 
-        public List<Joycon> j; // Array of all connected Joy-Cons
+        public ConcurrentList<Joycon> j { get; private set; } // Array of all connected Joy-Cons
         static JoyconManager instance;
 
         public MainForm form;
@@ -42,7 +42,7 @@ namespace BetterJoyForCemu {
 
         public void Awake() {
             instance = this;
-            j = new List<Joycon>();
+            j = new ConcurrentList<Joycon>();
             HIDapi.hid_init();
         }
 
@@ -61,16 +61,16 @@ namespace BetterJoyForCemu {
 
         void CleanUp() { // removes dropped controllers from list
             List<Joycon> rem = new List<Joycon>();
-            for (int i = 0; i < j.Count; i++) {
-                Joycon v = j[i];
-                if (v.state == Joycon.state_.DROPPED) {
-                    if (v.other != null)
-                        v.other.other = null; // The other of the other is the joycon itself
+            foreach (Joycon joycon in j) {
+                if (joycon.state == Joycon.state_.DROPPED) {
+                    if (joycon.other != null)
+                        joycon.other.other = null; // The other of the other is the joycon itself
 
-                    v.Detach(true); rem.Add(v);
+                    joycon.Detach(true);
+                    rem.Add(joycon);
 
                     foreach (Button b in form.con) {
-                        if (b.Enabled & b.Tag == v) {
+                        if (b.Enabled & b.Tag == joycon) {
                             b.Invoke(new MethodInvoker(delegate {
                                 b.BackColor = System.Drawing.Color.FromArgb(0x00, System.Drawing.SystemColors.Control);
                                 b.Enabled = false;
@@ -253,51 +253,59 @@ namespace BetterJoyForCemu {
             if (foundNew) { // attempt to auto join-up joycons on connection
                 Joycon temp = null;
                 foreach (Joycon v in j) {
-                    if (!v.isPro) {
-                        if (temp == null)
-                            temp = v;
-                        else if (temp.isLeft != v.isLeft && v.other == null) {
-                            temp.other = v;
-                            v.other = temp;
+                    // Do not attach two controllers if they are either:
+                    // - Not a Joycon
+                    // - Already attached to another Joycon (that isn't itself)
+                    if (v.isPro || (v.other != null && v.other != v)) {
+                        continue;
+                    }
 
-                            //Set both Joycon LEDs to the one with the lowest ID
-                            byte led = Math.Min(temp.LED, v.LED);
-                            temp.LED = led;
-                            v.LED = led;
-                            temp.SetPlayerLED(led);
-                            v.SetPlayerLED(led);
+                    // Otherwise, iterate through and find the Joycon with the lowest
+                    // id that has not been attached already (Does not include self)
+                    if (temp == null)
+                        temp = v;
+                    else if (temp.isLeft != v.isLeft && v.other == null) {
+                        temp.other = v;
+                        v.other = temp;
 
-                            if (temp.out_xbox != null) {
-                                try {
-                                    temp.out_xbox.Disconnect();
-                                } catch (Exception e) {
-                                    // it wasn't connected in the first place, go figure
-                                }
+                        //Set both Joycon LEDs to the one with the lowest ID
+                        byte led = Math.Min(temp.LED, v.LED);
+                        temp.LED = led;
+                        v.LED = led;
+                        temp.SetPlayerLED(led);
+                        v.SetPlayerLED(led);
+
+                        if (temp.out_xbox != null) {
+                            try {
+                                temp.out_xbox.Disconnect();
+                            } catch (Exception e) {
+                                // it wasn't connected in the first place, go figure
                             }
-                            if (temp.out_ds4 != null) {
-                                try {
-                                    temp.out_ds4.Disconnect();
-                                } catch (Exception e) {
-                                    // it wasn't connected in the first place, go figure
-                                }
-                            }
-                            temp.out_xbox = null;
-                            temp.out_ds4 = null;
-
-                            foreach (Button b in form.con)
-                                if (b.Tag == v || b.Tag == temp) {
-                                    Joycon tt = (b.Tag == v) ? v : (b.Tag == temp) ? temp : v;
-                                    b.BackgroundImage = tt.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
-                                }
-
-                            temp = null;    // repeat
                         }
+                        if (temp.out_ds4 != null) {
+                            try {
+                                temp.out_ds4.Disconnect();
+                            } catch (Exception e) {
+                                // it wasn't connected in the first place, go figure
+                            }
+                        }
+                        temp.out_xbox = null;
+                        temp.out_ds4 = null;
+
+                        foreach (Button b in form.con)
+                            if (b.Tag == v || b.Tag == temp) {
+                                Joycon tt = (b.Tag == v) ? v : (b.Tag == temp) ? temp : v;
+                                b.BackgroundImage = tt.isLeft ? Properties.Resources.jc_left : Properties.Resources.jc_right;
+                            }
+
+                        temp = null;    // repeat
                     }
                 }
             }
 
             HIDapi.hid_free_enumeration(top_ptr);
 
+            bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
             foreach (Joycon jc in j) { // Connect device straight away
                 if (jc.state == Joycon.state_.NOT_ATTACHED) {
                     if (jc.out_xbox != null)
@@ -312,10 +320,7 @@ namespace BetterJoyForCemu {
                         continue;
                     }
 
-                    bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
-                    foreach (Joycon j in Program.mgr.j) {
-                        j.SetHomeLight(on);
-                    }
+                    jc.SetHomeLight(on);
 
                     jc.Begin();
                     if (form.allowCalibration) {

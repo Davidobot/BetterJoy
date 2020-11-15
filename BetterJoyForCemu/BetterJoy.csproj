@@ -130,6 +130,7 @@
     <Compile Include="3rdPartyControllers.Designer.cs">
       <DependentUpon>3rdPartyControllers.cs</DependentUpon>
     </Compile>
+    <Compile Include="Collections\ConcurrentList.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Controller\OutputControllerDualShock4.cs" />
     <Compile Include="Controller\OutputControllerXbox360.cs" />
