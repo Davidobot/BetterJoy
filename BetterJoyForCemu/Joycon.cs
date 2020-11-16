@@ -17,7 +17,7 @@ namespace BetterJoyForCemu {
         public bool isPro = false;
         public bool isSnes = false;
         bool isUSB = false;
-        public Joycon other;
+        public Joycon other = null;
         public bool active_gyro = false;
 
         private long inactivity = Stopwatch.GetTimestamp();
