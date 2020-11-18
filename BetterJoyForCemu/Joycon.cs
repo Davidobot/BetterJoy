@@ -17,7 +17,26 @@ namespace BetterJoyForCemu {
         public bool isPro = false;
         public bool isSnes = false;
         bool isUSB = false;
-        public Joycon other = null;
+        private Joycon _other = null;
+        public Joycon other {
+            get {
+                return _other;
+            } 
+            set {
+                _other = value;
+
+                // If the other Joycon is itself, the Joycon is sideways
+                if (_other == null || _other == this) {
+                    // Set LED to current Pad ID
+                    SetLEDByPlayerNum(PadId);
+                }
+                else {
+                    // Set LED to current Joycon Pair
+                    int lowestPadId = Math.Min(_other.PadId, PadId);
+                    SetLEDByPlayerNum(lowestPadId);
+                }
+            } 
+        }
         public bool active_gyro = false;
 
         private long inactivity = Stopwatch.GetTimestamp();
@@ -234,7 +253,26 @@ namespace BetterJoyForCemu {
 
         public MainForm form;
 
-        public byte LED = 0x0;
+        public byte LED { get; private set; } = 0x0;
+        public void SetLEDByPlayerNum(int id) {
+            if (id > 3) {
+                // No support for any higher than 3 (4 Joycons/Controllers supported in the application normally)
+                id = 3;
+            }
+
+            if (ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["UseJoyconIncrementalLights"].Value.ToLower() == "true") {
+                // Set all LEDs from 0 to the given id to lit
+                int ledId = id;
+                LED = 0x0;
+                do {
+                    LED |= (byte)(0x1 << ledId);
+                } while (--ledId >= 0);
+            } else {
+                LED = (byte)(0x1 << id);
+            }
+
+            SetPlayerLED(LED);
+        }
 
         public string serial_number;
         bool thirdParty = false;

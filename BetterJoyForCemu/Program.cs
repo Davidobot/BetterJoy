@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -268,13 +269,6 @@ namespace BetterJoyForCemu {
                         temp.other = v;
                         v.other = temp;
 
-                        //Set both Joycon LEDs to the one with the lowest ID
-                        byte led = Math.Min(temp.LED, v.LED);
-                        temp.LED = led;
-                        v.LED = led;
-                        temp.SetPlayerLED(led);
-                        v.SetPlayerLED(led);
-
                         if (temp.out_xbox != null) {
                             try {
                                 temp.out_xbox.Disconnect();
@@ -326,7 +320,6 @@ namespace BetterJoyForCemu {
                     if (form.allowCalibration) {
                         jc.getActiveData();
                     }
-
                 }
             }
         }

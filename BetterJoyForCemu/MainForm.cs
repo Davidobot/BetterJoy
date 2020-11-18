@@ -205,13 +205,6 @@ namespace BetterJoyForCemu {
                                 v.other = jc;
                                 jc.other = v;
 
-                                //Set both Joycon LEDs to the one with the lowest ID
-                                byte led = jc.LED <= v.LED ? jc.LED : v.LED;
-                                jc.LED = led;
-                                v.LED = led;
-                                jc.SetPlayerLED(led);
-                                v.SetPlayerLED(led);
-
                                 if (v.out_xbox != null) {
                                     v.out_xbox.Disconnect();
                                     v.out_xbox = null;
@@ -246,12 +239,6 @@ namespace BetterJoyForCemu {
                     foreach (Button b in con)
                         if (b.Tag == v.other)
                             b.BackgroundImage = v.other.isLeft ? Properties.Resources.jc_left_s : Properties.Resources.jc_right_s;
-
-                    //Set original Joycon LEDs
-                    v.other.LED = (byte)(0x1 << v.other.PadId);
-                    v.LED = (byte)(0x1 << v.PadId);
-                    v.other.SetPlayerLED(v.other.LED);
-                    v.SetPlayerLED(v.LED);
 
                     v.other.other = null;
                     v.other = null;
