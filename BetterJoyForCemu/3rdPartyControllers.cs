@@ -18,10 +18,12 @@ namespace BetterJoyForCemu {
             public String name;
             public ushort product_id;
             public ushort vendor_id;
+            public string serial_number;
             public byte type; // 1 is pro, 2 is left joy, 3 is right joy
 
-            public SController(String name, ushort vendor_id, ushort product_id, byte type) {
+            public SController(String name, ushort vendor_id, ushort product_id, byte type, string serial_number) {
                 this.product_id = product_id; this.vendor_id = vendor_id; this.type = type;
+                this.serial_number = serial_number;
                 this.name = name;
             }
 
@@ -31,12 +33,12 @@ namespace BetterJoyForCemu {
                     return false;
                 } else {
                     SController s = (SController)obj;
-                    return (s.product_id == product_id) && (s.vendor_id == vendor_id);
+                    return (s.product_id == product_id) && (s.vendor_id == vendor_id) && (s.serial_number == serial_number);
                 }
             }
 
             public override int GetHashCode() {
-                return Tuple.Create(product_id, vendor_id).GetHashCode();
+                return Tuple.Create(product_id, vendor_id, serial_number).GetHashCode();
             }
 
             public override string ToString() {
@@ -44,7 +46,7 @@ namespace BetterJoyForCemu {
             }
 
             public string Serialise() {
-                return String.Format("{0}|{1}|{2}|{3}", name, vendor_id, product_id, type);
+                return String.Format("{0}|{1}|{2}|{3}|{4}", name, vendor_id, product_id, type, serial_number);
             }
         }
 
@@ -69,7 +71,12 @@ namespace BetterJoyForCemu {
                     string line = String.Empty;
                     while ((line = file.ReadLine()) != null && (line != String.Empty)) {
                         String[] split = line.Split('|');
-                        list_customControllers.Items.Add(new SController(split[0], ushort.Parse(split[1]), ushort.Parse(split[2]), byte.Parse(split[3])));
+                        //won't break existing config file
+                        String serial_number = "";
+                        if (split.Length > 4) {
+                            serial_number = split[4];
+                        }
+                        list_customControllers.Items.Add(new SController(split[0], ushort.Parse(split[1]), ushort.Parse(split[2]), byte.Parse(split[3]), serial_number));
                     }
                 }
             }
@@ -112,10 +119,11 @@ namespace BetterJoyForCemu {
                 }
 
                 // TODO: try checking against interface number instead
-                String name = enumerate.product_string + '(' + enumerate.vendor_id + '-' + enumerate.product_id + ')';
+                String name = enumerate.product_string + '(' + enumerate.vendor_id + '-' + enumerate.product_id + '-'+enumerate.serial_number+')';
                 if (!ContainsText(list_customControllers, name) && !ContainsText(list_allControllers, name)) {
-                    list_allControllers.Items.Add(new SController(name, enumerate.vendor_id, enumerate.product_id, 0));
+                    list_allControllers.Items.Add(new SController(name, enumerate.vendor_id, enumerate.product_id, 0, enumerate.serial_number));
                     // 0 type is undefined
+                    Console.WriteLine("Found controller "+ name);
                 }
 
                 ptr = enumerate.next;

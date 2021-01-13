@@ -134,7 +134,7 @@ namespace BetterJoyForCemu {
                                         enumerate.product_id == product_pro || enumerate.product_id == product_snes) && enumerate.vendor_id == vendor_id;
                 // check list of custom controllers specified
                 foreach (SController v in Program.thirdPartyCons) {
-                    if (enumerate.vendor_id == v.vendor_id && enumerate.product_id == v.product_id) {
+                    if (enumerate.vendor_id == v.vendor_id && enumerate.product_id == v.product_id && enumerate.serial_number == v.serial_number) {
                         validController = true;
                         thirdParty = v;
                         break;
