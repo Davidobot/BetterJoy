@@ -4,7 +4,7 @@ using System.IO;
 
 namespace BetterJoyForCemu {
 	public static class Config { // stores dynamic configuration, including
-		const string PATH = "settings";
+		static string path;
 		static Dictionary<string, string> variables = new Dictionary<string, string>();
 
 		const int settingsNum = 11; // currently - ProgressiveScan, StartInTray + special buttons
@@ -36,19 +36,20 @@ namespace BetterJoyForCemu {
 		}
 
 		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
+            path = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\settings";
 			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "shake", "reset_mouse", "active_gyro" })
 				variables[s] = GetDefaultValue(s);
 
-			if (File.Exists(PATH)) {
+			if (File.Exists(path)) {
 
 				// Reset settings file if old settings
-				if (CountLinesInFile(PATH) < settingsNum) {
-					File.Delete(PATH);
+				if (CountLinesInFile(path) < settingsNum) {
+					File.Delete(path);
 					Init(caliData);
 					return;
 				}
 
-				using (StreamReader file = new StreamReader(PATH)) {
+				using (StreamReader file = new StreamReader(path)) {
 					string line = String.Empty;
 					int lineNO = 0;
 					while ((line = file.ReadLine()) != null) {
@@ -75,7 +76,7 @@ namespace BetterJoyForCemu {
 					}
 				}
 			} else {
-				using (StreamWriter file = new StreamWriter(PATH)) {
+				using (StreamWriter file = new StreamWriter(path)) {
 					foreach (string k in variables.Keys)
 						file.WriteLine(String.Format("{0} {1}", k, variables[k]));
 					string caliStr = "";
@@ -111,7 +112,7 @@ namespace BetterJoyForCemu {
 		}
 
 		public static void SaveCaliData(List<KeyValuePair<string, float[]>> caliData) {
-			string[] txt = File.ReadAllLines(PATH);
+			string[] txt = File.ReadAllLines(path);
 			if (txt.Length < settingsNum + 1) // no custom calibrations yet
 				Array.Resize(ref txt, txt.Length + 1);
 
@@ -122,17 +123,17 @@ namespace BetterJoyForCemu {
 				caliStr += space + caliData[i].Key + "," + String.Join(",", caliData[i].Value);
 			}
             txt[settingsNum] = caliStr;
-            File.WriteAllLines(PATH, txt);
+            File.WriteAllLines(path, txt);
 		}
 
 		public static void Save() {
-			string[] txt = File.ReadAllLines(PATH);
+			string[] txt = File.ReadAllLines(path);
 			int NO = 0;
 			foreach (string k in variables.Keys) {
 				txt[NO] = String.Format("{0} {1}", k, variables[k]);
 				NO++;
 			}
-			File.WriteAllLines(PATH, txt);
+			File.WriteAllLines(path, txt);
 		}
 	}
 }
