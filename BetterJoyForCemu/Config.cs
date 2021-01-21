@@ -9,6 +9,10 @@ namespace BetterJoyForCemu {
 
 		const int settingsNum = 11; // currently - ProgressiveScan, StartInTray + special buttons
 
+        static Config() {
+            path = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\settings";
+        }
+
 		public static string GetDefaultValue(string s) {
 			switch (s) {
 				case "ProgressiveScan":
@@ -36,7 +40,6 @@ namespace BetterJoyForCemu {
 		}
 
 		public static void Init(List<KeyValuePair<string, float[]>> caliData) {
-            path = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\\settings";
 			foreach (string s in new string[] { "ProgressiveScan", "StartInTray", "capture", "home", "sl_l", "sl_r", "sr_l", "sr_r", "shake", "reset_mouse", "active_gyro" })
 				variables[s] = GetDefaultValue(s);
 
