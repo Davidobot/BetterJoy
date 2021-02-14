@@ -123,6 +123,8 @@ namespace BetterJoyForCemu {
         private Int16[] gyr_sensiti = { 0, 0, 0 };
         private Vector3 gyr_g;
 
+        private float[] cur_rotation; // Filtered IMU data
+
         private short[] acc_sen = new short[3]{
             16384,
             16384,
@@ -278,6 +280,7 @@ namespace BetterJoyForCemu {
         bool thirdParty = false;
 
         private float[] activeData;
+        private MadgwickAHRS AHRS = new MadgwickAHRS(0.005f, 0.01f); // for getting filtered Euler angles of rotation; 5ms sampling rate
 
         public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false, bool thirdParty = false) {
             serial_number = serialNum;
@@ -425,8 +428,6 @@ namespace BetterJoyForCemu {
             Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1);
             Subcommand(0x48, new byte[] { 0x01 }, 1);
 
-            Subcommand(0x41, new byte[] { 0x03, 0x00, 0x00, 0x01 }, 4); // higher gyro performance rate
-
             Subcommand(0x3, new byte[] { 0x30 }, 1);
             DebugPrint("Done with init.", DebugType.COMMS);
 
@@ -519,7 +520,7 @@ namespace BetterJoyForCemu {
             if (state > state_.NO_JOYCONS) {
                 HIDapi.hid_set_nonblocking(handle, 0);
 
-                Subcommand(0x40, new byte[] { 0x0 }, 1); // disable IMU sensor
+                // Subcommand(0x40, new byte[] { 0x0 }, 1); // disable IMU sensor
                                                          //Subcommand(0x48, new byte[] { 0x0 }, 1); // Would turn off rumble?
 
                 if (isUSB) {
@@ -679,7 +680,8 @@ namespace BetterJoyForCemu {
         long PowerOffInactivityMins = Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
 
         string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
-        int GyroMouseSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivity"]);
+        int GyroMouseSensitivityX = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityX"]);
+        int GyroMouseSensitivityY = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityY"]);
         bool GyroHoldToggle = Boolean.Parse(ConfigurationManager.AppSettings["GyroHoldToggle"]);
         bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
         int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
@@ -743,13 +745,15 @@ namespace BetterJoyForCemu {
                 SimulateContinous((int)Button.SR, Config.Value("sr_r"));
             }
 
+            // Filtered IMU data
+            this.cur_rotation = AHRS.GetEulerAngles();
+
             if (GyroAnalogSliders && (other != null || isPro)) {
                 Button leftT = isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2;
                 Button rightT = isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2;
-                float dt = 0.015f; // 15ms
                 Joycon left = isLeft ? this : (isPro ? this : this.other); Joycon right = !isLeft ? this : (isPro ? this : this.other);
-                int ldy = (int)(GyroAnalogSensitivity * (left.gyr_g.Y * dt) * (Math.Abs(left.gyr_g.Y) < 1 ? 0 : 1));
-                int rdy = (int)(GyroAnalogSensitivity * (right.gyr_g.Y * dt) * (Math.Abs(right.gyr_g.Y) < 1 ? 0 : 1));
+                int ldy = (int)(GyroAnalogSensitivity * (left.cur_rotation[0] - left.cur_rotation[3]));
+                int rdy = (int)(GyroAnalogSensitivity * (right.cur_rotation[0] - right.cur_rotation[3]));
 
                 if (buttons[(int)leftT]) {
                     sliderVal[0] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[0] + ldy));
@@ -782,12 +786,10 @@ namespace BetterJoyForCemu {
                     }
                 }
 
-                float dt = 0.015f; // 15ms
-
                 // gyro data is in degrees/s
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
-                    int dx = (int)(GyroMouseSensitivity * (gyr_g.Z * dt) * (Math.Abs(gyr_g.Z) < 1 ? 0 : 1));
-                    int dy = (int)-(GyroMouseSensitivity * (gyr_g.Y * dt) * (Math.Abs(gyr_g.Y) < 1 ? 0 : 1));
+                    int dx = (int)(GyroMouseSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
+                    int dy = (int)-(GyroMouseSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
 
                     WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
                 }
@@ -1020,7 +1022,6 @@ namespace BetterJoyForCemu {
                     }
                 }
 
-
                 if (other == null && !isPro) { // single joycon mode; Z do not swap, rest do
                     if (isLeft) {
                         acc_g.X = -acc_g.X;
@@ -1038,6 +1039,10 @@ namespace BetterJoyForCemu {
                     gyr_g.X = gyr_g.Y;
                     gyr_g.Y = temp;
                 }
+
+                // Update rotation Quaternion
+                float deg_to_rad = 0.0174533f;
+                AHRS.Update(gyr_g.X * deg_to_rad, gyr_g.Y * deg_to_rad, gyr_g.Z * deg_to_rad, acc_g.X, acc_g.Y, acc_g.Z);
             }
         }
 

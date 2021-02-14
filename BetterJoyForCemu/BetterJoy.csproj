@@ -102,8 +102,8 @@
     <Reference Include="JetBrains.Annotations, Version=2020.1.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
       <HintPath>..\packages\JetBrains.Annotations.2020.1.0\lib\net20\JetBrains.Annotations.dll</HintPath>
     </Reference>
-    <Reference Include="Nefarius.ViGEm.Client, Version=1.16.150.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nefarius.ViGEm.Client.1.16.150\lib\net452\Nefarius.ViGEm.Client.dll</HintPath>
+    <Reference Include="Nefarius.ViGEm.Client, Version=1.17.175.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nefarius.ViGEm.Client.1.17.175\lib\net452\Nefarius.ViGEm.Client.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -136,6 +136,7 @@
     <Compile Include="Controller\OutputControllerXbox360.cs" />
     <Compile Include="HIDapi.cs" />
     <Compile Include="Joycon.cs" />
+    <Compile Include="MadgwickAHRS.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
