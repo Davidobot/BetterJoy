@@ -50,14 +50,15 @@ namespace BetterJoyForCemu {
             }
         }
 
-        const string PATH = "3rdPartyControllers";
+        static readonly string path;
+
+        static _3rdPartyControllers() {
+            path = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+                   + "\\3rdPartyControllers";
+        }
 
         public _3rdPartyControllers() {
             InitializeComponent();
-            /*list_allControllers.DisplayMember = "Text";
-            list_allControllers.ValueMember = "Value";
-            list_customControllers.DisplayMember = "Text";
-            list_customControllers.ValueMember = "Value";*/
             list_allControllers.HorizontalScrollbar = true; list_customControllers.HorizontalScrollbar = true;
 
             chooseType.Items.AddRange(new String[] { "Pro Controller", "Left Joycon", "Right Joycon" });
@@ -66,8 +67,8 @@ namespace BetterJoyForCemu {
             group_props.Controls.Add(chooseType);
             group_props.Enabled = false;
 
-            if (File.Exists(PATH)) {
-                using (StreamReader file = new StreamReader(PATH)) {
+            if (File.Exists(path)) {
+                using (StreamReader file = new StreamReader(path)) {
                     string line = String.Empty;
                     while ((line = file.ReadLine()) != null && (line != String.Empty)) {
                         String[] split = line.Split('|');
@@ -154,7 +155,7 @@ namespace BetterJoyForCemu {
             foreach (SController v in list_customControllers.Items) {
                 sc += v.Serialise() + "\r\n";
             }
-            File.WriteAllText(PATH, sc);
+            File.WriteAllText(path, sc);
             CopyCustomControllers();
         }
 
