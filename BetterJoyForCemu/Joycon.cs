@@ -21,7 +21,7 @@ namespace BetterJoyForCemu {
         public Joycon other {
             get {
                 return _other;
-            } 
+            }
             set {
                 _other = value;
 
@@ -29,13 +29,12 @@ namespace BetterJoyForCemu {
                 if (_other == null || _other == this) {
                     // Set LED to current Pad ID
                     SetLEDByPlayerNum(PadId);
-                }
-                else {
+                } else {
                     // Set LED to current Joycon Pair
                     int lowestPadId = Math.Min(_other.PadId, PadId);
                     SetLEDByPlayerNum(lowestPadId);
                 }
-            } 
+            }
         }
         public bool active_gyro = false;
 
@@ -148,7 +147,7 @@ namespace BetterJoyForCemu {
             public Queue<float[]> queue;
 
             public void set_vals(float low_freq, float high_freq, float amplitude) {
-                float[] rumbleQueue = new float[] {low_freq, high_freq, amplitude};
+                float[] rumbleQueue = new float[] { low_freq, high_freq, amplitude };
                 // Keep a queue of 15 items, discard oldest item if queue is full.
                 if (queue.Count > 15) {
                     queue.Dequeue();
@@ -288,7 +287,7 @@ namespace BetterJoyForCemu {
             handle = handle_;
             imu_enabled = imu;
             do_localize = localize;
-            rumble_obj = new Rumble(new float[] {lowFreq, highFreq, 0});
+            rumble_obj = new Rumble(new float[] { lowFreq, highFreq, 0 });
             for (int i = 0; i < buttons_down_timestamp.Length; i++)
                 buttons_down_timestamp[i] = -1;
             filterweight = alpha;
@@ -521,7 +520,7 @@ namespace BetterJoyForCemu {
                 HIDapi.hid_set_nonblocking(handle, 0);
 
                 // Subcommand(0x40, new byte[] { 0x0 }, 1); // disable IMU sensor
-                                                         //Subcommand(0x48, new byte[] { 0x0 }, 1); // Would turn off rumble?
+                //Subcommand(0x48, new byte[] { 0x0 }, 1); // Would turn off rumble?
 
                 if (isUSB) {
                     byte[] a = Enumerable.Repeat((byte)0, 64).ToArray();
@@ -809,7 +808,7 @@ namespace BetterJoyForCemu {
             stop_polling = false;
             int attempts = 0;
             while (!stop_polling & state > state_.NO_JOYCONS) {
-                if (rumble_obj.queue.Count > 0) {
+                if (rumble_obj.queue.Count > 0a) {
                     SendRumble(rumble_obj.GetData());
                 }
                 int a = ReceiveRaw();
