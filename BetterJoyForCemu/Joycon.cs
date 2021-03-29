@@ -808,7 +808,7 @@ namespace BetterJoyForCemu {
             stop_polling = false;
             int attempts = 0;
             while (!stop_polling & state > state_.NO_JOYCONS) {
-                if (rumble_obj.queue.Count > 0a) {
+                if (rumble_obj.queue.Count > 0) {
                     SendRumble(rumble_obj.GetData());
                 }
                 int a = ReceiveRaw();
