@@ -1353,7 +1353,7 @@ namespace BetterJoyForCemu {
             return output;
         }
 
-        private static OutputControllerDualShock4InputState MapToDualShock4Input(Joycon input) {
+        public static OutputControllerDualShock4InputState MapToDualShock4Input(Joycon input) {
             var output = new OutputControllerDualShock4InputState();
 
             var swapAB = input.swapAB;
