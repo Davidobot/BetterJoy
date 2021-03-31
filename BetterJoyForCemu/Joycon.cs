@@ -1444,7 +1444,7 @@ namespace BetterJoyForCemu {
                     output.triangle = !swapXY ? buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)] : buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)];
                     output.square = swapXY ? buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.DPAD_LEFT)] : buttons[(int)(isLeft ? Button.DPAD_UP : Button.DPAD_DOWN)];
 
-                    output.square = buttons[(int)Button.MINUS] | buttons[(int)Button.HOME];
+                    output.ps = buttons[(int)Button.MINUS] | buttons[(int)Button.HOME];
                     output.options = buttons[(int)Button.PLUS] | buttons[(int)Button.CAPTURE];
 
                     output.shoulder_left = buttons[(int)Button.SL];
