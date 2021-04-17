@@ -126,10 +126,6 @@ namespace BetterJoyForCemu {
                     continue;
                 }
 
-                if (form.nonOriginal) {
-                    enumerate.product_id = product_pro;
-                }
-
                 bool validController = (enumerate.product_id == product_l || enumerate.product_id == product_r ||
                                         enumerate.product_id == product_pro || enumerate.product_id == product_snes) && enumerate.vendor_id == vendor_id;
                 // check list of custom controllers specified

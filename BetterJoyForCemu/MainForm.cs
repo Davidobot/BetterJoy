@@ -15,8 +15,6 @@ using System.Xml.Linq;
 
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
-        public bool useControllerStickCalibration;
-        public bool nonOriginal;
         public bool allowCalibration = Boolean.Parse(ConfigurationManager.AppSettings["AllowCalibration"]);
         public List<Button> con, loc;
         public bool calibrate;
@@ -40,7 +38,6 @@ namespace BetterJoyForCemu {
             caliData = new List<KeyValuePair<string, float[]>> {
                 new KeyValuePair<string, float[]>("0", new float[6] {0,0,0,-710,0,0})
             };
-            SetNonOriginalControllerSettings();
 
             InitializeComponent();
 
@@ -67,28 +64,6 @@ namespace BetterJoyForCemu {
 
                 childControl.MouseClick += cbBox_Changed;
                 settingsTable.Controls.Add(childControl, 1, i);
-            }
-        }
-
-        private void SetNonOriginalControllerSettings() {
-            Enum.TryParse(ConfigurationManager.AppSettings["NonOriginalController"], true, out NonOriginalController nonOriginalController);
-            switch ((int)nonOriginalController) {
-                case 0:
-                    nonOriginal = false;
-                    break;
-                case 1:
-                case 2:
-                    nonOriginal = true;
-                    break;       
-            }
-            switch ((int)nonOriginalController) {
-                case 0:
-                case 2:
-                    useControllerStickCalibration = true;
-                    break;
-                case 1:
-                    useControllerStickCalibration = false;
-                    break;
             }
         }
 
