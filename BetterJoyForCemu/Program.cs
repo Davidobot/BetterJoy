@@ -304,7 +304,7 @@ namespace BetterJoyForCemu {
                         jc.out_ds4.Connect();
 
                     try {
-                        jc.Attach(leds_: jc.LED);
+                        jc.Attach();
                     } catch (Exception e) {
                         jc.state = Joycon.state_.DROPPED;
                         continue;

@@ -261,7 +261,7 @@ namespace BetterJoyForCemu {
                 id = 3;
             }
 
-            if (ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["UseJoyconIncrementalLights"].Value.ToLower() == "true") {
+            if (ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["UseIncrementalLights"].Value.ToLower() == "true") {
                 // Set all LEDs from 0 to the given id to lit
                 int ledId = id;
                 LED = 0x0;
@@ -364,7 +364,7 @@ namespace BetterJoyForCemu {
         public Vector3 GetAccel() {
             return acc_g;
         }
-        public int Attach(byte leds_ = 0x0) {
+        public int Attach() {
             state = state_.ATTACHED;
 
             // Make sure command is received
@@ -422,7 +422,7 @@ namespace BetterJoyForCemu {
             //Subcommand(0x01, new byte[] { 0x03 }, 1, true);
 
             BlinkHomeLight();
-            SetPlayerLED(leds_);
+            SetLEDByPlayerNum(PadId);
 
             Subcommand(0x40, new byte[] { (imu_enabled ? (byte)0x1 : (byte)0x0) }, 1);
             Subcommand(0x48, new byte[] { 0x01 }, 1);
