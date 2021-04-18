@@ -682,6 +682,9 @@ namespace BetterJoyForCemu {
         bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
         long PowerOffInactivityMins = Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
 
+        bool ChangeOrientationDoubleClick = Boolean.Parse(ConfigurationManager.AppSettings["ChangeOrientationDoubleClick"]);
+        long lastDoubleClick = -1;
+
         string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
         int GyroMouseSensitivityX = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityX"]);
         int GyroMouseSensitivityY = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityY"]);
@@ -689,6 +692,7 @@ namespace BetterJoyForCemu {
         bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
         int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
         byte[] sliderVal = new byte[] { 0, 0 };
+
         private void DoThingsWithButtons() {
             int powerOffButton = (int)((isPro || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
 
@@ -701,6 +705,18 @@ namespace BetterJoyForCemu {
                     PowerOff();
                     return;
                 }
+            }
+
+            if (ChangeOrientationDoubleClick && buttons_down[(int)Button.STICK] && lastDoubleClick != -1 && !isPro) {
+                if ((buttons_down_timestamp[(int)Button.STICK] - lastDoubleClick) < 3000000) {
+                    form.conBtnClick(form.con[PadId], EventArgs.Empty); // trigger connection button click
+
+                    lastDoubleClick = buttons_down_timestamp[(int)Button.STICK];
+                    return;
+                }
+                lastDoubleClick = buttons_down_timestamp[(int)Button.STICK];
+            } else if (ChangeOrientationDoubleClick && buttons_down[(int)Button.STICK] && !isPro) {
+                lastDoubleClick = buttons_down_timestamp[(int)Button.STICK];
             }
 
             if (PowerOffInactivityMins > 0) {
