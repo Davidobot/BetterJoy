@@ -162,6 +162,8 @@ namespace BetterJoyForCemu {
             }
         }
 
+        bool doNotRejoin = Boolean.Parse(ConfigurationManager.AppSettings["DoNotRejoinJoycons"]);
+
         public void conBtnClick(object sender, EventArgs e) {
             Button button = sender as Button;
 
@@ -171,7 +173,7 @@ namespace BetterJoyForCemu {
                 if (v.other == null && !v.isPro) { // needs connecting to other joycon (so messy omg)
                     bool succ = false;
 
-                    if (Program.mgr.j.Count == 1) { // when want to have a single joycon in vertical mode
+                    if (Program.mgr.j.Count == 1 || doNotRejoin) { // when want to have a single joycon in vertical mode
                         v.other = v; // hacky; implement check in Joycon.cs to account for this
                         succ = true;
                     } else {
