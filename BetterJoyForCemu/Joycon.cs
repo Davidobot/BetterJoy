@@ -279,7 +279,8 @@ namespace BetterJoyForCemu {
         bool thirdParty = false;
 
         private float[] activeData;
-        private MadgwickAHRS AHRS = new MadgwickAHRS(0.005f, 0.01f); // for getting filtered Euler angles of rotation; 5ms sampling rate
+        static float AHRS_beta = float.Parse(ConfigurationManager.AppSettings["AHRS_beta"]);
+        private MadgwickAHRS AHRS = new MadgwickAHRS(0.005f, AHRS_beta); // for getting filtered Euler angles of rotation; 5ms sampling rate
 
         public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false, bool thirdParty = false) {
             serial_number = serialNum;
@@ -688,6 +689,9 @@ namespace BetterJoyForCemu {
         string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
         int GyroMouseSensitivityX = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityX"]);
         int GyroMouseSensitivityY = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityY"]);
+        float GyroStickSensitivityX = float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityX"]);
+        float GyroStickSensitivityY = float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityY"]);
+        float GyroStickReduction = float.Parse(ConfigurationManager.AppSettings["GyroStickReduction"]);
         bool GyroHoldToggle = Boolean.Parse(ConfigurationManager.AppSettings["GyroHoldToggle"]);
         bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
         int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
@@ -787,24 +791,30 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            if (extraGyroFeature == "joy") {
-                // TODO
-            } else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
-                string res_val = Config.Value("active_gyro");
-
-                if (res_val.StartsWith("joy_")) {
-                    int i = Int32.Parse(res_val.Substring(4));
-                    if (GyroHoldToggle) {
-                        if (buttons_down[i] || (other != null && other.buttons_down[i]))
-                            active_gyro = true;
-                        else if (buttons_up[i] || (other != null && other.buttons_up[i]))
-                            active_gyro = false;
-                    } else {
-                        if (buttons_down[i] || (other != null && other.buttons_down[i]))
-                            active_gyro = !active_gyro;
-                    }
+            string res_val = Config.Value("active_gyro");
+            if (res_val.StartsWith("joy_")) {
+                int i = Int32.Parse(res_val.Substring(4));
+                if (GyroHoldToggle) {
+                    if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                        active_gyro = true;
+                    else if (buttons_up[i] || (other != null && other.buttons_up[i]))
+                        active_gyro = false;
+                } else {
+                    if (buttons_down[i] || (other != null && other.buttons_down[i]))
+                        active_gyro = !active_gyro;
                 }
+            }
 
+            if (extraGyroFeature.Substring(0, 3) == "joy") {
+                if (Config.Value("active_gyro") == "0" || active_gyro) {
+                    float[] control_stick = (extraGyroFeature == "joy_left") ? stick : stick2;
+                    float dx = (GyroStickSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
+                    float dy = -(GyroStickSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+
+                    control_stick[0] = Math.Max(-1.0f, Math.Min(1.0f, control_stick[0] / GyroStickReduction + dx));
+                    control_stick[1] = Math.Max(-1.0f, Math.Min(1.0f, control_stick[1] / GyroStickReduction + dy));
+                }
+            } else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
                 // gyro data is in degrees/s
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
                     int dx = (int)(GyroMouseSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
