@@ -687,6 +687,7 @@ namespace BetterJoyForCemu {
         long lastDoubleClick = -1;
 
         string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
+        bool UseFilteredIMU = Boolean.Parse(ConfigurationManager.AppSettings["UseFilteredIMU"]);
         int GyroMouseSensitivityX = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityX"]);
         int GyroMouseSensitivityY = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityY"]);
         float GyroStickSensitivityX = float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityX"]);
@@ -770,13 +771,21 @@ namespace BetterJoyForCemu {
 
             // Filtered IMU data
             this.cur_rotation = AHRS.GetEulerAngles();
+            float dt = 0.015f; // 15ms
 
             if (GyroAnalogSliders && (other != null || isPro)) {
                 Button leftT = isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2;
                 Button rightT = isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2;
                 Joycon left = isLeft ? this : (isPro ? this : this.other); Joycon right = !isLeft ? this : (isPro ? this : this.other);
-                int ldy = (int)(GyroAnalogSensitivity * (left.cur_rotation[0] - left.cur_rotation[3]));
-                int rdy = (int)(GyroAnalogSensitivity * (right.cur_rotation[0] - right.cur_rotation[3]));
+
+                int ldy, rdy;
+                if (UseFilteredIMU) {
+                    ldy = (int)(GyroAnalogSensitivity * (left.cur_rotation[0] - left.cur_rotation[3]));
+                    rdy = (int)(GyroAnalogSensitivity * (right.cur_rotation[0] - right.cur_rotation[3]));
+                } else {
+                    ldy = (int)(GyroAnalogSensitivity * (left.gyr_g.Y * dt));
+                    rdy = (int)(GyroAnalogSensitivity * (right.gyr_g.Y * dt));
+                }
 
                 if (buttons[(int)leftT]) {
                     sliderVal[0] = (byte)Math.Min(Byte.MaxValue, Math.Max(0, (int)sliderVal[0] + ldy));
@@ -808,8 +817,15 @@ namespace BetterJoyForCemu {
             if (extraGyroFeature.Substring(0, 3) == "joy") {
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
                     float[] control_stick = (extraGyroFeature == "joy_left") ? stick : stick2;
-                    float dx = (GyroStickSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
-                    float dy = -(GyroStickSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+
+                    float dx, dy;
+                    if (UseFilteredIMU) {
+                        dx = (GyroStickSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
+                        dy = -(GyroStickSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+                    } else {
+                        dx = (GyroStickSensitivityX * (gyr_g.Z * dt)); // yaw
+                        dy = -(GyroStickSensitivityY * (gyr_g.Y * dt)); // pitch
+                    }
 
                     control_stick[0] = Math.Max(-1.0f, Math.Min(1.0f, control_stick[0] / GyroStickReduction + dx));
                     control_stick[1] = Math.Max(-1.0f, Math.Min(1.0f, control_stick[1] / GyroStickReduction + dy));
@@ -817,8 +833,15 @@ namespace BetterJoyForCemu {
             } else if (extraGyroFeature == "mouse" && (isPro || (other == null) || (other != null && (Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseLeftHanded"]) ? isLeft : !isLeft)))) {
                 // gyro data is in degrees/s
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
-                    int dx = (int)(GyroMouseSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
-                    int dy = (int)-(GyroMouseSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+                    int dx, dy;
+
+                    if (UseFilteredIMU) {
+                        dx = (int)(GyroMouseSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
+                        dy = (int)-(GyroMouseSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+                    } else {
+                        dx = (int)(GyroMouseSensitivityX * (gyr_g.Z * dt));
+                        dy = (int)-(GyroMouseSensitivityY * (gyr_g.Y * dt));
+                    }
 
                     WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
                 }
