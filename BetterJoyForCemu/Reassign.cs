@@ -11,8 +11,8 @@ using System.Windows.Forms;
 
 namespace BetterJoyForCemu {
     public partial class Reassign : Form {
-        private WindowsInput.EventSources.IKeyboardEventSource keyboard;
-        private WindowsInput.EventSources.IMouseEventSource mouse;
+        private WindowsInput.Events.Sources.IKeyboardEventSource keyboard;
+        private WindowsInput.Events.Sources.IMouseEventSource mouse;
 
         ContextMenuStrip menu_joy_buttons = new ContextMenuStrip();
 
@@ -73,7 +73,7 @@ namespace BetterJoyForCemu {
             mouse.MouseEvent += Mouse_MouseEvent;
         }
 
-        private void Mouse_MouseEvent(object sender, WindowsInput.EventSources.EventSourceEventArgs<WindowsInput.EventSources.MouseEvent> e) {
+        private void Mouse_MouseEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.MouseEvent> e) {
             if (curAssignment != null && e.Data.ButtonDown != null) {
                 Config.SetValue((string)curAssignment.Tag, "mse_" + ((int)e.Data.ButtonDown.Button));
                 AsyncPrettyName(curAssignment);
@@ -82,7 +82,7 @@ namespace BetterJoyForCemu {
             }
         }
 
-        private void Keyboard_KeyEvent(object sender, WindowsInput.EventSources.EventSourceEventArgs<WindowsInput.EventSources.KeyboardEvent> e) {
+        private void Keyboard_KeyEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.KeyboardEvent> e) {
             if (curAssignment != null && e.Data.KeyDown != null) {
                 Config.SetValue((string)curAssignment.Tag, "key_" + ((int)e.Data.KeyDown.Key));
                 AsyncPrettyName(curAssignment);
