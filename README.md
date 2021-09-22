@@ -53,6 +53,41 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
 1. Click on it and a "Remove" button will be revealed.
 1. Press the "Remove" button
 
+# Building
+
+## Visual Studio (IDE)
+
+1. If you didn't already, install **Visual Studio Community 2019** via
+   [the official guide](https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2019).
+   When asked about the workloads, select **.NET Desktop Development**.
+2. Get the code project via Git or by using the *Download ZIP* button.
+3. Open Visual Studio Community and open the solution file (*BetterJoy.sln*).
+4. Open the NuGet manager via *Tools > NuGet Package Manager > Package Manager Settings*.
+5. You should have a warning mentioning *restoring your packages*. Click on the **Restore** button.
+6. You can now run and build BetterJoy.
+
+## Visual Studio Build Tools (CLI)
+1. Download **Visual Studio Build Tools** via
+   [the official link](https://visualstudio.microsoft.com/it/downloads/#build-tools-for-visual-studio-2019).
+2. Install **NuGet** by following
+   [the official guide](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#nugetexe-cli).
+   You should follow the section for ***nuget.exe***.
+   Verify that you can run `nuget` from your favourite terminal.
+3. Get the code project via Git or by using the *Download ZIP* button.
+4. Open a terminal (*cmd*, *PowerShell*, ...) and enter the folder with the source code.
+5. Restore the NuGet dependencies by running: `nuget restore`
+6. Now build the app with MSBuild:
+   ```
+   msbuild .\BetterJoy.sln -p:Configuration=CONFIGURATION -p:Platform=PLATFORM -t:Rebuild
+   ```
+   The available values for **CONFIGURATION** are *Release* and *Debug*.
+   The available values for **PLATFORM** are *x86* and *x64* (you want the latter 99.99% of the time).
+7. You have now built the app: 
+
+## Binaries location
+The built binaries are located under
+*BetterJoyForCemu\bin\PLATFORM\CONFIGURATION*
+
 # Acknowledgements
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
 
