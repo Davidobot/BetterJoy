@@ -82,11 +82,14 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
    ```
    The available values for **CONFIGURATION** are *Release* and *Debug*.
    The available values for **PLATFORM** are *x86* and *x64* (you want the latter 99.99% of the time).
-7. You have now built the app: 
+7. You have now built the app. See the next section for locating the binaries.
 
 ## Binaries location
 The built binaries are located under
+
 *BetterJoyForCemu\bin\PLATFORM\CONFIGURATION*
+
+where `PLATFORM` and `CONFIGURATION` are the one provided at build time. 
 
 # Acknowledgements
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
