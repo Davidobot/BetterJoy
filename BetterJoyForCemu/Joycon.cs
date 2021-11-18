@@ -1460,10 +1460,10 @@ namespace BetterJoyForCemu {
                 else if (buttons[(int)Button.DPAD_RIGHT])
                     output.dPad = DpadDirection.East;
 
-                output.share = buttons[(int)Button.MINUS];
+                output.share = buttons[(int)Button.CAPTURE];
                 output.options = buttons[(int)Button.PLUS];
                 output.ps = buttons[(int)Button.HOME];
-                output.touchpad = buttons[(int)Button.CAPTURE];
+                output.touchpad = buttons[(int)Button.MINUS];
                 output.shoulder_left = buttons[(int)Button.SHOULDER_1];
                 output.shoulder_right = buttons[(int)Button.SHOULDER2_1];
                 output.thumb_left = buttons[(int)Button.STICK];
@@ -1494,10 +1494,10 @@ namespace BetterJoyForCemu {
                     else if (buttons[(int)(isLeft ? Button.DPAD_RIGHT : Button.A)])
                         output.dPad = DpadDirection.East;
 
-                    output.share = buttons[(int)Button.MINUS];
+                    output.share = buttons[(int)Button.CAPTURE];
                     output.options = buttons[(int)Button.PLUS];
                     output.ps = buttons[(int)Button.HOME];
-                    output.touchpad = buttons[(int)Button.CAPTURE];
+                    output.touchpad = buttons[(int)Button.MINUS];
                     output.shoulder_left = buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER2_1)];
                     output.shoulder_right = buttons[(int)(isLeft ? Button.SHOULDER2_1 : Button.SHOULDER_1)];
                     output.thumb_left = buttons[(int)(isLeft ? Button.STICK : Button.STICK2)];
@@ -1543,6 +1543,9 @@ namespace BetterJoyForCemu {
                 output.trigger_left_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0);
                 output.trigger_right_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0);
             }
+            // Output digital L2 / R2 in addition to analog L2 / R2
+            output.trigger_left = output.trigger_left_value > 0 ? output.trigger_left = true : output.trigger_left = false;
+            output.trigger_right = output.trigger_right_value > 0 ? output.trigger_right = true : output.trigger_right = false;
 
             return output;
         }
