@@ -528,12 +528,10 @@ namespace BetterJoyForCemu {
         }
 
         static void SetupDlls() {
-            const int LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
-            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-            AddDllDirectory(Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                Environment.Is64BitProcess ? "x64" : "x86"
-            ));
+            string archPath = $"{AppDomain.CurrentDomain.BaseDirectory}{(Environment.Is64BitProcess ? "x64" : "x86")}\\";
+            string pathVariable = Environment.GetEnvironmentVariable("PATH");
+            pathVariable = $"{archPath};{pathVariable}";
+            Environment.SetEnvironmentVariable("PATH", pathVariable);
         }
 
         // Helper funtions to set the hidapi dll location acording to the system instruction set.
