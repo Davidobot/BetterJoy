@@ -99,7 +99,7 @@
             this.version_lbl.Name = "version_lbl";
             this.version_lbl.Size = new System.Drawing.Size(28, 13);
             this.version_lbl.TabIndex = 2;
-            this.version_lbl.Text = "v6.4";
+            this.version_lbl.Text = "v7.1";
             // 
             // passiveScanBox
             // 
@@ -276,7 +276,7 @@
             // 
             // settingsTable
             // 
-            this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.settingsTable.AutoScroll = true;
             this.settingsTable.ColumnCount = 2;
