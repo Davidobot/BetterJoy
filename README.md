@@ -49,7 +49,7 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
  * Plug the controller into your computer.
  
 ## Disconnecting \[Windows 10]
-You may run into issues
+You may run into issues with controller detection. Try disconnection and unpairing them with this, then try reconnecting them.
 1. Go into "Bluetooth and other devices settings"
 1. Under the first category "Mouse, keyboard, & pen", there should be the pro controller.
 1. Click on it and a "Remove" button will be revealed.
