@@ -37,7 +37,7 @@ Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
 * As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam! Check [this page](https://github.com/Davidobot/BetterJoy/wiki/HIDGuardian-and-Steam-(Big-Picture)) if you run into trouble with Steam.
 
 # More Info
-Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll find all sorts of goodness such as the changelog, description of app settings, the FAQ and Problems page, and info on how to make BetterJoy work with Steam *better*. Try fiddling with the HID The wiki is still under construction, please feel free to open an issue if you do not understand what the wiki is telling you to do.
+Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll find all sorts of goodness such as the changelog, description of app settings, the FAQ and Problems page, and info on how to make BetterJoy work with Steam *better*. Try fiddling with the HID The wiki is still under construction, please feel free to open an issue if you do not understand what the wiki is telling you to do. There are also detailed descriptions of each setting in the config file in the same directory as the .exe.
 
 # Connecting and Disconnecting the Controller
 ## Bluetooth Mode
