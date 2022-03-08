@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="title.png">
+  <img src="title.png" alt="Several game controllers surrounding the BetterJoy logo">
 </p>
 
 # BetterJoy v7.0
@@ -28,16 +28,16 @@ Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
 2. Run *BetterJoyForCemu.exe* 
     1. Run as Administrator if your keyboard/mouse button mappings don't work
 3. Connect your controllers.
-4. Start Cemu and ensure CemuHook has the controller selected.
+4. If you want to use your controllers with Cemu, start it and ensure CemuHook has the controller selected.
     1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
-5. Go into *Input Settings*, choose XInput as a source and assign buttons normally.
+5. Go into *Input Settings* in Cemu, choose XInput as a source and assign buttons normally.
     1. If you don't want to do this for some reason, just have one input profile set up with *Wii U Gamepad* as the controller and enable "Also use for buttons/axes" under *GamePad motion source*. **This is no longer required as of version 3**
     2. Turn rumble up to 70-80% if you want rumble.
 
-* As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam!
+* As of version 3, you can use the pro controller and Joycons as normal xbox controllers on your PC - try it with Steam! Check [this page](https://github.com/Davidobot/BetterJoy/wiki/HIDGuardian-and-Steam-(Big-Picture)) if you run into trouble with Steam.
 
 # More Info
-Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll find all sorts of goodness such as the changelog, description of app settings, the FAQ and Problems page, and info on how to make BetterJoy work with Steam *better*.
+Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll find all sorts of goodness such as the changelog, description of app settings, the FAQ and Problems page, and info on how to make BetterJoy work with Steam *better*. Try fiddling with the HID The wiki is still under construction, please feel free to open an issue if you do not understand what the wiki is telling you to do.
 
 # Connecting and Disconnecting the Controller
 ## Bluetooth Mode
@@ -49,6 +49,7 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
  * Plug the controller into your computer.
  
 ## Disconnecting \[Windows 10]
+You may run into issues
 1. Go into "Bluetooth and other devices settings"
 1. Under the first category "Mouse, keyboard, & pen", there should be the pro controller.
 1. Click on it and a "Remove" button will be revealed.
