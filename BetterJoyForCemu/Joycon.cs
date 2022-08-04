@@ -891,6 +891,9 @@ namespace BetterJoyForCemu {
 
         bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
         bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        float stickScalingFactor = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor"]);
+        float stickScalingFactor2 = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor2"]);
+
         private int ProcessButtonsAndStick(byte[] report_buf) {
             if (report_buf[0] == 0x00) throw new ArgumentException("received undefined report. This is probably a bug");
             if (!isSnes) {
@@ -906,12 +909,12 @@ namespace BetterJoyForCemu {
 
                 stick_precal[0] = (UInt16)(stick_raw[0] | ((stick_raw[1] & 0xf) << 8));
                 stick_precal[1] = (UInt16)((stick_raw[1] >> 4) | (stick_raw[2] << 4));
-                stick = CenterSticks(stick_precal, stick_cal, deadzone);
+                stick = CenterSticks(stick_precal, stick_cal, deadzone, isLeft ? stickScalingFactor : stickScalingFactor2);
 
                 if (isPro) {
                     stick2_precal[0] = (UInt16)(stick2_raw[0] | ((stick2_raw[1] & 0xf) << 8));
                     stick2_precal[1] = (UInt16)((stick2_raw[1] >> 4) | (stick2_raw[2] << 4));
-                    stick2 = CenterSticks(stick2_precal, stick2_cal, deadzone2);
+                    stick2 = CenterSticks(stick2_precal, stick2_cal, deadzone2, stickScalingFactor2);
                 }
 
                 // Read other Joycon's sticks
@@ -1108,7 +1111,7 @@ namespace BetterJoyForCemu {
         }
 
         // Should really be called calculating stick data
-        private float[] CenterSticks(UInt16[] vals, ushort[] cal, ushort dz) {
+        private float[] CenterSticks(UInt16[] vals, ushort[] cal, ushort dz, float scaling_factor) {
             ushort[] t = cal;
 
             float[] s = { 0, 0 };
@@ -1118,6 +1121,15 @@ namespace BetterJoyForCemu {
 
             s[0] = dx / (dx > 0 ? t[0] : t[4]);
             s[1] = dy / (dy > 0 ? t[1] : t[5]);
+
+            if (scaling_factor != 1.0f) {
+                s[0] *= scaling_factor;
+                s[1] *= scaling_factor;
+
+                s[0] = Math.Max(Math.Min(s[0], 1.0f), -1.0f);
+                s[1] = Math.Max(Math.Min(s[1], 1.0f), -1.0f);
+            }
+
             return s;
         }
 
