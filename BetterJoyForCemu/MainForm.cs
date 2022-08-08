@@ -16,6 +16,7 @@ using System.Xml.Linq;
 namespace BetterJoyForCemu {
     public partial class MainForm : Form {
         public bool allowCalibration = Boolean.Parse(ConfigurationManager.AppSettings["AllowCalibration"]);
+        public bool ManualStickCal = Boolean.Parse(ConfigurationManager.AppSettings["ManualStickCal"]);
         public List<Button> con, loc;
         public bool calibrate;
         public List<KeyValuePair<string, float[]>> caliData;

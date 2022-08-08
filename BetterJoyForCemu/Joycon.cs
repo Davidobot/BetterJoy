@@ -1181,7 +1181,7 @@ namespace BetterJoyForCemu {
         }
 
         private void dump_calibration_data() {
-            if (isSnes || thirdParty) {
+            if (isSnes || thirdParty || form.ManualStickCal) {
                 short[] temp = (short[])ConfigurationManager.AppSettings["acc_sensiti"].Split(',').Select(s => short.Parse(s)).ToArray();
                 acc_sensiti[0] = temp[0]; acc_sensiti[1] = temp[1]; acc_sensiti[2] = temp[2];
                 temp = (short[])ConfigurationManager.AppSettings["gyr_sensiti"].Split(',').Select(s => short.Parse(s)).ToArray();
