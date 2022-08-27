@@ -636,14 +636,27 @@ namespace BetterJoyForCemu {
         Dictionary<int, bool> mouse_toggle_btn = new Dictionary<int, bool>();
         private void Simulate(string s, bool click = true, bool up = false) {
             if (s.StartsWith("key_")) {
-                WindowsInput.Events.KeyCode key = (WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4));
-                if (click) {
-                    WindowsInput.Simulate.Events().Click(key).Invoke();
-                } else {
-                    if (up) {
-                        WindowsInput.Simulate.Events().Release(key).Invoke();
+                if (s.Contains(",")) {
+                    List<WindowsInput.Events.KeyCode> keys = s.Substring(4).Split(',').Select(x => (WindowsInput.Events.KeyCode)Int32.Parse(x)).ToList();
+                    if (click) {
+                        WindowsInput.Simulate.Events().ClickChord(keys).Invoke();
                     } else {
-                        WindowsInput.Simulate.Events().Hold(key).Invoke();
+                        if (up) {
+                            WindowsInput.Simulate.Events().Release(keys).Invoke();
+                        } else {
+                            WindowsInput.Simulate.Events().Hold(keys).Invoke();
+                        }
+                    }
+                } else {
+                    WindowsInput.Events.KeyCode key = (WindowsInput.Events.KeyCode)Int32.Parse(s.Substring(4));
+                    if (click) {
+                        WindowsInput.Simulate.Events().Click(key).Invoke();
+                    } else {
+                        if (up) {
+                            WindowsInput.Simulate.Events().Release(key).Invoke();
+                        } else {
+                            WindowsInput.Simulate.Events().Hold(key).Invoke();
+                        }
                     }
                 }
             } else if (s.StartsWith("mse_")) {
