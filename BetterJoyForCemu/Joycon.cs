@@ -891,6 +891,7 @@ namespace BetterJoyForCemu {
 
         bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
         bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        bool swapSpells = Boolean.Parse(ConfigurationManager.AppSettings["SwapSpells"]);
         float stickScalingFactor = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor"]);
         float stickScalingFactor2 = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor2"]);
 
@@ -1330,6 +1331,7 @@ namespace BetterJoyForCemu {
 
             var swapAB = input.swapAB;
             var swapXY = input.swapXY;
+            var swapSpells = input.swapSpells;
 
             var isPro = input.isPro;
             var isLeft = input.isLeft;
@@ -1343,6 +1345,10 @@ namespace BetterJoyForCemu {
             var sliderVal = input.sliderVal;
 
             if (isPro) {
+                if (output.trigger_right > 0 & swapSpells) {
+                    swapAB = !swapAB;
+                    swapXY = !swapXY;
+                }
                 output.a = buttons[(int)(!swapAB ? Button.B : Button.A)];
                 output.b = buttons[(int)(!swapAB ? Button.A : Button.B)];
                 output.y = buttons[(int)(!swapXY ? Button.X : Button.Y)];
@@ -1434,6 +1440,7 @@ namespace BetterJoyForCemu {
 
             var swapAB = input.swapAB;
             var swapXY = input.swapXY;
+            var swapSpells = input.swapSpells;
 
             var isPro = input.isPro;
             var isLeft = input.isLeft;
@@ -1447,6 +1454,10 @@ namespace BetterJoyForCemu {
             var sliderVal = input.sliderVal;
 
             if (isPro) {
+                if (output.trigger_right > 0 & swapSpells) {
+                    swapAB = !swapAB;
+                    swapXY = !swapXY;
+                }
                 output.cross = buttons[(int)(!swapAB ? Button.B : Button.A)];
                 output.circle = buttons[(int)(!swapAB ? Button.A : Button.B)];
                 output.triangle = buttons[(int)(!swapXY ? Button.X : Button.Y)];
