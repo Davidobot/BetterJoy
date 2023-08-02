@@ -30,6 +30,7 @@ namespace BetterJoyForCemu {
         private const ushort product_r = 0x2007;
         private const ushort product_pro = 0x2009;
         private const ushort product_snes = 0x2017;
+        private const ushort product_n64 = 0x2019;
 
         public ConcurrentList<Joycon> j { get; private set; } // Array of all connected Joy-Cons
         static JoyconManager instance;
@@ -128,7 +129,7 @@ namespace BetterJoyForCemu {
                 }
 
                 bool validController = (enumerate.product_id == product_l || enumerate.product_id == product_r ||
-                                        enumerate.product_id == product_pro || enumerate.product_id == product_snes) && enumerate.vendor_id == vendor_id;
+                                        enumerate.product_id == product_pro || enumerate.product_id == product_snes || enumerate.product_id == product_n64) && enumerate.vendor_id == vendor_id;
                 // check list of custom controllers specified
                 foreach (SController v in Program.thirdPartyCons) {
                     if (enumerate.vendor_id == v.vendor_id && enumerate.product_id == v.product_id && enumerate.serial_number == v.serial_number) {
@@ -158,6 +159,9 @@ namespace BetterJoyForCemu {
                         case product_snes:
                             isLeft = true;
                             form.AppendTextBox("SNES controller connected.\r\n"); break;
+                        case product_n64:
+                            isLeft = true;
+                            form.AppendTextBox("N64 controller connected.\r\n"); break;
                         default:
                             form.AppendTextBox("Non Joy-Con Nintendo input device skipped.\r\n"); break;
                     }
@@ -194,7 +198,8 @@ namespace BetterJoyForCemu {
 
                     bool isPro = prod_id == product_pro;
                     bool isSnes = prod_id == product_snes;
-                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes, thirdParty != null));
+                    bool isN64 = prod_id == product_n64;
+                    j.Add(new Joycon(handle, EnableIMU, EnableLocalize & EnableIMU, 0.05f, isLeft, enumerate.path, enumerate.serial_number, j.Count, isPro, isSnes, isN64, thirdParty != null));
 
                     foundNew = true;
                     j.Last().form = form;
@@ -214,6 +219,8 @@ namespace BetterJoyForCemu {
                                         temp = Properties.Resources.pro; break;
                                     case (product_snes):
                                         temp = Properties.Resources.snes; break;
+                                    case (product_n64):
+                                        temp = Properties.Resources.n64; break;
                                     default:
                                         temp = Properties.Resources.cross; break;
                                 }
