@@ -239,6 +239,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Icons\snes.png" />
+    <Content Include="Icons\ultra.png" />
     <None Include="Properties\app.manifest" />
     <Content Include="Icons\betterjoyforcemu_icon.ico" />
     <Content Include="x86\hidapi.dll">

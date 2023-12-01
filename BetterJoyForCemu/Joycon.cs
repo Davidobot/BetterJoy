@@ -16,6 +16,7 @@ namespace BetterJoyForCemu {
         public string path = String.Empty;
         public bool isPro = false;
         public bool isSnes = false;
+        public bool is64 = false;
         bool isUSB = false;
         private Joycon _other = null;
         public Joycon other {
@@ -282,7 +283,7 @@ namespace BetterJoyForCemu {
         static float AHRS_beta = float.Parse(ConfigurationManager.AppSettings["AHRS_beta"]);
         private MadgwickAHRS AHRS = new MadgwickAHRS(0.005f, AHRS_beta); // for getting filtered Euler angles of rotation; 5ms sampling rate
 
-        public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false, bool thirdParty = false) {
+        public Joycon(IntPtr handle_, bool imu, bool localize, float alpha, bool left, string path, string serialNum, int id = 0, bool isPro = false, bool isSnes = false, bool is64 = false, bool thirdParty = false) {
             serial_number = serialNum;
             activeData = new float[6];
             handle = handle_;
@@ -296,8 +297,9 @@ namespace BetterJoyForCemu {
 
             PadId = id;
             LED = (byte)(0x1 << PadId);
-            this.isPro = isPro || isSnes;
+            this.isPro = isPro || isSnes || is64;
             this.isSnes = isSnes;
+            this.is64 = is64;
             isUSB = serialNum == "000000000001";
             this.thirdParty = thirdParty;
 
@@ -501,7 +503,7 @@ namespace BetterJoyForCemu {
 
             if (battery <= 1) {
                 form.notifyIcon.Visible = true;
-                form.notifyIcon.BalloonTipText = String.Format("Controller {0} ({1}) - low battery notification!", PadId, isPro ? "Pro Controller" : (isSnes ? "SNES Controller" : (isLeft ? "Joycon Left" : "Joycon Right")));
+                form.notifyIcon.BalloonTipText = String.Format("Controller {0} ({1}) - low battery notification!", PadId, isPro ? "Pro Controller" : (isSnes ? "SNES Controller" : (is64? "N64 Controller" : (isLeft ? "Joycon Left" : "Joycon Right"))));
                 form.notifyIcon.ShowBalloonTip(0);
             }
         }
@@ -590,7 +592,7 @@ namespace BetterJoyForCemu {
                 }
 
 
-                if (ts_en == raw_buf[1] && !isSnes) {
+                if (ts_en == raw_buf[1] && !(isSnes || is64)) {
                     form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
                     DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
                 }
@@ -1009,7 +1011,7 @@ namespace BetterJoyForCemu {
 
         // Get Gyro/Accel data
         private void ExtractIMUValues(byte[] report_buf, int n = 0) {
-            if (!isSnes) {
+            if (!(isSnes || is64)) {
                 gyr_r[0] = (Int16)(report_buf[19 + n * 12] | ((report_buf[20 + n * 12] << 8) & 0xff00));
                 gyr_r[1] = (Int16)(report_buf[21 + n * 12] | ((report_buf[22 + n * 12] << 8) & 0xff00));
                 gyr_r[2] = (Int16)(report_buf[23 + n * 12] | ((report_buf[24 + n * 12] << 8) & 0xff00));
@@ -1181,7 +1183,7 @@ namespace BetterJoyForCemu {
         }
 
         private void dump_calibration_data() {
-            if (isSnes || thirdParty) {
+            if (isSnes || is64 || thirdParty) {
                 short[] temp = (short[])ConfigurationManager.AppSettings["acc_sensiti"].Split(',').Select(s => short.Parse(s)).ToArray();
                 acc_sensiti[0] = temp[0]; acc_sensiti[1] = temp[1]; acc_sensiti[2] = temp[2];
                 temp = (short[])ConfigurationManager.AppSettings["gyr_sensiti"].Split(',').Select(s => short.Parse(s)).ToArray();
@@ -1328,12 +1330,14 @@ namespace BetterJoyForCemu {
         private static OutputControllerXbox360InputState MapToXbox360Input(Joycon input) {
             var output = new OutputControllerXbox360InputState();
 
+
             var swapAB = input.swapAB;
             var swapXY = input.swapXY;
 
             var isPro = input.isPro;
             var isLeft = input.isLeft;
             var isSnes = input.isSnes;
+            var is64 = input.is64;
             var other = input.other;
             var GyroAnalogSliders = input.GyroAnalogSliders;
 
@@ -1342,7 +1346,35 @@ namespace BetterJoyForCemu {
             var stick2 = input.stick2;
             var sliderVal = input.sliderVal;
 
-            if (isPro) {
+            if (is64)
+            {
+                output.axis_right_x = (short) ((buttons[(int)Button.X] ? Int16.MinValue : 0) + (buttons[(int)Button.MINUS] ? Int16.MaxValue : 0));
+                output.axis_right_y = (short) ((buttons[(int)Button.Y] ? Int16.MinValue: 0) + (buttons[(int)Button.SHOULDER2_2] ? Int16.MaxValue: 0));
+
+                output.axis_left_x = CastStickValue((other == input && !isLeft) ? stick2[0] : stick[0]);
+                output.axis_left_y = CastStickValue((other == input && !isLeft) ? stick2[1] : stick[1]);
+
+                output.start = buttons[(int)Button.PLUS];
+                output.a = buttons[(int)(!swapAB ? Button.B : Button.A)];
+                output.b = buttons[(int)(!swapAB ? Button.A : Button.B)];
+
+                output.shoulder_left = buttons[(int)Button.SHOULDER_1];
+                output.shoulder_right = buttons[(int)Button.SHOULDER2_1];
+
+                output.trigger_left = (byte)(buttons[(int)Button.SHOULDER_2] ? Byte.MaxValue : 0);
+                output.trigger_right = (byte)(buttons[(int)Button.STICK] ? Byte.MaxValue : 0);
+
+                output.dpad_down = buttons[(int)Button.DPAD_DOWN];
+                output.dpad_left = buttons[(int)Button.DPAD_LEFT];
+                output.dpad_right = buttons[(int)Button.DPAD_RIGHT];
+                output.dpad_up = buttons[(int)Button.DPAD_UP];
+                output.guide = buttons[(int)Button.HOME];
+
+                output.axis_left_x = CastStickValue((other == input && !isLeft) ? stick2[0] : stick[0]);
+                output.axis_left_y = CastStickValue((other == input && !isLeft) ? stick2[1] : stick[1]);
+
+            }
+            else if (isPro) {
                 output.a = buttons[(int)(!swapAB ? Button.B : Button.A)];
                 output.b = buttons[(int)(!swapAB ? Button.A : Button.B)];
                 output.y = buttons[(int)(!swapXY ? Button.X : Button.Y)];
@@ -1403,7 +1435,7 @@ namespace BetterJoyForCemu {
             if (Config.Value("home") != "0")
                 output.guide = false;
 
-            if (!isSnes) {
+            if (!(isSnes || is64)) {
                 if (other != null || isPro) { // no need for && other != this
                     output.axis_left_x = CastStickValue((other == input && !isLeft) ? stick2[0] : stick[0]);
                     output.axis_left_y = CastStickValue((other == input && !isLeft) ? stick2[1] : stick[1]);
@@ -1416,14 +1448,17 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            if (other != null || isPro) {
-                byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
-                byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
-                output.trigger_left = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0);
-                output.trigger_right = (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0);
-            } else {
-                output.trigger_left = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0);
-                output.trigger_right = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0);
+            if (!is64)
+            {
+                if (other != null || isPro) {
+                    byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
+                    byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
+                    output.trigger_left = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0);
+                    output.trigger_right = (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0);
+                } else {
+                    output.trigger_left = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0);
+                    output.trigger_right = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0);
+                }
             }
 
             return output;
@@ -1438,6 +1473,7 @@ namespace BetterJoyForCemu {
             var isPro = input.isPro;
             var isLeft = input.isLeft;
             var isSnes = input.isSnes;
+            var is64 = input.is64;
             var other = input.other;
             var GyroAnalogSliders = input.GyroAnalogSliders;
 
@@ -1445,6 +1481,46 @@ namespace BetterJoyForCemu {
             var stick = input.stick;
             var stick2 = input.stick2;
             var sliderVal = input.sliderVal;
+
+            if (is64)
+            {
+                output.thumb_right_x = (byte) ((buttons[(int)Button.X] ? Byte.MinValue : 0) + (buttons[(int)Button.MINUS] ? Byte.MaxValue : 0));
+                output.thumb_right_y = (byte) ((buttons[(int)Button.Y] ? Byte.MinValue: 0) + (buttons[(int)Button.SHOULDER2_2] ? Byte.MaxValue: 0));
+
+                output.thumb_left_x = CastStickValueByte((other == input && !isLeft) ? -stick2[0] : -stick[0]);
+                output.thumb_left_y = CastStickValueByte((other == input && !isLeft) ? stick2[1] : stick[1]);
+
+                output.options = buttons[(int)Button.PLUS];
+                output.cross = buttons[(int)(!swapAB ? Button.B : Button.A)];
+                output.circle = buttons[(int)(!swapAB ? Button.A : Button.B)];
+
+                output.shoulder_left = buttons[(int)Button.SHOULDER_1];
+                output.shoulder_right = buttons[(int)Button.SHOULDER2_1];
+
+                output.trigger_left = buttons[(int)Button.SHOULDER_2];
+                output.trigger_right = buttons[(int)Button.STICK];
+                output.trigger_left_value = (byte)(buttons[(int)Button.SHOULDER_2] ? Byte.MaxValue : 0);
+                output.trigger_right_value = (byte)(buttons[(int)Button.STICK] ? Byte.MaxValue : 0);
+
+                if (buttons[(int)Button.DPAD_UP]) {
+                    if (buttons[(int)Button.DPAD_LEFT])
+                        output.dPad = DpadDirection.Northwest;
+                    else if (buttons[(int)Button.DPAD_RIGHT])
+                        output.dPad = DpadDirection.Northeast;
+                    else
+                        output.dPad = DpadDirection.North;
+                } else if (buttons[(int)Button.DPAD_DOWN]) {
+                    if (buttons[(int)Button.DPAD_LEFT])
+                        output.dPad = DpadDirection.Southwest;
+                    else if (buttons[(int)Button.DPAD_RIGHT])
+                        output.dPad = DpadDirection.Southeast;
+                    else
+                        output.dPad = DpadDirection.South;
+                } else if (buttons[(int)Button.DPAD_LEFT])
+                    output.dPad = DpadDirection.West;
+                else if (buttons[(int)Button.DPAD_RIGHT])
+                    output.dPad = DpadDirection.East;                
+            }
 
             if (isPro) {
                 output.cross = buttons[(int)(!swapAB ? Button.B : Button.A)];
@@ -1534,7 +1610,7 @@ namespace BetterJoyForCemu {
             if (Config.Value("home") != "0")
                 output.ps = false;
 
-            if (!isSnes) {
+            if (!(isSnes || is64)) {
                 if (other != null || isPro) { // no need for && other != this
                     output.thumb_left_x = CastStickValueByte((other == input && !isLeft) ? -stick2[0] : -stick[0]);
                     output.thumb_left_y = CastStickValueByte((other == input && !isLeft) ? stick2[1] : stick[1]);
@@ -1546,18 +1622,21 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            if (other != null || isPro) {
-                byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
-                byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
-                output.trigger_left_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0);
-                output.trigger_right_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0);
-            } else {
-                output.trigger_left_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0);
-                output.trigger_right_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0);
-            }
+            if (!is64)
+            {
+                if (other != null || isPro) {
+                    byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
+                    byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;
+                    output.trigger_left_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER2_2)] ? lval : 0);
+                    output.trigger_right_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER2_2 : Button.SHOULDER_2)] ? rval : 0);
+                } else {
+                    output.trigger_left_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_2 : Button.SHOULDER_1)] ? Byte.MaxValue : 0);
+                    output.trigger_right_value = (byte)(buttons[(int)(isLeft ? Button.SHOULDER_1 : Button.SHOULDER_2)] ? Byte.MaxValue : 0);
+                }
             // Output digital L2 / R2 in addition to analog L2 / R2
             output.trigger_left = output.trigger_left_value > 0 ? output.trigger_left = true : output.trigger_left = false;
             output.trigger_right = output.trigger_right_value > 0 ? output.trigger_right = true : output.trigger_right = false;
+            }
 
             return output;
         }
