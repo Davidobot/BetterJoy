@@ -1349,7 +1349,7 @@ namespace BetterJoyForCemu {
             if (is64)
             {
                 output.axis_right_x = (short) ((buttons[(int)Button.X] ? Int16.MinValue : 0) + (buttons[(int)Button.MINUS] ? Int16.MaxValue : 0));
-                output.axis_right_y = (short) ((buttons[(int)Button.Y] ? Int16.MinValue: 0) + (buttons[(int)Button.SHOULDER2_2] ? Int16.MaxValue: 0));
+                output.axis_right_y = (short) ((buttons[(int)Button.SHOULDER2_2] ? Int16.MinValue: 0) + (buttons[(int)Button.Y] ? Int16.MaxValue: 0));
 
                 output.axis_left_x = CastStickValue((other == input && !isLeft) ? stick2[0] : stick[0]);
                 output.axis_left_y = CastStickValue((other == input && !isLeft) ? stick2[1] : stick[1]);
@@ -1485,7 +1485,7 @@ namespace BetterJoyForCemu {
             if (is64)
             {
                 output.thumb_right_x = (byte) ((buttons[(int)Button.X] ? Byte.MinValue : 0) + (buttons[(int)Button.MINUS] ? Byte.MaxValue : 0));
-                output.thumb_right_y = (byte) ((buttons[(int)Button.Y] ? Byte.MinValue: 0) + (buttons[(int)Button.SHOULDER2_2] ? Byte.MaxValue: 0));
+                output.thumb_right_y = (byte) ((buttons[(int)Button.SHOULDER2_2] ? Byte.MinValue: 0) + (buttons[(int)Button.Y] ? Byte.MaxValue: 0));
 
                 output.thumb_left_x = CastStickValueByte((other == input && !isLeft) ? -stick2[0] : -stick[0]);
                 output.thumb_left_y = CastStickValueByte((other == input && !isLeft) ? stick2[1] : stick[1]);
