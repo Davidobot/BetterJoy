@@ -900,6 +900,7 @@ namespace BetterJoyForCemu {
 
         bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
         bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        bool realn64Range = Boolean.Parse(ConfigurationManager.AppSettings["N64Range"]);
         float stickScalingFactor = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor"]);
         float stickScalingFactor2 = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor2"]);
 
@@ -1372,12 +1373,12 @@ namespace BetterJoyForCemu {
                 input.maxY = yAxis;
             }
 
+            var middleX = (input.minX + (input.maxX - input.minX)/2);
+            var middleY = (input.minY + (input.maxY - input.minY)/2);
             #if DEBUG
             var desc = "";
             desc += "x: "+xAxis+"; y: "+yAxis;
             desc += "\n X: ["+input.minX+", "+input.maxX+"]; Y: ["+input.minY+", "+input.maxY+"] ";
-            var middleX = (input.minX + (input.maxX - input.minX)/2);
-            var middleY = (input.minY + (input.maxY - input.minY)/2);
             desc += "; middle ["+middleX+", "+middleY+"]";
                 
             Debug.WriteLine(desc);
@@ -1386,8 +1387,14 @@ namespace BetterJoyForCemu {
             var negative_normalized = new float[] {-1, 0};
             var positive_normalized = new float[] {0, 1};
 
-            var xRange = new float[] {-0.79f, 0.79f};
-            var yRange = new float[] {-0.79f, 0.79f};
+            var xRange = new float[] {-1f, 1f};
+            var yRange = new float[] {-1f, 1f};
+
+            if (input.realn64Range)
+            {
+                xRange = new float[] {-0.79f, 0.79f};
+                yRange = new float[] {-0.79f, 0.79f};
+            }
             
 
             if (xAxis < (middleX - middleX))
