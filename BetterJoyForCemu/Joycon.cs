@@ -1399,22 +1399,22 @@ namespace BetterJoyForCemu {
 
             if (xAxis < (middleX - middleX))
             {
-                stick_correction[0] = GetNormalizedValue(xAxis, input.minX, middleX, xRange[0], 0f);
+                stick_correction[0] = GetNormalizedValue(xAxis, input.minX, (middleX - middleX), xRange[0], 0f);
             }
 
             if (xAxis > (middleX+middleX))
             {
-                stick_correction[0] = GetNormalizedValue(xAxis, middleX, input.maxX, 0f, xRange[1]);
+                stick_correction[0] = GetNormalizedValue(xAxis, (middleX+middleX), input.maxX, 0f, xRange[1]);
             }
 
             if (yAxis < (middleY-middleY))
             {
-                stick_correction[1] = GetNormalizedValue(yAxis, input.minY, middleY, yRange[0], 0f);
+                stick_correction[1] = GetNormalizedValue(yAxis, input.minY, (middleY-middleY), yRange[0], 0f);
             }
 
             if (yAxis > (middleY+middleY))
             {
-                stick_correction[1] = GetNormalizedValue(yAxis, middleY, input.maxY, 0f, yRange[1]);
+                stick_correction[1] = GetNormalizedValue(yAxis, (middleY+middleY), input.maxY, 0f, yRange[1]);
             }
 
 
