@@ -139,5 +139,15 @@ namespace BetterJoyForCemu.Properties {
 				return ((System.Drawing.Bitmap)(obj));
 			}
 		}
+
+        /// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
+		internal static System.Drawing.Bitmap ultra {
+			get {
+				object obj = ResourceManager.GetObject("ultra", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
 	}
 }
