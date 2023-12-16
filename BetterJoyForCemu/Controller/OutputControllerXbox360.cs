@@ -91,7 +91,8 @@ namespace BetterJoyForCemu.Controller {
 		}
 
 		private void FeedbackReceivedRcv(object _sender, Xbox360FeedbackReceivedEventArgs e) {
-			FeedbackReceived(e);
+            if(FeedbackReceived!=null)
+			    FeedbackReceived(e);
 		}
 
 		public bool UpdateInput(OutputControllerXbox360InputState new_state) {
