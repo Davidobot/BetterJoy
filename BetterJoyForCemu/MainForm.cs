@@ -277,9 +277,9 @@ namespace BetterJoyForCemu {
             }
         }
 
-        private void foldLbl_Click(object sender, EventArgs e) {
+        private void btn_settings_Click(object sender, EventArgs e) {
             rightPanel.Visible = !rightPanel.Visible;
-            foldLbl.Text = rightPanel.Visible ? "<" : ">";
+            btn_settings.Text = rightPanel.Visible ? "Close Settings" : "Open Settings";
         }
 
         private void cbBox_Changed(object sender, EventArgs e) {
