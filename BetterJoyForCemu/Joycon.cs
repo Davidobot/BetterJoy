@@ -508,7 +508,7 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            if (battery <= 1) {
+            if (battery <= 1 && !isUSB) {
                 form.notifyIcon.Visible = true;
                 form.notifyIcon.BalloonTipText = String.Format("Controller {0} ({1}) - low battery notification!", PadId, isPro ? "Pro Controller" : (isSnes ? "SNES Controller" : (is64? "N64 Controller" : (isLeft ? "Joycon Left" : "Joycon Right"))));
                 form.notifyIcon.ShowBalloonTip(0);
