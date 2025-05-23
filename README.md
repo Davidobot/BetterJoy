@@ -7,7 +7,7 @@ Allows the Nintendo Switch Pro Controller, Joycons, and Switch SNES controller t
 
 It also allows using the gyro to control your mouse and remap the special buttons (SL, SR, Capture) to key bindings of your choice.
 
-If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
+If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5).
 
 #### Personal note
 Thank you for using my software and all the constructive feedback I've been getting about it. I started writing this project a while back and have since then learnt a lot more about programming and software development in general. I don't have too much time to work on this project, but I will try to fix bugs when and if they arise. Thank you for your patience in that regard too!
@@ -25,7 +25,7 @@ Go to the [Releases tab](https://github.com/Davidobot/BetterJoy/releases/)!
     1. Read the READMEs (they're there for a reason!)
     1. Run *Drivers/ViGEmBus_Setup_1.16.116.exe*
     1. Restart your computer
-2. Run *BetterJoyForCemu.exe* 
+2. Run *BetterJoyForCemu.exe*
     1. Run as Administrator if your keyboard/mouse button mappings don't work
 3. Connect your controllers.
 4. Start Cemu and ensure CemuHook has the controller selected.
@@ -47,7 +47,7 @@ Check out the [wiki](https://github.com/Davidobot/BetterJoy/wiki)! There, you'll
 
 ## USB Mode
  * Plug the controller into your computer.
- 
+
 ## Disconnecting \[Windows 10]
 1. Go into "Bluetooth and other devices settings"
 1. Under the first category "Mouse, keyboard, & pen", there should be the pro controller.
@@ -90,7 +90,7 @@ The built binaries are located under
 
 *BetterJoyForCemu\bin\PLATFORM\CONFIGURATION*
 
-where `PLATFORM` and `CONFIGURATION` are the one provided at build time. 
+where `PLATFORM` and `CONFIGURATION` are the one provided at build time.
 
 # Acknowledgements
 A massive thanks goes out to [rajkosto](https://github.com/rajkosto/) for putting up with 17 emails and replying very quickly to my silly queries. The UDP server is also mostly taken from his [ScpToolkit](https://github.com/rajkosto/ScpToolkit) repo.
@@ -104,4 +104,4 @@ A last thanks goes out to [dekuNukem](https://github.com/dekuNukem/Nintendo_Swit
 Massive *thank you* to **all** code contributors!
 
 Icons (modified): "[Switch Pro Controller](https://thenounproject.com/term/nintendo-switch/930119/)", "[
-Switch Detachable Controller Left](https://thenounproject.com/remsing/uploads/?i=930115)", "[Switch Detachable Controller Right](https://thenounproject.com/remsing/uploads/?i=930121)" icons by Chad Remsing from [the Noun Project](http://thenounproject.com/). [Super Nintendo Controller](https://thenounproject.com/themizarkshow/collection/vectogram/?i=193592) icon by Mark Davis from the [the Noun Project](http://thenounproject.com/); icon modified by [Amy Alexander](https://www.linkedin.com/in/-amy-alexander/). [Nintendo 64 Controller](https://thenounproject.com/icon/game-controller-193588/) icon by Mark Davis from the [the Noun Project](http://thenounproject.com/); icon modified by [Gino Moena](https://www.github.com/GinoMoena).
+Switch Detachable Controller Left](https://thenounproject.com/remsing/uploads/?i=930115)", "[Switch Detachable Controller Right](https://thenounproject.com/remsing/uploads/?i=930121)" icons by Chad Remsing from [the Noun Project](http://thenounproject.com/). [Super Nintendo Controller](https://thenounproject.com/themizarkshow/collection/vectogram/?i=193592) icon by Mark Davis from the [the Noun Project](http://thenounproject.com/); icon modified by [Amy Alexander](https://www.linkedin.com/in/-amy-alexander/). [Nintendo 64 Controller](https://thenounproject.com/icon/game-controller-193588/) icon by Mark Davis from the [the Noun Project](http://thenounproject.com/); icon modified by [Gino Moena](https://www.github.com/GinoMoena); [NES Controller](https://thenounproject.com/icon/nes-gamepad-949405/) icon by Viktor Korobkov from [the Noun Project](http://thenounproject.com/); icon modified by anon.

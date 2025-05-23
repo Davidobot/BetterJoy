@@ -214,7 +214,8 @@ namespace BetterJoyForCemu {
                                     case (product_l):
                                         temp = Properties.Resources.jc_left_s; break;
                                     case (product_r):
-                                        temp = Properties.Resources.jc_right_s; break;
+                                        temp = Properties.Resources.jc_right_s; 
+                                        break;
                                     case (product_pro):
                                         temp = Properties.Resources.pro; break;
                                     case (product_snes):
@@ -253,6 +254,36 @@ namespace BetterJoyForCemu {
                 }
 
                 ptr = enumerate.next;
+            }
+            
+            bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
+            foreach (Joycon jc in j) { // Connect device straight away
+                if (jc.state == Joycon.state_.NOT_ATTACHED) {
+                    if (jc.out_xbox != null)
+                        jc.out_xbox.Connect();
+                    if (jc.out_ds4 != null)
+                        jc.out_ds4.Connect();
+
+                    try {
+                        jc.Attach();
+                    } catch (Exception e) {
+                        jc.state = Joycon.state_.DROPPED;
+                        continue;
+                    }
+
+                    jc.SetHomeLight(on);
+
+                    jc.Begin();
+                    if (form.allowCalibration) {
+                        jc.getActiveData();
+                    }
+                }
+            }
+            
+            foreach (Button b in form.con) {
+                if (b.Enabled && b.Tag is Joycon jc && jc.isNes) {
+                    b.BackgroundImage = Properties.Resources.nes;
+                }
             }
 
             if (foundNew) { // attempt to auto join-up joycons on connection
@@ -303,29 +334,7 @@ namespace BetterJoyForCemu {
 
             HIDapi.hid_free_enumeration(top_ptr);
 
-            bool on = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).AppSettings.Settings["HomeLEDOn"].Value.ToLower() == "true";
-            foreach (Joycon jc in j) { // Connect device straight away
-                if (jc.state == Joycon.state_.NOT_ATTACHED) {
-                    if (jc.out_xbox != null)
-                        jc.out_xbox.Connect();
-                    if (jc.out_ds4 != null)
-                        jc.out_ds4.Connect();
-
-                    try {
-                        jc.Attach();
-                    } catch (Exception e) {
-                        jc.state = Joycon.state_.DROPPED;
-                        continue;
-                    }
-
-                    jc.SetHomeLight(on);
-
-                    jc.Begin();
-                    if (form.allowCalibration) {
-                        jc.getActiveData();
-                    }
-                }
-            }
+            
         }
 
         public void OnApplicationQuit() {
