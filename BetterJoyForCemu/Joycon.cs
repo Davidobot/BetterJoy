@@ -59,7 +59,7 @@ namespace BetterJoyForCemu {
             RUMBLE,
             SHAKE,
         };
-        public DebugType debug_type = (DebugType)int.Parse(ConfigurationManager.AppSettings["DebugType"]);
+        public DebugType debug_type => (DebugType)int.Parse(ConfigurationManager.AppSettings["DebugType"]);
         //public DebugType debug_type = DebugType.NONE; //Keep this for manual debugging during development.
         public bool isLeft;
         public enum state_ : uint {
@@ -252,10 +252,10 @@ namespace BetterJoyForCemu {
         ushort ds4_ts = 0;
         ulong lag;
 
-        int lowFreq = Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
-        int highFreq = Int32.Parse(ConfigurationManager.AppSettings["HighFreqRumble"]);
+        int lowFreq => Int32.Parse(ConfigurationManager.AppSettings["LowFreqRumble"]);
+        int highFreq => Int32.Parse(ConfigurationManager.AppSettings["HighFreqRumble"]);
 
-        bool toRumble = Boolean.Parse(ConfigurationManager.AppSettings["EnableRumble"]);
+        bool toRumble => Boolean.Parse(ConfigurationManager.AppSettings["EnableRumble"]);
 
         bool showAsXInput = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsXInput"]);
         bool showAsDS4 = Boolean.Parse(ConfigurationManager.AppSettings["ShowAsDS4"]);
@@ -385,7 +385,7 @@ namespace BetterJoyForCemu {
             // Connect
             if (isUSB) {
                 a = Enumerable.Repeat((byte)0, 64).ToArray();
-                form.AppendTextBox("Using USB.\r\n");
+                form.AppendTextBox(I18n.Str("MsgUsingUSB"));
 
                 a[0] = 0x80;
                 a[1] = 0x1;
@@ -393,7 +393,7 @@ namespace BetterJoyForCemu {
                 HIDapi.hid_read_timeout(handle, a, new UIntPtr(64), 100);
 
                 if (a[0] != 0x81) { // can occur when USB connection isn't closed properly
-                    form.AppendTextBox("Resetting USB connection.\r\n");
+                    form.AppendTextBox(I18n.Str("MsgResettingUSB"));
                     Subcommand(0x06, new byte[] { 0x01 }, 1);
                     throw new Exception("reset_usb");
                 }
@@ -600,7 +600,7 @@ namespace BetterJoyForCemu {
 
 
                 if (ts_en == raw_buf[1] && !(isSnes || is64)) {
-                    form.AppendTextBox("Duplicate timestamp enqueued.\r\n");
+                    form.AppendTextBox(I18n.Str("MsgDuplicateTimestamp"));
                     DebugPrint(string.Format("Duplicate timestamp enqueued. TS: {0:X2}", ts_en), DebugType.THREADING);
                 }
                 ts_en = raw_buf[1];
@@ -641,7 +641,7 @@ namespace BetterJoyForCemu {
             }
         }
 
-        bool dragToggle = Boolean.Parse(ConfigurationManager.AppSettings["DragToggle"]);
+        bool dragToggle => Boolean.Parse(ConfigurationManager.AppSettings["DragToggle"]);
         Dictionary<int, bool> mouse_toggle_btn = new Dictionary<int, bool>();
         private void Simulate(string s, bool click = true, bool up = false) {
             if (s.StartsWith("key_")) {
@@ -689,23 +689,34 @@ namespace BetterJoyForCemu {
             }
         }
 
-        bool HomeLongPowerOff = Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
-        long PowerOffInactivityMins = Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
+        bool HomeLongPowerOff => Boolean.Parse(ConfigurationManager.AppSettings["HomeLongPowerOff"]);
+        long PowerOffInactivityMins => Int32.Parse(ConfigurationManager.AppSettings["PowerOffInactivity"]);
 
-        bool ChangeOrientationDoubleClick = Boolean.Parse(ConfigurationManager.AppSettings["ChangeOrientationDoubleClick"]);
+        bool ChangeOrientationDoubleClick => Boolean.Parse(ConfigurationManager.AppSettings["ChangeOrientationDoubleClick"]);
         long lastDoubleClick = -1;
 
-        string extraGyroFeature = ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
-        bool UseFilteredIMU = Boolean.Parse(ConfigurationManager.AppSettings["UseFilteredIMU"]);
-        int GyroMouseSensitivityX = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityX"]);
-        int GyroMouseSensitivityY = Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityY"]);
-        float GyroStickSensitivityX = float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityX"]);
-        float GyroStickSensitivityY = float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityY"]);
-        float GyroStickReduction = float.Parse(ConfigurationManager.AppSettings["GyroStickReduction"]);
-        bool GyroHoldToggle = Boolean.Parse(ConfigurationManager.AppSettings["GyroHoldToggle"]);
-        bool GyroAnalogSliders = Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
-        int GyroAnalogSensitivity = Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
+        string extraGyroFeature => ConfigurationManager.AppSettings["GyroToJoyOrMouse"];
+        bool UseFilteredIMU => Boolean.Parse(ConfigurationManager.AppSettings["UseFilteredIMU"]);
+        int GyroMouseSensitivityX => Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityX"]);
+        int GyroMouseSensitivityY => Int32.Parse(ConfigurationManager.AppSettings["GyroMouseSensitivityY"]);
+        float GyroStickSensitivityX => float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityX"]);
+        float GyroStickSensitivityY => float.Parse(ConfigurationManager.AppSettings["GyroStickSensitivityY"]);
+        float GyroStickReduction => float.Parse(ConfigurationManager.AppSettings["GyroStickReduction"]);
+        bool GyroHoldToggle => Boolean.Parse(ConfigurationManager.AppSettings["GyroHoldToggle"]);
+        bool GyroStickInvertX => Boolean.Parse(ConfigurationManager.AppSettings["GyroStickInvertX"]);
+        bool GyroStickInvertY => Boolean.Parse(ConfigurationManager.AppSettings["GyroStickInvertY"]);
+        bool GyroMouseInvertX => Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseInvertX"]);
+        bool GyroMouseInvertY => Boolean.Parse(ConfigurationManager.AppSettings["GyroMouseInvertY"]);
+        float GyroStickDeadzone => float.Parse(ConfigurationManager.AppSettings["GyroStickDeadzone"]);
+        float GyroMouseDeadzone => float.Parse(ConfigurationManager.AppSettings["GyroMouseDeadzone"]);
+        bool GyroAnalogSliders => Boolean.Parse(ConfigurationManager.AppSettings["GyroAnalogSliders"]);
+        int GyroAnalogSensitivity => Int32.Parse(ConfigurationManager.AppSettings["GyroAnalogSensitivity"]);
         byte[] sliderVal = new byte[] { 0, 0 };
+
+        private static float ApplyDeadzone(float value, float deadzone) {
+            if (deadzone <= 0) return value;
+            return Math.Abs(value) < deadzone ? 0 : value;
+        }
 
         private void DoThingsWithButtons() {
             int powerOffButton = (int)((isPro || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
@@ -823,18 +834,25 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            if (extraGyroFeature.Substring(0, 3) == "joy") {
+            if (!string.IsNullOrEmpty(extraGyroFeature) && extraGyroFeature.StartsWith("joy")) {
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
                     float[] control_stick = (extraGyroFeature == "joy_left") ? stick : stick2;
 
                     float dx, dy;
+                    float rateX, rateY;
                     if (UseFilteredIMU) {
-                        dx = (GyroStickSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
-                        dy = -(GyroStickSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+                        rateX = (cur_rotation[1] - cur_rotation[4]) / dt; // yaw in deg/s
+                        rateY = -(cur_rotation[0] - cur_rotation[3]) / dt; // pitch in deg/s
                     } else {
-                        dx = (GyroStickSensitivityX * (gyr_g.Z * dt)); // yaw
-                        dy = -(GyroStickSensitivityY * (gyr_g.Y * dt)); // pitch
+                        rateX = gyr_g.Z; // yaw in deg/s
+                        rateY = -gyr_g.Y; // pitch in deg/s
                     }
+                    rateX = ApplyDeadzone(rateX, GyroStickDeadzone);
+                    rateY = ApplyDeadzone(rateY, GyroStickDeadzone);
+                    dx = GyroStickSensitivityX * rateX * dt;
+                    dy = GyroStickSensitivityY * rateY * dt;
+                    if (GyroStickInvertX) dx = -dx;
+                    if (GyroStickInvertY) dy = -dy;
 
                     control_stick[0] = Math.Max(-1.0f, Math.Min(1.0f, control_stick[0] / GyroStickReduction + dx));
                     control_stick[1] = Math.Max(-1.0f, Math.Min(1.0f, control_stick[1] / GyroStickReduction + dy));
@@ -843,14 +861,20 @@ namespace BetterJoyForCemu {
                 // gyro data is in degrees/s
                 if (Config.Value("active_gyro") == "0" || active_gyro) {
                     int dx, dy;
-
+                    float rateX, rateY;
                     if (UseFilteredIMU) {
-                        dx = (int)(GyroMouseSensitivityX * (cur_rotation[1] - cur_rotation[4])); // yaw
-                        dy = (int)-(GyroMouseSensitivityY * (cur_rotation[0] - cur_rotation[3])); // pitch
+                        rateX = (cur_rotation[1] - cur_rotation[4]) / dt; // yaw in deg/s
+                        rateY = -(cur_rotation[0] - cur_rotation[3]) / dt; // pitch in deg/s
                     } else {
-                        dx = (int)(GyroMouseSensitivityX * (gyr_g.Z * dt));
-                        dy = (int)-(GyroMouseSensitivityY * (gyr_g.Y * dt));
+                        rateX = gyr_g.Z; // yaw in deg/s
+                        rateY = -gyr_g.Y; // pitch in deg/s
                     }
+                    rateX = ApplyDeadzone(rateX, GyroMouseDeadzone);
+                    rateY = ApplyDeadzone(rateY, GyroMouseDeadzone);
+                    dx = (int)(GyroMouseSensitivityX * rateX * dt);
+                    dy = (int)(GyroMouseSensitivityY * rateY * dt);
+                    if (GyroMouseInvertX) dx = -dx;
+                    if (GyroMouseInvertY) dy = -dy;
 
                     WindowsInput.Simulate.Events().MoveBy(dx, dy).Invoke();
                 }
@@ -880,7 +904,7 @@ namespace BetterJoyForCemu {
                     attempts = 0;
                 } else if (attempts > 240) {
                     state = state_.DROPPED;
-                    form.AppendTextBox("Dropped.\r\n");
+                    form.AppendTextBox(I18n.Str("MsgDropped"));
 
                     DebugPrint("Connection lost. Is the Joy-Con connected?", DebugType.ALL);
                     break;
@@ -898,11 +922,11 @@ namespace BetterJoyForCemu {
 
         public float[] otherStick = { 0, 0 };
 
-        bool swapAB = Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
-        bool swapXY = Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
-        bool realn64Range = Boolean.Parse(ConfigurationManager.AppSettings["N64Range"]);
-        float stickScalingFactor = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor"]);
-        float stickScalingFactor2 = float.Parse(ConfigurationManager.AppSettings["StickScalingFactor2"]);
+        bool swapAB => Boolean.Parse(ConfigurationManager.AppSettings["SwapAB"]);
+        bool swapXY => Boolean.Parse(ConfigurationManager.AppSettings["SwapXY"]);
+        bool realn64Range => Boolean.Parse(ConfigurationManager.AppSettings["N64Range"]);
+        float stickScalingFactor => float.Parse(ConfigurationManager.AppSettings["StickScalingFactor"]);
+        float stickScalingFactor2 => float.Parse(ConfigurationManager.AppSettings["StickScalingFactor2"]);
 
         private int ProcessButtonsAndStick(byte[] report_buf) {
             if (report_buf[0] == 0x00) throw new ArgumentException("received undefined report. This is probably a bug");
@@ -1114,9 +1138,9 @@ namespace BetterJoyForCemu {
                 PollThreadObj.IsBackground = true;
                 PollThreadObj.Start();
 
-                form.AppendTextBox("Starting poll thread.\r\n");
+                form.AppendTextBox(I18n.Str("MsgStartingPoll"));
             } else {
-                form.AppendTextBox("Poll cannot start.\r\n");
+                form.AppendTextBox(I18n.Str("MsgPollCannotStart"));
             }
         }
 
@@ -1212,13 +1236,13 @@ namespace BetterJoyForCemu {
             bool found = false;
             for (int i = 0; i < 9; ++i) {
                 if (buf_[i] != 0xff) {
-                    form.AppendTextBox("Using user stick calibration data.\r\n");
+                    form.AppendTextBox(I18n.Str("MsgUsingUserStickCal"));
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                form.AppendTextBox("Using factory stick calibration data.\r\n");
+                form.AppendTextBox(I18n.Str("MsgUsingFactoryStickCal"));
                 buf_ = ReadSPI(0x60, (isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
             }
             stick_cal[isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
@@ -1235,13 +1259,13 @@ namespace BetterJoyForCemu {
                 found = false;
                 for (int i = 0; i < 9; ++i) {
                     if (buf_[i] != 0xff) {
-                        form.AppendTextBox("Using user stick calibration data.\r\n");
+                        form.AppendTextBox(I18n.Str("MsgUsingUserStickCal"));
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    form.AppendTextBox("Using factory stick calibration data.\r\n");
+                    form.AppendTextBox(I18n.Str("MsgUsingFactoryStickCal"));
                     buf_ = ReadSPI(0x60, (!isLeft ? (byte)0x3d : (byte)0x46), 9); // get user calibration data if possible
                 }
                 stick2_cal[!isLeft ? 0 : 2] = (UInt16)((buf_[1] << 8) & 0xF00 | buf_[0]); // X Axis Max above center
