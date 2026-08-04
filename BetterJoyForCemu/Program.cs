@@ -83,7 +83,7 @@ namespace BetterJoyForCemu {
                         }
                     }
 
-                    form.AppendTextBox("Removed dropped controller. Can be reconnected.\r\n");
+                    form.AppendTextBox(I18n.Str("MsgRemovedDropped"));
                 }
             }
 
@@ -149,21 +149,21 @@ namespace BetterJoyForCemu {
                     switch (prod_id) {
                         case product_l:
                             isLeft = true;
-                            form.AppendTextBox("Left Joy-Con connected.\r\n"); break;
+                            form.AppendTextBox(I18n.Str("MsgLeftJoyconConnected")); break;
                         case product_r:
                             isLeft = false;
-                            form.AppendTextBox("Right Joy-Con connected.\r\n"); break;
+                            form.AppendTextBox(I18n.Str("MsgRightJoyconConnected")); break;
                         case product_pro:
                             isLeft = true;
-                            form.AppendTextBox("Pro controller connected.\r\n"); break;
+                            form.AppendTextBox(I18n.Str("MsgProControllerConnected")); break;
                         case product_snes:
                             isLeft = true;
-                            form.AppendTextBox("SNES controller connected.\r\n"); break;
+                            form.AppendTextBox(I18n.Str("MsgSnesControllerConnected")); break;
                         case product_n64:
                             isLeft = true;
-                            form.AppendTextBox("N64 controller connected.\r\n"); break;
+                            form.AppendTextBox(I18n.Str("MsgN64ControllerConnected")); break;
                         default:
-                            form.AppendTextBox("Non Joy-Con Nintendo input device skipped.\r\n"); break;
+                            form.AppendTextBox(I18n.Str("MsgNonJoyconSkipped")); break;
                     }
 
                     // Add controller to block-list for HidGuardian
@@ -183,7 +183,7 @@ namespace BetterJoyForCemu {
                             var response = (HttpWebResponse)request.GetResponse();
                             var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
                         } catch {
-                            form.AppendTextBox("Unable to add controller to block-list.\r\n");
+                            form.AppendTextBox(I18n.Str("MsgUnableBlocklist"));
                         }
                     }
                     // -------------------- //
@@ -192,7 +192,7 @@ namespace BetterJoyForCemu {
                     try {
                         HIDapi.hid_set_nonblocking(handle, 1);
                     } catch {
-                        form.AppendTextBox("Unable to open path to device - are you using the correct (64 vs 32-bit) version for your PC?\r\n");
+                        form.AppendTextBox(I18n.Str("MsgUnableOpenDevice"));
                         break;
                     }
 
@@ -373,21 +373,21 @@ namespace BetterJoyForCemu {
             pid = Process.GetCurrentProcess().Id.ToString(); // get current process id for HidCerberus.Srv
 
             if (useHIDG) {
-                form.console.AppendText("HidGuardian is enabled.\r\n");
+                form.console.AppendText(I18n.Str("MsgHidGuardianEnabled"));
                 try {
                     var HidCerberusService = new ServiceController("HidCerberus Service");
                     if (HidCerberusService.Status == ServiceControllerStatus.Stopped) {
-                        form.console.AppendText("HidGuardian was stopped. Starting...\r\n");
+                        form.console.AppendText(I18n.Str("MsgHidGuardianStarting"));
 
                         try {
                             HidCerberusService.Start();
                         } catch (Exception e) {
-                            form.console.AppendText("Unable to start HidGuardian - everything should work fine without it, but if you need it, run the app again as an admin.\r\n");
+                            form.console.AppendText(I18n.Str("MsgHidGuardianStartFailedAdmin"));
                             useHIDG = false;
                         }
                     }
                 } catch (Exception e) {
-                    form.console.AppendText("Unable to start HidGuardian - everything should work fine without it, but if you need it, install it properly as admin.\r\n");
+                    form.console.AppendText(I18n.Str("MsgHidGuardianStartFailedInstall"));
                     useHIDG = false;
                 }
 
@@ -396,7 +396,7 @@ namespace BetterJoyForCemu {
                     try {
                         response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/purge/").GetResponse(); // remove all programs allowed to see controller
                     } catch (Exception e) {
-                        form.console.AppendText("Unable to purge whitelist.\r\n");
+                        form.console.AppendText(I18n.Str("MsgUnablePurgeWhitelist"));
                         useHIDG = false;
                     }
                 }
@@ -404,7 +404,7 @@ namespace BetterJoyForCemu {
                 try {
                     response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/add/" + pid).GetResponse(); // add BetterJoyForCemu to allowed processes 
                 } catch (Exception e) {
-                    form.console.AppendText("Unable to add program to whitelist.\r\n");
+                    form.console.AppendText(I18n.Str("MsgUnableAddWhitelist"));
                     useHIDG = false;
                 }
             }
@@ -413,7 +413,7 @@ namespace BetterJoyForCemu {
                 try {
                     emClient = new ViGEmClient(); // Manages emulated XInput
                 } catch (Nefarius.ViGEm.Client.Exceptions.VigemBusNotFoundException) {
-                    form.console.AppendText("Could not start VigemBus. Make sure drivers are installed correctly.\r\n");
+                    form.console.AppendText(I18n.Str("MsgVigemBusFailed"));
                 }
             }
 
@@ -447,7 +447,7 @@ namespace BetterJoyForCemu {
             mouse = WindowsInput.Capture.Global.MouseAsync();
             mouse.MouseEvent += Mouse_MouseEvent;
 
-            form.console.AppendText("All systems go\r\n");
+            form.console.AppendText(I18n.Str("MsgAllSystemsGo"));
         }
 
         private static void Mouse_MouseEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.MouseEvent> e) {
@@ -501,7 +501,7 @@ namespace BetterJoyForCemu {
                 try {
                     HttpWebResponse response = (HttpWebResponse)WebRequest.Create(@"http://localhost:26762/api/v1/hidguardian/whitelist/remove/" + pid).GetResponse();
                 } catch (Exception e) {
-                    form.console.AppendText("Unable to remove program from whitelist.\r\n");
+                    form.console.AppendText(I18n.Str("MsgUnableRemoveWhitelist"));
                 }
             }
 
@@ -522,12 +522,18 @@ namespace BetterJoyForCemu {
             // Setting the culturesettings so float gets parsed correctly
             CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
 
+            // Set UI culture based on Language setting (empty = system default)
+            string lang = ConfigurationManager.AppSettings["Language"];
+            if (!string.IsNullOrEmpty(lang)) {
+                Thread.CurrentThread.CurrentUICulture = new CultureInfo(lang);
+            }
+
             // Set the correct DLL for the current OS
             SetupDlls();
 
             using (Mutex mutex = new Mutex(false, "Global\\" + appGuid)) {
                 if (!mutex.WaitOne(0, false)) {
-                    MessageBox.Show("Instance already running.", "BetterJoy");
+                    MessageBox.Show(I18n.Str("MsgInstanceRunning"), I18n.Str("FormTitle"));
                     return;
                 }
 

@@ -21,8 +21,12 @@ namespace BetterJoyForCemu {
         public Reassign() {
             InitializeComponent();
 
+            Font uiFont = I18n.UiFont;
+            if (uiFont != null)
+                this.Font = uiFont;
+
             foreach (int i in Enum.GetValues(typeof(Joycon.Button))) {
-                ToolStripMenuItem temp = new ToolStripMenuItem(Enum.GetName(typeof(Joycon.Button), i));
+                ToolStripMenuItem temp = new ToolStripMenuItem(GetButtonDisplayName((Joycon.Button)i));
                 temp.Tag = i;
                 menu_joy_buttons.Items.Add(temp);
             }
@@ -33,10 +37,29 @@ namespace BetterJoyForCemu {
                 c.Tag = c.Name.Substring(4);
                 GetPrettyName(c);
 
-                tip_reassign.SetToolTip(c, "Left-click to detect input.\r\nMiddle-click to clear to default.\r\nRight-click to see more options.");
+                tip_reassign.SetToolTip(c, I18n.Str("TipRemap"));
                 c.MouseDown += Remap;
                 c.Menu = menu_joy_buttons;
                 c.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            }
+        }
+
+        private string GetButtonDisplayName(Joycon.Button button) {
+            switch (button) {
+                case Joycon.Button.SHOULDER_1: return I18n.Str("BtnL");
+                case Joycon.Button.SHOULDER_2: return I18n.Str("BtnZL");
+                case Joycon.Button.SHOULDER2_1: return I18n.Str("BtnR");
+                case Joycon.Button.SHOULDER2_2: return I18n.Str("BtnZR");
+                case Joycon.Button.STICK: return I18n.Str("BtnLStick");
+                case Joycon.Button.STICK2: return I18n.Str("BtnRStick");
+                case Joycon.Button.DPAD_UP: return I18n.Str("BtnDpadUp");
+                case Joycon.Button.DPAD_DOWN: return I18n.Str("BtnDpadDown");
+                case Joycon.Button.DPAD_LEFT: return I18n.Str("BtnDpadLeft");
+                case Joycon.Button.DPAD_RIGHT: return I18n.Str("BtnDpadRight");
+                case Joycon.Button.PLUS: return I18n.Str("BtnPlus");
+                case Joycon.Button.MINUS: return I18n.Str("BtnMinus");
+                case Joycon.Button.CAPTURE: return I18n.Str("BtnCapture");
+                default: return Enum.GetName(typeof(Joycon.Button), button);
             }
         }
 
@@ -54,7 +77,7 @@ namespace BetterJoyForCemu {
             SplitButton c = sender as SplitButton;
             switch (e.Button) {
                 case MouseButtons.Left:
-                    c.Text = "...";
+                    c.Text = I18n.Str("Detecting");
                     curAssignment = c;
                     break;
                 case MouseButtons.Middle:
@@ -109,13 +132,13 @@ namespace BetterJoyForCemu {
             switch (val = Config.Value((string)c.Tag)) {
                 case "0":
                     if (c == btn_home)
-                        c.Text = "Guide";
+                        c.Text = I18n.Str("Guide");
                     else
                         c.Text = "";
                     break;
                 default:
                     Type t = val.StartsWith("joy_") ? typeof(Joycon.Button) : (val.StartsWith("key_") ? typeof(WindowsInput.Events.KeyCode) : typeof(WindowsInput.Events.ButtonCode));
-                    c.Text = Enum.GetName(t, Int32.Parse(val.Substring(4)));
+                    c.Text = (t == typeof(Joycon.Button)) ? GetButtonDisplayName((Joycon.Button)Int32.Parse(val.Substring(4))) : Enum.GetName(t, Int32.Parse(val.Substring(4)));
                     break;
             }
         }

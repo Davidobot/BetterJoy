@@ -135,6 +135,7 @@
     <Compile Include="Controller\OutputControllerDualShock4.cs" />
     <Compile Include="Controller\OutputControllerXbox360.cs" />
     <Compile Include="HIDapi.cs" />
+    <Compile Include="I18n.cs" />
     <Compile Include="Joycon.cs" />
     <Compile Include="MadgwickAHRS.cs" />
     <Compile Include="MainForm.cs">
@@ -187,6 +188,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="packages.config" />
+    <EmbeddedResource Include="Strings.resx" />
+    <EmbeddedResource Include="Strings.zh-CN.resx" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".nuget\mouse-keyboard-hook-logo.png" />

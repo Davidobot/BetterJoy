@@ -42,7 +42,7 @@ namespace BetterJoyForCemu {
             }
 
             public override string ToString() {
-                return name ?? $"Unidentified Device ({this.product_id})";
+                return name ?? I18n.Format("UnidentifiedDevice", this.product_id);
             }
 
             public string Serialise() {
@@ -59,9 +59,13 @@ namespace BetterJoyForCemu {
 
         public _3rdPartyControllers() {
             InitializeComponent();
+
+            Font uiFont = I18n.UiFont;
+            if (uiFont != null)
+                this.Font = uiFont;
             list_allControllers.HorizontalScrollbar = true; list_customControllers.HorizontalScrollbar = true;
 
-            chooseType.Items.AddRange(new String[] { "Pro Controller", "Left Joycon", "Right Joycon" });
+            chooseType.Items.AddRange(new String[] { I18n.Str("ProController"), I18n.Str("LeftJoycon"), I18n.Str("RightJoycon") });
 
             chooseType.FormattingEnabled = true;
             group_props.Controls.Add(chooseType);

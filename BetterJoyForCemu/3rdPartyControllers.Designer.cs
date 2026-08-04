@@ -65,7 +65,7 @@
             // 
             this.btn_add.Location = new System.Drawing.Point(121, 27);
             this.btn_add.Name = "btn_add";
-            this.btn_add.Size = new System.Drawing.Size(42, 23);
+            this.btn_add.Size = new System.Drawing.Size(42, 29);
             this.btn_add.TabIndex = 2;
             this.btn_add.Text = "->";
             this.btn_add.UseVisualStyleBackColor = true;
@@ -75,7 +75,7 @@
             // 
             this.btn_remove.Location = new System.Drawing.Point(121, 112);
             this.btn_remove.Name = "btn_remove";
-            this.btn_remove.Size = new System.Drawing.Size(42, 23);
+            this.btn_remove.Size = new System.Drawing.Size(42, 29);
             this.btn_remove.TabIndex = 3;
             this.btn_remove.Text = "<-";
             this.btn_remove.UseVisualStyleBackColor = true;
@@ -90,7 +90,7 @@
             this.group_props.Size = new System.Drawing.Size(150, 81);
             this.group_props.TabIndex = 4;
             this.group_props.TabStop = false;
-            this.group_props.Text = "Settings";
+            this.group_props.Text = I18n.Str("Settings");
             // 
             // label2
             // 
@@ -99,7 +99,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(31, 13);
             this.label2.TabIndex = 1;
-            this.label2.Text = "Type";
+            this.label2.Text = I18n.Str("Type");
             // 
             // chooseType
             // 
@@ -114,9 +114,9 @@
             // 
             this.btn_applyAndClose.Location = new System.Drawing.Point(203, 229);
             this.btn_applyAndClose.Name = "btn_applyAndClose";
-            this.btn_applyAndClose.Size = new System.Drawing.Size(69, 23);
+            this.btn_applyAndClose.Size = new System.Drawing.Size(69, 29);
             this.btn_applyAndClose.TabIndex = 5;
-            this.btn_applyAndClose.Text = "Close";
+            this.btn_applyAndClose.Text = I18n.Str("Close");
             this.btn_applyAndClose.UseVisualStyleBackColor = true;
             this.btn_applyAndClose.Click += new System.EventHandler(this.btn_applyAndClose_Click);
             // 
@@ -124,9 +124,9 @@
             // 
             this.btn_apply.Location = new System.Drawing.Point(121, 229);
             this.btn_apply.Name = "btn_apply";
-            this.btn_apply.Size = new System.Drawing.Size(69, 23);
+            this.btn_apply.Size = new System.Drawing.Size(69, 29);
             this.btn_apply.TabIndex = 6;
-            this.btn_apply.Text = "Apply";
+            this.btn_apply.Text = I18n.Str("Apply");
             this.btn_apply.UseVisualStyleBackColor = true;
             this.btn_apply.Click += new System.EventHandler(this.btn_apply_Click);
             // 
@@ -137,7 +137,7 @@
             this.lbl_all.Name = "lbl_all";
             this.lbl_all.Size = new System.Drawing.Size(60, 13);
             this.lbl_all.TabIndex = 7;
-            this.lbl_all.Text = "All Devices";
+            this.lbl_all.Text = I18n.Str("AllDevices");
             // 
             // label1
             // 
@@ -146,7 +146,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(91, 13);
             this.label1.TabIndex = 8;
-            this.label1.Text = "Switch Controllers";
+            this.label1.Text = I18n.Str("SwitchControllers");
             // 
             // btn_refresh
             // 
@@ -154,7 +154,7 @@
             this.btn_refresh.Name = "btn_refresh";
             this.btn_refresh.Size = new System.Drawing.Size(42, 50);
             this.btn_refresh.TabIndex = 9;
-            this.btn_refresh.Text = "Re-\r\nfresh";
+            this.btn_refresh.Text = I18n.Str("Refresh");
             this.btn_refresh.UseVisualStyleBackColor = true;
             this.btn_refresh.Click += new System.EventHandler(this.btn_refresh_Click);
             // 
@@ -178,7 +178,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "_3rdPartyControllers";
-            this.Text = "Add 3rd-Party Controllers";
+            this.Text = I18n.Str("FormAdd3rdParty");
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this._3rdPartyControllers_FormClosing);
             this.group_props.ResumeLayout(false);
             this.group_props.PerformLayout();

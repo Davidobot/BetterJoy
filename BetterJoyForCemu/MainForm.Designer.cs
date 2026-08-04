@@ -1,4 +1,4 @@
-﻿namespace BetterJoyForCemu {
+namespace BetterJoyForCemu {
     partial class MainForm {
         /// <summary>
         /// Required designer variable.
@@ -46,7 +46,7 @@
             this.startInTrayBox = new System.Windows.Forms.CheckBox();
             this.btn_open3rdP = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.settingsTable = new System.Windows.Forms.TableLayoutPanel();
+            this.settingsTable = new System.Windows.Forms.FlowLayoutPanel();
             this.rightPanel = new System.Windows.Forms.Panel();
             this.settingsApply = new System.Windows.Forms.Button();
             this.AutoCalibrate = new System.Windows.Forms.Button();
@@ -69,11 +69,11 @@
             // 
             // notifyIcon
             // 
-            this.notifyIcon.BalloonTipText = "Double click the tray icon to maximise!";
-            this.notifyIcon.BalloonTipTitle = "BetterJoy";
+            this.notifyIcon.BalloonTipText = I18n.Str("TrayBalloonTip");
+            this.notifyIcon.BalloonTipTitle = I18n.Str("FormTitle");
             this.notifyIcon.ContextMenuStrip = this.contextMenu;
             this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
-            this.notifyIcon.Text = "BetterJoy";
+            this.notifyIcon.Text = I18n.Str("FormTitle");
             this.notifyIcon.Visible = true;
             this.notifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseDoubleClick);
             // 
@@ -89,7 +89,7 @@
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(93, 22);
-            this.exitToolStripMenuItem.Text = "Exit";
+            this.exitToolStripMenuItem.Text = I18n.Str("Exit");
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
             // version_lbl
@@ -111,7 +111,7 @@
             this.passiveScanBox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
             this.passiveScanBox.Size = new System.Drawing.Size(91, 17);
             this.passiveScanBox.TabIndex = 4;
-            this.passiveScanBox.Text = "Passive Scan";
+            this.passiveScanBox.Text = I18n.Str("PassiveScan");
             this.passiveScanBox.UseVisualStyleBackColor = true;
             this.passiveScanBox.CheckedChanged += new System.EventHandler(this.passiveScanBox_CheckedChanged);
             // 
@@ -123,7 +123,7 @@
             this.donationLink.Size = new System.Drawing.Size(42, 13);
             this.donationLink.TabIndex = 5;
             this.donationLink.TabStop = true;
-            this.donationLink.Text = "Donate";
+            this.donationLink.Text = I18n.Str("Donate");
             this.donationLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
             // conCntrls
@@ -141,42 +141,42 @@
             this.conCntrls.Size = new System.Drawing.Size(262, 100);
             this.conCntrls.TabIndex = 0;
             this.conCntrls.TabStop = false;
-            this.conCntrls.Text = "Connected Controllers";
+            this.conCntrls.Text = I18n.Str("ConnectedControllers");
             // 
             // loc4
             // 
             this.loc4.Location = new System.Drawing.Point(198, 80);
             this.loc4.Name = "loc4";
-            this.loc4.Size = new System.Drawing.Size(58, 20);
+            this.loc4.Size = new System.Drawing.Size(58, 25);
             this.loc4.TabIndex = 7;
-            this.loc4.Text = "Locate";
+            this.loc4.Text = I18n.Str("Locate");
             this.loc4.UseVisualStyleBackColor = true;
             // 
             // loc3
             // 
             this.loc3.Location = new System.Drawing.Point(134, 80);
             this.loc3.Name = "loc3";
-            this.loc3.Size = new System.Drawing.Size(58, 20);
+            this.loc3.Size = new System.Drawing.Size(58, 25);
             this.loc3.TabIndex = 6;
-            this.loc3.Text = "Locate";
+            this.loc3.Text = I18n.Str("Locate");
             this.loc3.UseVisualStyleBackColor = true;
             // 
             // loc2
             // 
             this.loc2.Location = new System.Drawing.Point(70, 80);
             this.loc2.Name = "loc2";
-            this.loc2.Size = new System.Drawing.Size(58, 20);
+            this.loc2.Size = new System.Drawing.Size(58, 25);
             this.loc2.TabIndex = 5;
-            this.loc2.Text = "Locate";
+            this.loc2.Text = I18n.Str("Locate");
             this.loc2.UseVisualStyleBackColor = true;
             // 
             // loc1
             // 
             this.loc1.Location = new System.Drawing.Point(6, 80);
             this.loc1.Name = "loc1";
-            this.loc1.Size = new System.Drawing.Size(58, 20);
+            this.loc1.Size = new System.Drawing.Size(58, 25);
             this.loc1.TabIndex = 4;
-            this.loc1.Text = "Locate";
+            this.loc1.Text = I18n.Str("Locate");
             this.loc1.UseVisualStyleBackColor = true;
             // 
             // con4
@@ -225,7 +225,7 @@
             this.con1.Size = new System.Drawing.Size(58, 59);
             this.con1.TabIndex = 0;
             this.con1.TabStop = false;
-            this.btnTip.SetToolTip(this.con1, "Click on Joycons to join/split them");
+            this.btnTip.SetToolTip(this.con1, I18n.Str("TipJoinSplit"));
             this.con1.UseVisualStyleBackColor = true;
             // 
             // foldLbl
@@ -237,7 +237,7 @@
             this.foldLbl.TabIndex = 12;
             this.foldLbl.Text = ">";
             this.foldLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.btnTip.SetToolTip(this.foldLbl, "Config");
+            this.btnTip.SetToolTip(this.foldLbl, I18n.Str("TipConfig"));
             this.foldLbl.Click += new System.EventHandler(this.foldLbl_Click);
             // 
             // startInTrayBox
@@ -248,7 +248,7 @@
             this.startInTrayBox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
             this.startInTrayBox.Size = new System.Drawing.Size(83, 17);
             this.startInTrayBox.TabIndex = 6;
-            this.startInTrayBox.Text = "Start in Tray";
+            this.startInTrayBox.Text = I18n.Str("StartInTray");
             this.startInTrayBox.UseVisualStyleBackColor = true;
             this.startInTrayBox.CheckedChanged += new System.EventHandler(this.startInTrayBox_CheckedChanged);
             // 
@@ -256,9 +256,9 @@
             // 
             this.btn_open3rdP.Location = new System.Drawing.Point(93, 112);
             this.btn_open3rdP.Name = "btn_open3rdP";
-            this.btn_open3rdP.Size = new System.Drawing.Size(86, 20);
+            this.btn_open3rdP.Size = new System.Drawing.Size(86, 25);
             this.btn_open3rdP.TabIndex = 7;
-            this.btn_open3rdP.Text = "Add Controllers";
+            this.btn_open3rdP.Text = I18n.Str("AddControllers");
             this.btn_open3rdP.UseVisualStyleBackColor = true;
             this.btn_open3rdP.Click += new System.EventHandler(this.btn_open3rdP_Click);
             // 
@@ -272,23 +272,20 @@
             this.groupBox1.Size = new System.Drawing.Size(304, 242);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Config";
+            this.groupBox1.Text = I18n.Str("Config");
             // 
             // settingsTable
             // 
             this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.settingsTable.AutoScroll = true;
-            this.settingsTable.ColumnCount = 2;
-            this.settingsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 58.90411F));
-            this.settingsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 41.09589F));
+            this.settingsTable.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.settingsTable.Location = new System.Drawing.Point(4, 17);
             this.settingsTable.Margin = new System.Windows.Forms.Padding(2);
             this.settingsTable.Name = "settingsTable";
-            this.settingsTable.RowCount = 1;
-            this.settingsTable.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.settingsTable.Size = new System.Drawing.Size(300, 219);
             this.settingsTable.TabIndex = 1;
+            this.settingsTable.WrapContents = false;
             // 
             // rightPanel
             // 
@@ -308,9 +305,9 @@
             this.settingsApply.Location = new System.Drawing.Point(246, 252);
             this.settingsApply.Margin = new System.Windows.Forms.Padding(2);
             this.settingsApply.Name = "settingsApply";
-            this.settingsApply.Size = new System.Drawing.Size(61, 21);
+            this.settingsApply.Size = new System.Drawing.Size(61, 27);
             this.settingsApply.TabIndex = 10;
-            this.settingsApply.Text = "Apply";
+            this.settingsApply.Text = I18n.Str("Apply");
             this.settingsApply.UseVisualStyleBackColor = true;
             this.settingsApply.Click += new System.EventHandler(this.settingsApply_Click);
             // 
@@ -318,9 +315,9 @@
             // 
             this.AutoCalibrate.Location = new System.Drawing.Point(203, 112);
             this.AutoCalibrate.Name = "AutoCalibrate";
-            this.AutoCalibrate.Size = new System.Drawing.Size(71, 20);
+            this.AutoCalibrate.Size = new System.Drawing.Size(71, 25);
             this.AutoCalibrate.TabIndex = 8;
-            this.AutoCalibrate.Text = "Calibrate";
+            this.AutoCalibrate.Text = I18n.Str("Calibrate");
             this.AutoCalibrate.UseVisualStyleBackColor = true;
             this.AutoCalibrate.Click += new System.EventHandler(this.StartCalibrate);
             // 
@@ -328,9 +325,9 @@
             // 
             this.btn_reassign_open.Location = new System.Drawing.Point(12, 112);
             this.btn_reassign_open.Name = "btn_reassign_open";
-            this.btn_reassign_open.Size = new System.Drawing.Size(75, 20);
+            this.btn_reassign_open.Size = new System.Drawing.Size(75, 25);
             this.btn_reassign_open.TabIndex = 13;
-            this.btn_reassign_open.Text = "Map Buttons";
+            this.btn_reassign_open.Text = I18n.Str("MapButtons");
             this.btn_reassign_open.UseVisualStyleBackColor = true;
             this.btn_reassign_open.Click += new System.EventHandler(this.btn_reassign_open_Click);
             // 
@@ -356,7 +353,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
-            this.Text = "BetterJoy";
+            this.Text = I18n.Str("FormTitle");
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
@@ -391,7 +388,7 @@
         private System.Windows.Forms.CheckBox startInTrayBox;
         private System.Windows.Forms.Button btn_open3rdP;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.TableLayoutPanel settingsTable;
+        private System.Windows.Forms.FlowLayoutPanel settingsTable;
         private System.Windows.Forms.Panel rightPanel;
         private System.Windows.Forms.Button settingsApply;
         private System.Windows.Forms.Label foldLbl;

@@ -1,0 +1,541 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- MainForm -->
+  <data name="FormTitle" xml:space="preserve">
+    <value>BetterJoy</value>
+  </data>
+  <data name="ConnectedControllers" xml:space="preserve">
+    <value>已连接的控制器</value>
+  </data>
+  <data name="PassiveScan" xml:space="preserve">
+    <value>被动扫描</value>
+  </data>
+  <data name="StartInTray" xml:space="preserve">
+    <value>启动到系统托盘</value>
+  </data>
+  <data name="Donate" xml:space="preserve">
+    <value>捐赠</value>
+  </data>
+  <data name="Locate" xml:space="preserve">
+    <value>定位</value>
+  </data>
+  <data name="AddControllers" xml:space="preserve">
+    <value>添加控制器</value>
+  </data>
+  <data name="Config" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="Calibrate" xml:space="preserve">
+    <value>校准</value>
+  </data>
+  <data name="MapButtons" xml:space="preserve">
+    <value>映射按键</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="TrayBalloonTip" xml:space="preserve">
+    <value>双击托盘图标以恢复窗口！</value>
+  </data>
+  <data name="TipJoinSplit" xml:space="preserve">
+    <value>点击 Joycon 手柄以合并/拆分</value>
+  </data>
+  <data name="TipConfig" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <!-- MainForm console messages -->
+  <data name="MsgErrorWritingSettings" xml:space="preserve">
+    <value>写入应用设置时出错。\r\n</value>
+  </data>
+  <data name="MsgConnectSinglePro" xml:space="preserve">
+    <value>请连接单个 Pro 手柄。</value>
+  </data>
+  <data name="MsgCalibrateOneAtTime" xml:space="preserve">
+    <value>请一次只校准一个控制器（请断开其他控制器）。</value>
+  </data>
+  <data name="MsgCalibrating" xml:space="preserve">
+    <value>正在校准...</value>
+  </data>
+  <data name="MsgKeepFlat" xml:space="preserve">
+    <value>请将控制器平放。\r\n</value>
+  </data>
+  <data name="MsgCalibrationStartsIn" xml:space="preserve">
+    <value>校准将在 {0} 秒后开始。</value>
+  </data>
+  <data name="MsgCalibrationCompleted" xml:space="preserve">
+    <value>校准完成！\r\n</value>
+  </data>
+  <!-- Program.cs -->
+  <data name="MsgRemovedDropped" xml:space="preserve">
+    <value>已移除断开的控制器。可以重新连接。\r\n</value>
+  </data>
+  <data name="MsgLeftJoyconConnected" xml:space="preserve">
+    <value>左侧 Joy-Con 已连接。\r\n</value>
+  </data>
+  <data name="MsgRightJoyconConnected" xml:space="preserve">
+    <value>右侧 Joy-Con 已连接。\r\n</value>
+  </data>
+  <data name="MsgProControllerConnected" xml:space="preserve">
+    <value>Pro 手柄已连接。\r\n</value>
+  </data>
+  <data name="MsgSnesControllerConnected" xml:space="preserve">
+    <value>SNES 控制器已连接。\r\n</value>
+  </data>
+  <data name="MsgN64ControllerConnected" xml:space="preserve">
+    <value>N64 控制器已连接。\r\n</value>
+  </data>
+  <data name="MsgNonJoyconSkipped" xml:space="preserve">
+    <value>已跳过非 Joy-Con 的任天堂输入设备。\r\n</value>
+  </data>
+  <data name="MsgUnableBlocklist" xml:space="preserve">
+    <value>无法将控制器添加到屏蔽列表。\r\n</value>
+  </data>
+  <data name="MsgUnableOpenDevice" xml:space="preserve">
+    <value>无法打开设备路径 - 请确认您使用的是正确版本（64位或32位）？\r\n</value>
+  </data>
+  <data name="MsgHidGuardianEnabled" xml:space="preserve">
+    <value>HidGuardian 已启用。\r\n</value>
+  </data>
+  <data name="MsgHidGuardianStarting" xml:space="preserve">
+    <value>HidGuardian 已停止。正在启动...\r\n</value>
+  </data>
+  <data name="MsgHidGuardianStartFailedAdmin" xml:space="preserve">
+    <value>无法启动 HidGuardian - 不使用它也应该正常运行，但如果需要，请以管理员身份重新运行此程序。\r\n</value>
+  </data>
+  <data name="MsgHidGuardianStartFailedInstall" xml:space="preserve">
+    <value>无法启动 HidGuardian - 不使用它也应该正常运行，但如果需要，请以管理员身份正确安装。\r\n</value>
+  </data>
+  <data name="MsgUnablePurgeWhitelist" xml:space="preserve">
+    <value>无法清空白名单。\r\n</value>
+  </data>
+  <data name="MsgUnableAddWhitelist" xml:space="preserve">
+    <value>无法将程序添加到白名单。\r\n</value>
+  </data>
+  <data name="MsgUnableRemoveWhitelist" xml:space="preserve">
+    <value>无法从白名单中移除程序。\r\n</value>
+  </data>
+  <data name="MsgVigemBusFailed" xml:space="preserve">
+    <value>无法启动 ViGEmBus。请确保驱动程序已正确安装。\r\n</value>
+  </data>
+  <data name="MsgAllSystemsGo" xml:space="preserve">
+    <value>系统就绪\r\n</value>
+  </data>
+  <data name="MsgInstanceRunning" xml:space="preserve">
+    <value>程序已在运行。</value>
+  </data>
+  <data name="MsgRestartRequired" xml:space="preserve">
+    <value>以下设置需要重启才能生效：\r\n</value>
+  </data>
+  <!-- Reassign -->
+  <data name="FormMapSpecialButtons" xml:space="preserve">
+    <value>映射特殊按键</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>截图</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="SLLeftJoycon" xml:space="preserve">
+    <value>SL 左 Joycon</value>
+  </data>
+  <data name="SRLeftJoycon" xml:space="preserve">
+    <value>SR 左 Joycon</value>
+  </data>
+  <data name="SLRightJoycon" xml:space="preserve">
+    <value>SL 右 Joycon</value>
+  </data>
+  <data name="SRRightJoycon" xml:space="preserve">
+    <value>SR 右 Joycon</value>
+  </data>
+  <data name="Okay" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="ReCentreGyro" xml:space="preserve">
+    <value>重置陀螺仪中心</value>
+  </data>
+  <data name="ActivateGyro" xml:space="preserve">
+    <value>激活陀螺仪</value>
+  </data>
+  <data name="ShakeInput" xml:space="preserve">
+    <value>摇晃输入</value>
+  </data>
+  <data name="Guide" xml:space="preserve">
+    <value>Guide</value>
+  </data>
+  <data name="Detecting" xml:space="preserve">
+    <value>...</value>
+  </data>
+  <data name="TipRemap" xml:space="preserve">
+    <value>左键单击：检测输入。\r\n中键单击：恢复默认。\r\n右键单击：更多选项。</value>
+  </data>
+  <!-- 3rdPartyControllers -->
+  <data name="FormAdd3rdParty" xml:space="preserve">
+    <value>添加第三方控制器</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="AllDevices" xml:space="preserve">
+    <value>所有设备</value>
+  </data>
+  <data name="SwitchControllers" xml:space="preserve">
+    <value>Switch 控制器</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷\r\n新</value>
+  </data>
+  <data name="ProController" xml:space="preserve">
+    <value>Pro 手柄</value>
+  </data>
+  <data name="LeftJoycon" xml:space="preserve">
+    <value>左 Joycon</value>
+  </data>
+  <data name="RightJoycon" xml:space="preserve">
+    <value>右 Joycon</value>
+  </data>
+  <data name="UnidentifiedDevice" xml:space="preserve">
+    <value>未知设备 ({0})</value>
+  </data>
+  <!-- UpdServer -->
+  <data name="MsgMotionServerOff" xml:space="preserve">
+    <value>体感服务器已关闭。\r\n</value>
+  </data>
+  <data name="MsgServerStartFailed" xml:space="preserve">
+    <value>无法启动服务器。请确保同一时间只有一个程序实例在运行，且没有其他 CemuHook 应用程序在运行。\r\n</value>
+  </data>
+  <data name="MsgStartingServer" xml:space="preserve">
+    <value>正在启动服务器：{0}:{1}\r\n</value>
+  </data>
+  <!-- Joycon -->
+  <data name="MsgUsingUSB" xml:space="preserve">
+    <value>正在使用 USB 连接。\r\n</value>
+  </data>
+  <data name="MsgResettingUSB" xml:space="preserve">
+    <value>正在重置 USB 连接。\r\n</value>
+  </data>
+  <data name="MsgDuplicateTimestamp" xml:space="preserve">
+    <value>重复的时间戳已入队。\r\n</value>
+  </data>
+  <data name="MsgDropped" xml:space="preserve">
+    <value>已断开。\r\n</value>
+  </data>
+  <data name="MsgStartingPoll" xml:space="preserve">
+    <value>正在启动轮询线程。\r\n</value>
+  </data>
+  <data name="MsgPollCannotStart" xml:space="preserve">
+    <value>无法启动轮询。\r\n</value>
+  </data>
+  <data name="MsgUsingUserStickCal" xml:space="preserve">
+    <value>使用用户摇杆校准数据。\r\n</value>
+  </data>
+  <data name="MsgUsingFactoryStickCal" xml:space="preserve">
+    <value>使用出厂摇杆校准数据。\r\n</value>
+  </data>
+  <!-- App.config 设置项名称（设置界面标签） -->
+  <data name="Setting_IP" xml:space="preserve">
+    <value>IP 地址</value>
+  </data>
+  <data name="Setting_Port" xml:space="preserve">
+    <value>端口</value>
+  </data>
+  <data name="IpLabel" xml:space="preserve">
+    <value>IP</value>
+  </data>
+  <data name="PortLabel" xml:space="preserve">
+    <value>端口</value>
+  </data>
+  <data name="Setting_MotionServer" xml:space="preserve">
+    <value>MotionServer</value>
+  </data>
+  <data name="Setting_LowFreqRumble" xml:space="preserve">
+    <value>低频振动</value>
+  </data>
+  <data name="Setting_HighFreqRumble" xml:space="preserve">
+    <value>高频振动</value>
+  </data>
+  <data name="Setting_EnableRumble" xml:space="preserve">
+    <value>启用震动</value>
+  </data>
+  <data name="Setting_EnableShakeInput" xml:space="preserve">
+    <value>启用摇晃输入</value>
+  </data>
+  <data name="Setting_ShakeInputSensitivity" xml:space="preserve">
+    <value>灵敏度</value>
+  </data>
+  <data name="Setting_ShakeInputTitle" xml:space="preserve">
+    <value>摇晃输入</value>
+  </data>
+  <data name="Setting_ShakeInputDelay" xml:space="preserve">
+    <value>延迟(ms)</value>
+  </data>
+  <data name="Setting_SwapAB" xml:space="preserve">
+    <value>交换 A-B 按键</value>
+  </data>
+  <data name="Setting_SwapXY" xml:space="preserve">
+    <value>交换 X-Y 按键</value>
+  </data>
+  <data name="Setting_AllowCalibration" xml:space="preserve">
+    <value>允许校准</value>
+  </data>
+  <data name="Setting_N64Range" xml:space="preserve">
+    <value>N64 摇杆范围</value>
+  </data>
+  <data name="Setting_acc_sensiti" xml:space="preserve">
+    <value>加速度灵敏度</value>
+  </data>
+  <data name="Setting_gyr_sensiti" xml:space="preserve">
+    <value>陀螺仪灵敏度</value>
+  </data>
+  <data name="Setting_stick_cal" xml:space="preserve">
+    <value>校准</value>
+  </data>
+  <data name="Setting_deadzone" xml:space="preserve">
+    <value>死区</value>
+  </data>
+  <data name="Setting_stick2_cal" xml:space="preserve">
+    <value>校准</value>
+  </data>
+  <data name="Setting_deadzone2" xml:space="preserve">
+    <value>死区</value>
+  </data>
+  <data name="Setting_StickScalingFactor" xml:space="preserve">
+    <value>缩放系数</value>
+  </data>
+  <data name="Setting_StickScalingFactor2" xml:space="preserve">
+    <value>缩放系数</value>
+  </data>
+  <data name="Setting_GyroAnalogSliders" xml:space="preserve">
+    <value>陀螺仪模拟扳机</value>
+  </data>
+  <data name="Setting_GyroAnalogSensitivity" xml:space="preserve">
+    <value>陀螺仪模拟灵敏度</value>
+  </data>
+  <data name="Setting_PurgeAffectedDevices" xml:space="preserve">
+    <value>退出时清除受影响设备</value>
+  </data>
+  <data name="Setting_PurgeWhitelist" xml:space="preserve">
+    <value>启动时清空白名单</value>
+  </data>
+  <data name="Setting_UseHIDG" xml:space="preserve">
+    <value>使用 HIDGuardian</value>
+  </data>
+  <data name="Setting_HomeLEDOn" xml:space="preserve">
+    <value>Home 键 LED 常亮</value>
+  </data>
+  <data name="Setting_UseIncrementalLights" xml:space="preserve">
+    <value>使用递增灯效</value>
+  </data>
+  <data name="Setting_GyroToJoyOrMouse" xml:space="preserve">
+    <value>陀螺仪转摇杆或鼠标</value>
+  </data>
+  <data name="Setting_UseFilteredIMU" xml:space="preserve">
+    <value>使用滤波 IMU</value>
+  </data>
+  <data name="Setting_AHRS_beta" xml:space="preserve">
+    <value>AHRS Beta 值</value>
+  </data>
+  <data name="Setting_GyroMouseSensitivityX" xml:space="preserve">
+    <value>陀螺仪鼠标灵敏度 X</value>
+  </data>
+  <data name="Setting_GyroMouseSensitivityY" xml:space="preserve">
+    <value>陀螺仪鼠标灵敏度 Y</value>
+  </data>
+  <data name="Setting_GyroStickSensitivityX" xml:space="preserve">
+    <value>陀螺仪摇杆灵敏度 X</value>
+  </data>
+  <data name="Setting_GyroStickSensitivityY" xml:space="preserve">
+    <value>陀螺仪摇杆灵敏度 Y</value>
+  </data>
+  <data name="Setting_GyroStickReduction" xml:space="preserve">
+    <value>陀螺仪摇杆范围缩减</value>
+  </data>
+  <data name="Setting_GyroStickInvertX" xml:space="preserve">
+    <value>反转陀螺仪摇杆 X</value>
+  </data>
+  <data name="Setting_GyroStickInvertY" xml:space="preserve">
+    <value>反转陀螺仪摇杆 Y</value>
+  </data>
+  <data name="Setting_GyroMouseInvertX" xml:space="preserve">
+    <value>反转陀螺仪鼠标 X</value>
+  </data>
+  <data name="Setting_GyroMouseInvertY" xml:space="preserve">
+    <value>反转陀螺仪鼠标 Y</value>
+  </data>
+  <data name="Setting_GyroStickDeadzone" xml:space="preserve">
+    <value>死区</value>
+  </data>
+  <data name="Setting_GyroMouseDeadzone" xml:space="preserve">
+    <value>死区</value>
+  </data>
+  <data name="Setting_GyroToMouseTitle" xml:space="preserve">
+    <value>陀螺仪鼠标</value>
+  </data>
+  <data name="Setting_GyroToStickTitle" xml:space="preserve">
+    <value>陀螺仪摇杆</value>
+  </data>
+  <data name="GyroSensX" xml:space="preserve">
+    <value>X轴灵敏度</value>
+  </data>
+  <data name="GyroSensY" xml:space="preserve">
+    <value>Y轴灵敏度</value>
+  </data>
+  <data name="GyroInvX" xml:space="preserve">
+    <value>反转X轴</value>
+  </data>
+  <data name="GyroInvY" xml:space="preserve">
+    <value>反转Y轴</value>
+  </data>
+  <data name="Setting_GyroHoldToggle" xml:space="preserve">
+    <value>陀螺仪按住/切换</value>
+  </data>
+  <data name="Setting_GyroMouseLeftHanded" xml:space="preserve">
+    <value>陀螺仪鼠标左手模式</value>
+  </data>
+  <data name="Setting_DragToggle" xml:space="preserve">
+    <value>拖拽切换</value>
+  </data>
+  <data name="Setting_ShowAsXInput" xml:space="preserve">
+    <value>显示为 XInput</value>
+  </data>
+  <data name="Setting_ShowAsDS4" xml:space="preserve">
+    <value>显示为 DS4</value>
+  </data>
+  <data name="Setting_AutoPowerOff" xml:space="preserve">
+    <value>退出时自动关机</value>
+  </data>
+  <data name="Setting_PowerOffInactivity" xml:space="preserve">
+    <value>闲置后自动关机(分钟)</value>
+  </data>
+  <data name="Setting_HomeLongPowerOff" xml:space="preserve">
+    <value>长按 Home 关机</value>
+  </data>
+  <data name="Setting_ChangeOrientationDoubleClick" xml:space="preserve">
+    <value>双击切换方向</value>
+  </data>
+  <data name="Setting_DoNotRejoinJoycons" xml:space="preserve">
+    <value>不重新合并 Joycon</value>
+  </data>
+  <data name="Setting_DebugType" xml:space="preserve">
+    <value>调试类型</value>
+  </data>
+  <data name="Setting_Language" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="Setting_LeftStick" xml:space="preserve">
+    <value>左摇杆</value>
+  </data>
+  <data name="Setting_RightStick" xml:space="preserve">
+    <value>右摇杆</value>
+  </data>
+  <data name="LangSystemDefault" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="LangEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LangSimplifiedChinese" xml:space="preserve">
+    <value>简体中文</value>
+  </data>
+  <data name="GyroModeNone" xml:space="preserve">
+    <value>无</value>
+  </data>
+  <data name="GyroModeJoyLeft" xml:space="preserve">
+    <value>左摇杆</value>
+  </data>
+  <data name="GyroModeJoyRight" xml:space="preserve">
+    <value>右摇杆</value>
+  </data>
+  <data name="GyroModeMouse" xml:space="preserve">
+    <value>鼠标</value>
+  </data>
+  <data name="BtnL" xml:space="preserve">
+    <value>L</value>
+  </data>
+  <data name="BtnZL" xml:space="preserve">
+    <value>ZL</value>
+  </data>
+  <data name="BtnR" xml:space="preserve">
+    <value>R</value>
+  </data>
+  <data name="BtnZR" xml:space="preserve">
+    <value>ZR</value>
+  </data>
+  <data name="BtnLStick" xml:space="preserve">
+    <value>按左摇杆</value>
+  </data>
+  <data name="BtnRStick" xml:space="preserve">
+    <value>按右摇杆</value>
+  </data>
+  <data name="BtnDpadUp" xml:space="preserve">
+    <value>方向键上键</value>
+  </data>
+  <data name="BtnDpadDown" xml:space="preserve">
+    <value>方向键下键</value>
+  </data>
+  <data name="BtnDpadLeft" xml:space="preserve">
+    <value>方向键左键</value>
+  </data>
+  <data name="BtnDpadRight" xml:space="preserve">
+    <value>方向键右键</value>
+  </data>
+  <data name="BtnPlus" xml:space="preserve">
+    <value>+ 加号键</value>
+  </data>
+  <data name="BtnMinus" xml:space="preserve">
+    <value>- 减号键</value>
+  </data>
+  <data name="BtnCapture" xml:space="preserve">
+    <value>截图键</value>
+  </data>
+</root>
