@@ -703,10 +703,10 @@ namespace BetterJoyForCemu {
             if (!isUSB || state <= state_.DROPPED || automaticBluetoothPairingAttempted)
                 return;
 
-            // Same firmware-flash hold-off as the before-attach path. Returns without setting
-            // automaticBluetoothPairingAttempted so the next reconciliation pass retries once the
-            // controller's own plug-in flash has completed.
-            if (!Program.mgr.IsDualSenseFirmwareConnectSettled(path))
+            // Bond repair needs no wake/connect output and can run during the firmware glow.
+            // Fresh pairing and its retries still wait before issuing their connect sequence.
+            if (!CanRepairExistingBluetoothBond() &&
+                    !Program.mgr.IsDualSenseFirmwareConnectSettled(path))
                 return;
             CaptureUSBSleepOnConnectInitialBluetoothState();
             // Same guard as the before-attach path: never queue the ceremony for a controller that
@@ -724,15 +724,6 @@ namespace BetterJoyForCemu {
                     !ControllerMappings.AutomaticBluetoothPairingEnabled(profileId))
                 return false;
 
-            // The firmware runs its own ~2.5s orange flash on plug-in; writing to the controller
-            // during it bleeds red into that flash. The pad is still opened and polled immediately
-            // (passive reads, which is what keeps it from dropping into its indefinite charge-only
-            // pulse) - only the ceremony's feature-report WRITES wait. Returning false falls through
-            // to the ordinary USB attach and deliberately leaves automaticBluetoothPairingAttempted
-            // unset, so the reconciliation entry point runs the ceremony on a later pass once the
-            // flash has finished.
-            if (!Program.mgr.IsDualSenseFirmwareConnectSettled(path))
-                return false;
             CaptureUSBSleepOnConnectInitialBluetoothState();
             // Plugging the cable into a controller that is ALREADY up and streaming over Bluetooth
             // has nothing to pair and nothing to connect. Running the ceremony here fires a connect
@@ -743,6 +734,11 @@ namespace BetterJoyForCemu {
             // still run for this pad.
             if (Program.mgr.HasLiveBluetoothDualSense(PadMacAddress?.GetAddressBytes()))
                 return false;
+            // Restore an existing host/key before Attach can engage lighting, audio or input.
+            // Only a fresh pairing ceremony needs the firmware-connect settle delay.
+            if (!CanRepairExistingBluetoothBond() &&
+                    !Program.mgr.IsDualSenseFirmwareConnectSettled(path))
+                return false;
             // Bluetooth-preferred automatic pairing owns the controller before the normal pad
             // lifecycle does: no Attach(), no virtual output, no lighting/audio/adaptive-trigger
             // writes. USB-preferred automatic pairing is only bond maintenance; after the feature
@@ -751,12 +747,21 @@ namespace BetterJoyForCemu {
             bool preferBluetooth = ControllerMappings.UsablePreferredTransport(profileId) ==
                 ControllerMappings.PreferredTransportBluetooth;
             PerformAutomaticBluetoothPairing();
+            if (monitorChargeOnlyWakeAfterPowerOff)
+                return true;
             if (!preferBluetooth)
                 return false;
             byte[] mac = PadMacAddress?.GetAddressBytes();
             return automaticBluetoothPairingInProgress ||
                 Program.mgr.HasPendingBluetoothPairingAttempt(mac) ||
                 Program.mgr.ShouldMonitorChargeOnlyUsbWake(path, profileId);
+        }
+
+        private bool CanRepairExistingBluetoothBond() {
+            byte[] mac = PadMacAddress?.GetAddressBytes();
+            return !freshBluetoothPairingPending &&
+                !Program.mgr.HasPendingBluetoothPairingAttempt(mac) &&
+                BluetoothRadio.HasClassicPairing(mac);
         }
 
         protected override void ApplyQueuedAutomaticBluetoothPairingIfAny() {
@@ -875,16 +880,10 @@ namespace BetterJoyForCemu {
                 if (created)
                     freshBluetoothPairingPending = true;
 
-                // Repair mode always takes the restore-only path. The PC's whole side of the bond
-                // (registry link key, Devices record, authenticated bond state) is never lost - a
-                // PS5 trip only overwrites the CONTROLLER's onboard half - so Repair just restores
-                // the controller's half of the bond the PC still has.
-                bool repairMode = ControllerMappings.AutomaticBluetoothPairingMode(
-                        ControllerMappings.ProfileIdFor(this)) == ControllerMappings.ModeRepair;
-
-                // Repair can only restore the controller half of a bond Windows already owns.
-                // With no existing Windows key, fall through to the normal fresh-pair sequence.
-                if (repairMode && !created) {
+                // An established Windows bond needs only controller-side repair in either mode.
+                // A key committed by an unfinished fresh ceremony still needs connect/confirmation.
+                if (!created && !freshBluetoothPairingPending &&
+                        !Program.mgr.HasPendingBluetoothPairingAttempt(controllerMac)) {
                     PerformRepairModePairing(controllerMac, hostMacLittleEndian, linkKey);
                     return;
                 }
@@ -1114,18 +1113,8 @@ namespace BetterJoyForCemu {
             Program.mgr.j.Remove(this);
         }
 
-        // Repair mode (Automatic BT = Repair, preferred transport Bluetooth). Restores the
-        // controller's half of a bond the PC never lost, instead of the full from-scratch pairing.
-        //
-        // The host MAC the controller is bonded to IS readable (report 0x09, offset 10), unlike the
-        // write-only link key - so check it and rewrite ONLY when it points somewhere other than
-        // this PC's adapter. A controller that's still ours (just re-plugged, never went to a PS5)
-        // gets no write at all. When it IS foreign (e.g. a PS5, since a controller only remembers
-        // one host), repoint it at this PC and CONFIRM the repoint took before any wake - if we
-        // can't confirm it, do not sleep/wake, or the wake would reach whatever host it still holds
-        // and could wake a nearby PS5. Only PowerOff (auto power-off / long-hold) asserts the bond
-        // unconditionally. Does no lighting/output - the controller stays dark until it is actually
-        // up on Bluetooth. Runs on the Poll thread, same as the full path.
+        // Restore an established bond before normal initialization, or on the Poll thread when
+        // automatic pairing is toggled on. Never connect here: the parked pad waits for PS.
         private void PerformRepairModePairing(byte[] controllerMac,
                 byte[] hostMacLittleEndian, byte[] linkKey) {
             string profileId = ControllerMappings.ProfileIdFor(this);
@@ -1142,34 +1131,26 @@ namespace BetterJoyForCemu {
                 return;
             }
 
-            // The Bluetooth-preferred path below is a genuine sleep-on-connect: it sends 0x08/0x02
-            // over USB before the controller has connected to the host at all, parks the wired
-            // interface and hands off to the PS-press wake monitor. That must obey the profile's
-            // USB Sleep setting - with USB Sleep = Disabled it was still parking the controller on
-            // every connect, directly violating the setting. Take the ordinary connect-and-confirm
-            // path instead, exactly as a USB-preferred profile does, so the controller still comes
-            // up over Bluetooth; it simply is not slept on the way.
-            bool usbSleepDisabled = ControllerMappings.USBSleepOnConnectMode(profileId) ==
-                ControllerMappings.USBSleepOnConnectDisabled;
-            if (!PrefersBluetoothTransport() || usbSleepDisabled) {
+            string sleepMode = ControllerMappings.USBSleepOnConnectMode(profileId);
+            bool shouldPark = sleepMode == ControllerMappings.USBSleepOnConnectEnabled ||
+                (PrefersBluetoothTransport() &&
+                    sleepMode == ControllerMappings.USBSleepOnConnectBluetooth);
+            if (!shouldPark || !Program.mgr.TryMarkUsbSleepOnConnectApplied(usbPath)) {
                 DebugLog.Write("DualSense repair: pad=" + PadId +
                     " hostMatchedPc=" + matchesPc +
-                    " bondVerified=True connectWithoutSleep=True" +
-                    " usbSleepDisabled=" + usbSleepDisabled);
-                BeginEnabledConnectAndConfirm(controllerMac, hostMacLittleEndian,
-                    false, matchesPc ? "existing bond" : "repaired bond");
+                    " bondVerified=True connectRequested=False parked=False");
                 return;
             }
 
-            // Host is confirmed to be this PC now (either it already matched, or the repoint above
-            // verified). Settle to low power and hand off to the charge-only Bluetooth wake path -
-            // the controller comes up over Bluetooth on its own / on a PS press. The low-power OFF
-            // (same one PowerOff uses) is unconditional; only the bond WRITE above is conditional.
+            // Host verification precedes low power and parking. Only the PS wake monitor may
+            // request a connection after this repair.
             bool sentLowPower = SendBluetoothControlFeatureReport(
                 handle, false, DualSenseBluetoothControlOff);
 
             chargeOnlyUsbPath = usbPath;
-            Program.mgr.SuppressUsbControllerForBluetoothPreference(usbPath, profileId);
+            appInitiatedPowerOff = true;
+            Program.mgr.MarkDeliberatePowerOff(controllerMac);
+            Program.mgr.MarkChargeOnlyUsbParked(usbPath, profileId);
             // Grace window so a brief USB re-enumeration while the controller drops to low power
             // doesn't release the suppression out from under the wake monitor - same call PowerOff
             // makes via PrepareChargeOnlyUsbWake.
@@ -1178,8 +1159,8 @@ namespace BetterJoyForCemu {
                 Program.mgr.ShouldMonitorChargeOnlyUsbWake(chargeOnlyUsbPath, profileId);
 
             form.AppendTextBox(matchesPc
-                ? "DualSense already bonded to this PC; using Bluetooth.\r\n"
-                : "DualSense bond repaired; using Bluetooth.\r\n");
+                ? "DualSense already bonded to this PC; parked until PS is pressed.\r\n"
+                : "DualSense bond repaired; parked until PS is pressed.\r\n");
             DebugLog.Write("DualSense repair: pad=" + PadId +
                 " hostMatchedPc=" + matchesPc +
                 " bondVerified=True" +
@@ -1193,7 +1174,7 @@ namespace BetterJoyForCemu {
             Detach(true);
             Program.mgr.j.Remove(this);
             if (monitorChargeOnlyWakeAfterPowerOff)
-                BeginChargeOnlyUsbWakeMonitor();
+                BeginChargeOnlyUsbWakeMonitor(requirePsPress: true);
         }
 
         // Reads the host address the controller is currently bonded to (report 0x09, offset 10),
@@ -1600,7 +1581,7 @@ namespace BetterJoyForCemu {
             }
         }
 
-        private void BeginChargeOnlyUsbWakeMonitor() {
+        private void BeginChargeOnlyUsbWakeMonitor(bool requirePsPress = false) {
             if (Interlocked.Exchange(ref chargeOnlyWakeMonitorStarted, 1) != 0)
                 return;
             if (!Program.mgr.TryBeginChargeOnlyUsbWakeMonitor()) {
@@ -1616,7 +1597,8 @@ namespace BetterJoyForCemu {
             int seedBatteryPercent = batteryPercent;
             bool queued = ThreadPool.QueueUserWorkItem(_ => {
                 try {
-                    MonitorChargeOnlyUsbWake(devicePath, profileId, seedBatteryPercent);
+                    MonitorChargeOnlyUsbWake(devicePath, profileId, seedBatteryPercent,
+                        requirePsPress);
                 } finally {
                     Interlocked.Exchange(ref chargeOnlyWakeMonitorStarted, 0);
                     Program.mgr.EndChargeOnlyUsbWakeMonitor();
@@ -1629,7 +1611,7 @@ namespace BetterJoyForCemu {
         }
 
         private static void MonitorChargeOnlyUsbWake(string devicePath, string profileId,
-                int seedBatteryPercent) {
+                int seedBatteryPercent, bool requirePsPress) {
             // Opening the USB HID interface during teardown prevents the firmware from reaching
             // its native orange charging state. Let that transition finish first; only then own
             // the input endpoint while waiting for the PS wake edge.
@@ -1723,14 +1705,10 @@ namespace BetterJoyForCemu {
                         // While input is still continuous (never went quiet), fall back to a
                         // released-to-pressed PS edge on the 0x01 report so ordinary play input
                         // doesn't wake it.
-                        bool wakeRequested = everQuiet;
-                        if (!wakeRequested && received == 64 && report[0] == 0x01) {
-                            bool psPressed = (report[10] & 0x01) != 0;
-                            if (!psPressed)
-                                sawPsReleased = true;
-                            else if (sawPsReleased)
-                                wakeRequested = true;
-                        }
+                        // A repaired bond must wait for PS; charge/status reports alone cannot
+                        // turn the bond restore into an automatic connection.
+                        bool wakeRequested = IsChargeOnlyUsbWakeRequested(report, received,
+                            requirePsPress, everQuiet, ref sawPsReleased);
                         quietSince = now;
                         if (wakeRequested) {
                             // Always clear the charge-light lane before handing the controller back
@@ -1775,6 +1753,21 @@ namespace BetterJoyForCemu {
                 }
             }
             DebugLog.Write("ChargeOnlyWake: monitor ended (ShouldMonitor went false).");
+        }
+
+        private static bool IsChargeOnlyUsbWakeRequested(byte[] report, int received,
+                bool requirePsPress, bool everQuiet, ref bool sawPsReleased) {
+            if (received <= 0)
+                return false;
+            if (!requirePsPress && everQuiet)
+                return true;
+            if (received != 64 || report == null || report.Length < 64 || report[0] != 0x01)
+                return false;
+            if ((report[10] & 0x01) == 0) {
+                sawPsReleased = true;
+                return false;
+            }
+            return sawPsReleased || (requirePsPress && everQuiet);
         }
 
         // Red at empty through to green at full, via yellow at the midpoint. A continuous ramp
