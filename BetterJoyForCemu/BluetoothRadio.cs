@@ -528,6 +528,18 @@ namespace BetterJoyForCemu {
             } catch { }
         }
 
+        internal static bool HasClassicPairing(byte[] deviceMac) {
+            if (deviceMac == null || deviceMac.Length != 6)
+                return false;
+            foreach (byte[] radio in GetLocalRadioAddressesLittleEndian()) {
+                if (TryGetClassicLinkKey(radio, deviceMac, out byte[] linkKey)) {
+                    Array.Clear(linkKey, 0, linkKey.Length);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // Select the local adapter that already owns this controller's bond when possible. For a
         // controller Windows has never seen, generate one cryptographically random Classic link
         // key but DO NOT put it in BthPort yet. The caller first writes/verifies that exact key on

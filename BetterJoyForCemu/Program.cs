@@ -573,23 +573,31 @@ namespace BetterJoyForCemu {
                         if (confirmPad.bluetoothImuStableSince == 0)
                             confirmPad.bluetoothImuStableSince = nowTs;   // start the stability dwell
                         else if (nowTs - confirmPad.bluetoothImuStableSince >=
-                                     Stopwatch.Frequency * BluetoothPairingStableDwellSeconds &&
-                                 TryConfirmBluetoothPairing(
+                                     Stopwatch.Frequency * BluetoothPairingStableDwellSeconds) {
+                            // USB-preferred fresh pairing also needs the live dwell before parking
+                            // or duplicate resolution can interrupt its first Bluetooth connection.
+                            foreach (Controller candidate in j) {
+                                if (candidate is DualSenseController usbPad && usbPad.isUSB &&
+                                        Equals(usbPad.PadMacAddress, confirmPad.PadMacAddress))
+                                    usbPad.ConfirmFreshBluetoothPairing();
+                            }
+                            if (TryConfirmBluetoothPairing(
                                      confirmPad.PadMacAddress.GetAddressBytes(),
                                      out int confirmedAttempt,
                                      out bool sleepOnConnectAfterConfirmation)) {
-                            if (sleepOnConnectAfterConfirmation)
-                                confirmPad.RequestRoamingSleepAfterBluetoothConfirmation();
-                            DebugLog.Write("DualSense BT pairing confirmed (held): pad=" +
-                                confirmPad.PadId + " mac=" + BitConverter.ToString(
-                                    confirmPad.PadMacAddress.GetAddressBytes()).Replace("-", "") +
-                                " attempt=" + confirmedAttempt +
-                                " sleepOnConnect=" + sleepOnConnectAfterConfirmation +
-                                " heldMs=" + ((nowTs - confirmPad.bluetoothImuStableSince) *
-                                    1000 / Stopwatch.Frequency));
-                            BluetoothRadio.MarkClassicPairingRegistryTrace(
-                                confirmPad.PadMacAddress.GetAddressBytes(),
-                                "pairing-confirmed-held");
+                                if (sleepOnConnectAfterConfirmation)
+                                    confirmPad.RequestRoamingSleepAfterBluetoothConfirmation();
+                                DebugLog.Write("DualSense BT pairing confirmed (held): pad=" +
+                                    confirmPad.PadId + " mac=" + BitConverter.ToString(
+                                        confirmPad.PadMacAddress.GetAddressBytes()).Replace("-", "") +
+                                    " attempt=" + confirmedAttempt +
+                                    " sleepOnConnect=" + sleepOnConnectAfterConfirmation +
+                                    " heldMs=" + ((nowTs - confirmPad.bluetoothImuStableSince) *
+                                        1000 / Stopwatch.Frequency));
+                                BluetoothRadio.MarkClassicPairingRegistryTrace(
+                                    confirmPad.PadMacAddress.GetAddressBytes(),
+                                    "pairing-confirmed-held");
+                            }
                         }
                     }
                     string profileId = ControllerMappings.ProfileIdFor(jc);

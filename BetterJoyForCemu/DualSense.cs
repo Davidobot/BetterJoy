@@ -75,6 +75,8 @@ namespace BetterJoyForCemu {
         // ApplyAutomaticBluetoothPairing/ApplyQueuedAutomaticBluetoothPairingIfAny.
         private int automaticBluetoothPairingPending;
         private volatile bool automaticBluetoothPairingInProgress;
+        // A saved link key precedes live authentication; keep fresh pairing awake until input holds.
+        private volatile bool freshBluetoothPairingPending;
         // Set by the manager (scan-timer thread) once this Bluetooth pad is confirmed live
         // (IMU_DATA_OK on the 00001124 interface); drained on the Poll thread to run the roaming
         // sleep (PowerOff) - same scan->Poll hand-off shape as automaticBluetoothPairingPending.
@@ -588,6 +590,23 @@ namespace BetterJoyForCemu {
             if (!isUSB || state <= state_.DROPPED)
                 return;
 
+            // Restore an existing Windows bond only if the controller's host differs. A matching
+            // host needs no write on plug-in; a missing Windows bond belongs to automatic pairing.
+            if (!shuttingDown && BluetoothRadio.TryGetOrCreateClassicPairing(
+                    PadMacAddress.GetAddressBytes(), out byte[] pcHostMac, out byte[] pcLinkKey,
+                    out bool pairingCreated)) {
+                try {
+                    if (!pairingCreated) {
+                        bool bondVerified = EnsureControllerBondPointsToThisPc(
+                            pcHostMac, pcLinkKey, out bool matchesPc);
+                        DebugLog.Write("DualSense USB park: hostMatchedPc=" + matchesPc +
+                            " bondVerified=" + bondVerified + " pad=" + PadId);
+                    }
+                } finally {
+                    Array.Clear(pcLinkKey, 0, pcLinkKey.Length);
+                }
+            }
+
             appInitiatedPowerOff = true;
             Program.mgr.MarkDeliberatePowerOff(PadMacAddress.GetAddressBytes());
             string profileId = ControllerMappings.ProfileIdFor(this);
@@ -596,32 +615,6 @@ namespace BetterJoyForCemu {
             Program.mgr.PreserveChargeOnlyUsbAfterLongPressPowerOff(profileId);
             monitorChargeOnlyWakeAfterPowerOff = !shuttingDown &&
                 Program.mgr.ShouldMonitorChargeOnlyUsbWake(chargeOnlyUsbPath, profileId);
-
-            // Write this PC's host MAC and stored link key back to the controller before parking
-            // it. A PS5 asserts its own host MAC and makes the controller generate a fresh key, so
-            // the controller's onboard half of the bond is whatever the last console to touch it
-            // wrote - and it is charging on our cable with a wake monitor about to wait for a PS
-            // press that has to come back to US. Restoring the controller's half of a bond the PC
-            // still owns is exactly what Repair does, so this takes the same route, gated on the
-            // same !created - a bond Windows does not already hold is nothing to reassert.
-            //
-            // Deliberately indiscriminate, and that is the one place it parts company with Repair:
-            // no ReadControllerPairedHost, no "already matches" shortcut, because the case being
-            // fixed IS the one where it does not match. Equally deliberately just the 0x0A write -
-            // no connect trigger, no wake, none of the rest of the ceremony - which is what makes
-            // it safe on every plug-in. Skipped when shutting down: a reassert immediately before a
-            // power-off is what gets that power-off refused.
-            if (!shuttingDown && BluetoothRadio.TryGetOrCreateClassicPairing(
-                    PadMacAddress.GetAddressBytes(), out byte[] pcHostMac, out byte[] pcLinkKey,
-                    out bool pairingCreated) && !pairingCreated) {
-                try {
-                    bool reasserted = SendBluetoothPairingFeatureReport(handle, pcHostMac, pcLinkKey);
-                    DebugLog.Write("DualSense USB park: host bond reasserted=" + reasserted +
-                        " pad=" + PadId);
-                } finally {
-                    Array.Clear(pcLinkKey, 0, pcLinkKey.Length);
-                }
-            }
 
             // Darken the pad before the handle closes. Closing it tells the controller nothing, so
             // it holds the last colour we wrote - that is the lightbar left on across the sleep.
@@ -704,6 +697,7 @@ namespace BetterJoyForCemu {
                 ControllerMappings.ProfileIdFor(this));
             if (!enabled) {
                 automaticBluetoothPairingAttempted = false;
+                freshBluetoothPairingPending = false;
                 return;
             }
             if (!isUSB || state <= state_.DROPPED || automaticBluetoothPairingAttempted)
@@ -795,6 +789,17 @@ namespace BetterJoyForCemu {
             if (ControllerMappings.USBSleepOnConnectMode(profileId) !=
                     ControllerMappings.USBSleepOnConnectEnabled)
                 return false;
+            if (ControllerMappings.AutomaticBluetoothPairingEnabled(profileId)) {
+                if (!BluetoothRadio.HasClassicPairing(PadMacAddress?.GetAddressBytes()))
+                    freshBluetoothPairingPending = true;
+                if (freshBluetoothPairingPending ||
+                        Program.mgr.HasPendingBluetoothPairingAttempt(
+                            PadMacAddress?.GetAddressBytes())) {
+                    DebugLog.Write("DualSense USB sleep-on-connect deferred: pad=" + PadId +
+                        " waiting for fresh Bluetooth pairing confirmation");
+                    return false;
+                }
+            }
             // INITIAL connection only. This pad object is destroyed and rebuilt on every wake, so the
             // per-object snapshot flag above resets and cannot enforce "once" - without this the
             // controller gets put straight back to sleep the moment it is woken. The manager holds
@@ -806,6 +811,13 @@ namespace BetterJoyForCemu {
             }
             QueueUSBSleepOnConnect("initial-usb-attach-enabled");
             return true;
+        }
+
+        internal void ConfirmFreshBluetoothPairing() {
+            if (!freshBluetoothPairingPending)
+                return;
+            freshBluetoothPairingPending = false;
+            ApplyUSBSleepOnConnectAfterAttach();
         }
 
         private void CaptureUSBSleepOnConnectInitialBluetoothState() {
@@ -860,6 +872,8 @@ namespace BetterJoyForCemu {
                         "a local Bluetooth radio or its Windows bond store.\r\n");
                     return;
                 }
+                if (created)
+                    freshBluetoothPairingPending = true;
 
                 // Repair mode always takes the restore-only path. The PC's whole side of the bond
                 // (registry link key, Devices record, authenticated bond state) is never lost - a
@@ -965,14 +979,15 @@ namespace BetterJoyForCemu {
         // Ensures the controller's onboard bond points at THIS PC. Reads the current host (report
         // 0x09, readable unlike the write-only link key); if it already matches, does nothing and
         // returns true with matchedAlready=true (no clobber). If it's foreign/empty, repoints it
-        // (0x0A) and verifies via WaitForBluetoothPairingHost. Returns false only when a foreign
-        // host could not be confirmed repointed - caller must NOT wake it then. Shared by Repair and
-        // the Enabled gentle connect path.
+        // (0x0A) and verifies via WaitForBluetoothPairingHost. Returns false if the host cannot be
+        // read or the repair cannot be verified. Shared by parking, Repair and Enabled pairing.
         private bool EnsureControllerBondPointsToThisPc(byte[] hostMacLittleEndian,
                 byte[] linkKey, out bool matchedAlready) {
             byte[] currentHost = ReadControllerPairedHost();
             matchedAlready = currentHost != null &&
                 ByteArraysEqual(currentHost, hostMacLittleEndian);
+            if (currentHost == null)
+                return false;
             if (matchedAlready)
                 return true;
             bool reasserted = SendBluetoothPairingFeatureReport(
@@ -1127,20 +1142,6 @@ namespace BetterJoyForCemu {
                 return;
             }
 
-            // This path powers the controller down over its USB interface. Re-assert even when
-            // report 0x09 already matched: the controller can lose the volatile key during a prior
-            // sleep, and the following 0x08/0x02 must never be sent against an uncommitted record.
-            bool pairingStateReasserted = SendBluetoothPairingFeatureReport(
-                handle, hostMacLittleEndian, linkKey) &&
-                WaitForBluetoothPairingHost(handle, hostMacLittleEndian,
-                    PairingRecordCommitTimeoutMs);
-            if (!pairingStateReasserted) {
-                form.AppendTextBox("DualSense bond could not be reasserted before USB sleep; " +
-                    "reconnect and try again.\r\n");
-                DebugLog.Write("DualSense repair: forced USB sleep reassert failed; not sleeping");
-                return;
-            }
-
             // The Bluetooth-preferred path below is a genuine sleep-on-connect: it sends 0x08/0x02
             // over USB before the controller has connected to the host at all, parks the wired
             // interface and hands off to the PS-press wake monitor. That must obey the profile's
@@ -1153,7 +1154,7 @@ namespace BetterJoyForCemu {
             if (!PrefersBluetoothTransport() || usbSleepDisabled) {
                 DebugLog.Write("DualSense repair: pad=" + PadId +
                     " hostMatchedPc=" + matchesPc +
-                    " pairingStateReasserted=True connectWithoutSleep=True" +
+                    " bondVerified=True connectWithoutSleep=True" +
                     " usbSleepDisabled=" + usbSleepDisabled);
                 BeginEnabledConnectAndConfirm(controllerMac, hostMacLittleEndian,
                     false, matchesPc ? "existing bond" : "repaired bond");
@@ -1181,7 +1182,7 @@ namespace BetterJoyForCemu {
                 : "DualSense bond repaired; using Bluetooth.\r\n");
             DebugLog.Write("DualSense repair: pad=" + PadId +
                 " hostMatchedPc=" + matchesPc +
-                " pairingStateReasserted=" + pairingStateReasserted +
+                " bondVerified=True" +
                 " sentLowPower=" + sentLowPower +
                 " wakeMonitorArmed=" + monitorChargeOnlyWakeAfterPowerOff);
 
@@ -1952,6 +1953,8 @@ namespace BetterJoyForCemu {
             return dualSense == null ||
                 (!automaticBluetoothPairingInProgress &&
                     !dualSense.automaticBluetoothPairingInProgress &&
+                    !freshBluetoothPairingPending &&
+                    !dualSense.freshBluetoothPairingPending &&
                     dualSense.lightbarTransportKnown);
         }
 
