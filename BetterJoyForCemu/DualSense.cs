@@ -510,6 +510,10 @@ namespace BetterJoyForCemu {
         // report 0x0A reasserts those exact values. If any part cannot be verified, never risk the
         // bond: use the host-side radio disconnect instead.
         public override void PowerOff(bool shuttingDown = false) {
+            PowerOffCore(shuttingDown, pairingConfirmed: false);
+        }
+
+        private void PowerOffCore(bool shuttingDown, bool pairingConfirmed) {
             if (state <= state_.DROPPED)
                 return;
             // USB-only: there is no real power-off over a wired handle, so pseudo-sleep instead -
@@ -543,7 +547,7 @@ namespace BetterJoyForCemu {
                 // needs the cable to run at all, which is why this is only ever seen with one
                 // attached, and never when the pad is already parked in the wake monitor.
                 bool pairingStateReasserted =
-                    !shuttingDown && ReassertBluetoothPairingStateOverUsb();
+                    !shuttingDown && !pairingConfirmed && ReassertBluetoothPairingStateOverUsb();
                 StopBluetoothMicrophone();
                 StopBluetoothAudioStream();
                 // Native Bluetooth power-off, exactly as originally implemented in df0514e: send
@@ -553,13 +557,14 @@ namespace BetterJoyForCemu {
                 if (!sentFeatureReport)
                     BluetoothRadio.DisconnectDevice(PadMacAddress.GetAddressBytes());
                 DebugLog.Write("DualSense.PowerOff: pad=" + PadId +
+                    " pairingConfirmed=" + pairingConfirmed +
                     " pairingStateReasserted=" + pairingStateReasserted +
                     " featureReportSent=" + sentFeatureReport +
                     " monitorChargeOnlyWakeAfterPowerOff=" + monitorChargeOnlyWakeAfterPowerOff);
                 state = state_.DROPPED;
                 AbandonBluetoothMediaTransport();
                 if (monitorChargeOnlyWakeAfterPowerOff)
-                    BeginChargeOnlyUsbWakeMonitor();
+                    BeginChargeOnlyUsbWakeMonitor(requirePsPress: pairingConfirmed);
             }
         }
 
@@ -767,11 +772,12 @@ namespace BetterJoyForCemu {
         protected override void ApplyQueuedAutomaticBluetoothPairingIfAny() {
             if (Interlocked.Exchange(ref automaticBluetoothPairingPending, 0) != 0)
                 PerformAutomaticBluetoothPairing();
-            // The pad has been confirmed live over Bluetooth - drop it into the roaming sleep
-            // (PowerOff already is the full assert-key + low-power OFF + arm-PS-wake tail), run here
-            // on the Poll thread because PowerOff issues feature reports on the handle.
-            if (Interlocked.Exchange(ref roamingSleepPending, 0) != 0)
-                PowerOff();
+            // A confirmed pairing has already proved the key. Rewriting it before OFF can disturb
+            // the new connection; run only the sleep tail, on this pad's Poll thread.
+            if (Interlocked.Exchange(ref roamingSleepPending, 0) != 0 &&
+                    ControllerMappings.USBSleepOnConnectMode(ControllerMappings.ProfileIdFor(this)) !=
+                        ControllerMappings.USBSleepOnConnectDisabled)
+                PowerOffCore(shuttingDown: false, pairingConfirmed: true);
             // Initial USB-only sleep also runs on the Poll thread for the same reason. This is not
             // driven by Hold Home/Capture or inactivity; it is only the first-attach USB policy.
             if (Interlocked.Exchange(ref usbSleepOnConnectPending, 0) != 0)
@@ -818,11 +824,16 @@ namespace BetterJoyForCemu {
             return true;
         }
 
-        internal void ConfirmFreshBluetoothPairing() {
+        internal bool ConfirmFreshBluetoothPairing() {
             if (!freshBluetoothPairingPending)
-                return;
+                return false;
             freshBluetoothPairingPending = false;
-            ApplyUSBSleepOnConnectAfterAttach();
+            // Reapply the transport-specific sleep policy only after fresh pairing is confirmed.
+            if (!ShouldUSBSleepOnConnectAfterBluetoothEstablished() ||
+                    !Program.mgr.TryMarkUsbSleepOnConnectApplied(path))
+                return false;
+            QueueUSBSleepOnConnect("fresh-bluetooth-pairing-confirmed");
+            return true;
         }
 
         private void CaptureUSBSleepOnConnectInitialBluetoothState() {
@@ -852,8 +863,8 @@ namespace BetterJoyForCemu {
                 return false;
             string mode = ControllerMappings.USBSleepOnConnectMode(
                 ControllerMappings.ProfileIdFor(this));
-            return mode == ControllerMappings.USBSleepOnConnectBluetooth ||
-                mode == ControllerMappings.USBSleepOnConnectEnabled;
+            return mode == ControllerMappings.USBSleepOnConnectEnabled ||
+                (mode == ControllerMappings.USBSleepOnConnectBluetooth && PrefersBluetoothTransport());
         }
 
         private void QueueUSBSleepOnConnect(string reason) {
@@ -1114,7 +1125,8 @@ namespace BetterJoyForCemu {
         }
 
         // Restore an established bond before normal initialization, or on the Poll thread when
-        // automatic pairing is toggled on. Never connect here: the parked pad waits for PS.
+        // automatic pairing is toggled on. Parked pads wait for PS; disabling USB sleep starts
+        // the preferred transport immediately after the bond is verified.
         private void PerformRepairModePairing(byte[] controllerMac,
                 byte[] hostMacLittleEndian, byte[] linkKey) {
             string profileId = ControllerMappings.ProfileIdFor(this);
@@ -1132,6 +1144,14 @@ namespace BetterJoyForCemu {
             }
 
             string sleepMode = ControllerMappings.USBSleepOnConnectMode(profileId);
+            if (sleepMode == ControllerMappings.USBSleepOnConnectDisabled) {
+                // USB falls through to normal Attach; Bluetooth uses the confirmed connection
+                // flow with sleep-after-confirmation disabled by the same profile setting.
+                if (PrefersBluetoothTransport())
+                    BeginEnabledConnectAndConfirm(controllerMac, hostMacLittleEndian,
+                        false, matchesPc ? "existing bond" : "repaired bond");
+                return;
+            }
             bool shouldPark = sleepMode == ControllerMappings.USBSleepOnConnectEnabled ||
                 (PrefersBluetoothTransport() &&
                     sleepMode == ControllerMappings.USBSleepOnConnectBluetooth);
