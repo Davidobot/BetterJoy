@@ -601,9 +601,8 @@ namespace BetterJoyForCemu {
             bool sentLowPower;
             string lowPowerTransport;
             if (isUSB) {
-                sentLowPower = SendBluetoothControlFeatureReport(
-                    handle, false, DualSenseBluetoothControlOff);
-                lowPowerTransport = "USB";
+                sentLowPower = false;
+                lowPowerTransport = "USB skipped; port cycle only";
             } else {
                 sentLowPower = SendBluetoothPowerOffFeatureReport();
                 lowPowerTransport = "Bluetooth";
@@ -1634,38 +1633,6 @@ namespace BetterJoyForCemu {
 
             return HIDapi.hid_send_feature_report(targetHandle, report,
                 new UIntPtr((uint)report.Length)) == report.Length;
-        }
-
-        // A hub port cycle gets the controller back to its firmware-owned plug-in state. Once
-        // that reset interface is available, make low-power the final command BetterJoy sends and
-        // immediately close the temporary handle. The bounded retry covers normal PnP reappearance
-        // latency without holding up suspend indefinitely.
-        internal static bool TrySendLowPowerAfterUsbCycle(string usbPath,
-                out string detail) {
-            detail = "no path";
-            if (String.IsNullOrWhiteSpace(usbPath))
-                return false;
-
-            Thread.Sleep(100);
-            for (int attempt = 1; attempt <= 20; attempt++) {
-                IntPtr usbHandle = HIDapi.hid_open_path(usbPath);
-                if (usbHandle != IntPtr.Zero) {
-                    try {
-                        if (SendBluetoothControlFeatureReport(usbHandle, false,
-                                DualSenseBluetoothControlOff)) {
-                            detail = "sent after " + attempt + " open attempt(s)";
-                            return true;
-                        }
-                    } finally {
-                        HIDapi.hid_close(usbHandle);
-                    }
-                }
-                if (attempt < 20)
-                    Thread.Sleep(50);
-            }
-
-            detail = "USB HID interface did not accept 0x08/0x02 after cycle";
-            return false;
         }
 
         public override void PrepareLongPressPowerOff() {

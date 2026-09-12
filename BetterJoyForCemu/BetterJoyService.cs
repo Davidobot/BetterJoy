@@ -33,7 +33,10 @@ namespace BetterJoyForCemu {
         }
 
         protected override void OnStop() {
-            StopPipeline();
+            // A manual service stop is also a complete handoff to controller firmware. Use the
+            // same low-power, handle-release and physical port-cycle sequence as suspend so the
+            // result can be observed while Windows itself remains awake.
+            StopPipeline(suspending: true);
         }
 
         // The service's actual start routine, factored out so a suspend/resume can run the very
@@ -62,6 +65,11 @@ namespace BetterJoyForCemu {
         // watcher for free, and a suspend/resume no longer has that luxury.
         private void StopPipeline(bool suspending = false) {
             lock (pipelineLock) {
+                // Resume deliberately asks SCM to stop this already-torn-down service so recovery
+                // starts a fresh process. Do not run the USB handoff a second time on that stop.
+                if (host == null)
+                    return;
+
                 var suspendPortTargets =
                     new List<UsbDeviceReenumerator.PortTarget>();
                 try {
@@ -74,6 +82,8 @@ namespace BetterJoyForCemu {
                 }
 
                 if (suspending) {
+                    // The cycle is the final suspend-side USB operation. BetterJoy does not
+                    // reopen or send controller commands to the reset controller afterward.
                     foreach (UsbDeviceReenumerator.PortTarget target in
                             suspendPortTargets) {
                         bool cycled = UsbDeviceReenumerator.TryCyclePort(
@@ -81,15 +91,6 @@ namespace BetterJoyForCemu {
                         DebugLog.Write("Power: suspend USB port cycle result=" +
                             cycled + " path=" + target.HidPath +
                             " detail=" + cycleDetail);
-                        if (!cycled)
-                            continue;
-
-                        bool sentLowPower =
-                            DualSenseController.TrySendLowPowerAfterUsbCycle(
-                                target.HidPath, out string lowPowerDetail);
-                        DebugLog.Write("Power: suspend post-cycle 0x08/0x02 sent=" +
-                            sentLowPower + " path=" + target.HidPath +
-                            " detail=" + lowPowerDetail);
                     }
                 }
             }

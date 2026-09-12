@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 using Nefarius.Utilities.DeviceManagement.PnP;
 
@@ -12,6 +13,8 @@ namespace BetterJoyForCemu {
             new Guid("F18A0E88-C30C-11D0-8815-00A0C906BED8");
         private const uint CrSuccess = 0x00000000;
         private const uint CrBufferSmall = 0x0000001A;
+        private const uint CmRemoveUiNotOk = 0x00000001;
+        private const uint CmRemoveNoRestart = 0x00000002;
         private const uint IoctlUsbHubCyclePort = 0x00220444;
         private const uint GenericRead = 0x80000000;
         private const uint GenericWrite = 0x40000000;
@@ -32,6 +35,23 @@ namespace BetterJoyForCemu {
         private struct CyclePortParameters {
             internal uint ConnectionIndex;
             internal uint StatusReturned;
+        }
+
+        private enum PnpVetoType {
+            Ok,
+            TypeUnknown,
+            LegacyDevice,
+            PendingClose,
+            WindowsApp,
+            WindowsService,
+            OutstandingOpen,
+            Device,
+            Driver,
+            IllegalDeviceRequest,
+            InsufficientPower,
+            NonDisableable,
+            LegacyDriver,
+            InsufficientRights
         }
 
         [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
@@ -56,6 +76,12 @@ namespace BetterJoyForCemu {
         [DllImport("cfgmgr32.dll")]
         private static extern uint CM_Reenumerate_DevNode(
             uint deviceInstance, uint flags);
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode,
+            EntryPoint = "CM_Query_And_Remove_SubTreeW")]
+        private static extern uint CM_Query_And_Remove_SubTree(
+            uint deviceInstance, out PnpVetoType vetoType,
+            StringBuilder vetoName, uint vetoNameLength, uint flags);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern SafeFileHandle CreateFile(
@@ -206,12 +232,41 @@ namespace BetterJoyForCemu {
                         " status=" + request.StatusReturned +
                         " bytes=" + bytesReturned +
                         (sent ? "" : " error=" + Marshal.GetLastWin32Error());
-                    return sent && request.StatusReturned == 0;
+
+                    bool removed = TryRemoveDevNodeForSuspend(target,
+                        out string removeDetail);
+                    detail += " fallbackRemove=" + removed +
+                        " fallbackDetail=" + removeDetail;
+                    return removed;
                 }
             } catch (Exception ex) {
                 detail = ex.GetType().Name + ": " + ex.Message;
                 return false;
             }
+        }
+
+        private static bool TryRemoveDevNodeForSuspend(PortTarget target,
+                out string detail) {
+            detail = "no target";
+            if (target == null ||
+                    String.IsNullOrWhiteSpace(target.DeviceInstanceId))
+                return false;
+
+            uint locate = CM_Locate_DevNode(out uint deviceInstance,
+                target.DeviceInstanceId, 0);
+            if (locate != CrSuccess) {
+                detail = "CM_Locate_DevNode=0x" + locate.ToString("X8");
+                return false;
+            }
+
+            var vetoName = new StringBuilder(260);
+            uint remove = CM_Query_And_Remove_SubTree(deviceInstance,
+                out PnpVetoType vetoType, vetoName, (uint)vetoName.Capacity,
+                CmRemoveUiNotOk | CmRemoveNoRestart);
+            detail = "CM_Query_And_Remove_SubTree=0x" +
+                remove.ToString("X8") + " veto=" + vetoType +
+                (vetoName.Length > 0 ? " vetoName=" + vetoName : "");
+            return remove == CrSuccess;
         }
 
         private static string GetDeviceInterfacePath(Guid interfaceGuid,
