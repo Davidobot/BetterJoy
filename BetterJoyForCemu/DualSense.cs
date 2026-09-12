@@ -584,6 +584,66 @@ namespace BetterJoyForCemu {
             base.DisconnectForSuspend();
         }
 
+        internal bool ReleaseForSuspend() {
+            appInitiatedPowerOff = true;
+            if (!isUSB)
+                Program.mgr.MarkDeliberatePowerOff(PadMacAddress.GetAddressBytes());
+            if (!StopPollingForSuspend()) {
+                DebugLog.Write("Power: DualSense poll did not stop; USB cycle skipped for pad=" + PadId);
+                return false;
+            }
+            form.StopUsbAudioLoopback(PadId);
+            StopBluetoothMicrophone();
+            StopBluetoothAudioStream();
+            if (bluetoothMicrophoneThread != null && bluetoothMicrophoneThread.IsAlive)
+                return false;
+
+            bool sentLowPower;
+            string lowPowerTransport;
+            if (isUSB) {
+                sentLowPower = SendBluetoothControlFeatureReport(
+                    handle, false, DualSenseBluetoothControlOff);
+                lowPowerTransport = "USB";
+            } else {
+                sentLowPower = SendBluetoothPowerOffFeatureReport();
+                lowPowerTransport = "Bluetooth";
+                if (!sentLowPower) {
+                    sentLowPower = SendBluetoothPowerOffOverUsbForSuspend();
+                    lowPowerTransport = sentLowPower ? "USB fallback" : "failed";
+                }
+                if (!sentLowPower)
+                    BluetoothRadio.DisconnectDevice(PadMacAddress.GetAddressBytes());
+            }
+            DebugLog.Write("Power: DualSense suspend 0x08/0x02 sent=" + sentLowPower +
+                " transport=" + lowPowerTransport + " pad=" + PadId);
+
+            state = state_.DROPPED;
+            AbandonBluetoothMediaTransport();
+            Detach(true);
+            Program.mgr.j.Remove(this);
+            DebugLog.Write("Power: DualSense handles released, pad=" + PadId + " path=" + path);
+            return true;
+        }
+
+        private bool SendBluetoothPowerOffOverUsbForSuspend() {
+            string profileId = ControllerMappings.ProfileIdFor(this);
+            string usbPath = chargeOnlyUsbPath;
+            if (String.IsNullOrEmpty(usbPath))
+                Program.mgr.TryGetChargeOnlyUsbPath(profileId, out usbPath);
+            if (String.IsNullOrEmpty(usbPath))
+                return false;
+
+            IntPtr usbHandle = HIDapi.hid_open_path(usbPath);
+            if (usbHandle == IntPtr.Zero)
+                return false;
+            try {
+                return SendBluetoothControlFeatureReport(
+                    usbHandle, false, DualSenseBluetoothControlOff);
+            } finally {
+                HIDapi.hid_close(usbHandle);
+            }
+        }
+
         // USB-only pseudo-sleep. Over USB the controller cannot be truly powered off like a live
         // Bluetooth HID pad, but it can be parked as charge-only: BetterJoy closes its HID handle,
         // suppresses re-adoption, nudges Windows to re-enumerate the USB interface, then a wake
@@ -649,13 +709,15 @@ namespace BetterJoyForCemu {
             // down pad is darkened by the write above instead, and the interface is simply closed -
             // the machine is taking the USB stack down regardless.
             if (!shuttingDown) {
-                ThreadPool.QueueUserWorkItem(_ => {
+                ThreadPool.QueueUserWorkItem(_ => Program.mgr.RunControllerUsbWork(() => {
                     Thread.Sleep(100);
+                    if (Program.mgr.IsStopping)
+                        return;
                     bool reenumerated = UsbDeviceReenumerator.TryReenumerateHidInterface(
                         parkedPath, out string detail);
                     DebugLog.Write("DualSense USB pseudo-sleep re-enumeration: path=" +
                         parkedPath + " result=" + reenumerated + " detail=" + detail);
-                });
+                }));
             }
 
             if (monitorChargeOnlyWakeAfterPowerOff)
@@ -1219,12 +1281,12 @@ namespace BetterJoyForCemu {
                 bool sleepOnConnectAfterBluetoothEstablished) {
             byte[] hostCopy = (byte[])hostMacLittleEndian.Clone();
             byte[] controllerCopy = (byte[])controllerMac.Clone();
-            bool queued = ThreadPool.QueueUserWorkItem(_ => {
+            bool queued = ThreadPool.QueueUserWorkItem(_ => Program.mgr.RunControllerUsbWork(() => {
                 try {
                     bool bluetoothHandoff = attemptNumber > 0;
                     bool completed = BluetoothRadio.TryFinalizeClassicHidPairing(
                         hostCopy, controllerCopy, BluetoothPairingFallbackName(),
-                        createdWindowsBond, 10000);
+                        createdWindowsBond, 10000, () => Program.mgr.IsStopping);
                     // Previously also reopened a fresh USB handle here and rewrote the pairing-info
                     // feature report (0x0A) once more as a "final key reassert" once Windows
                     // finished authenticating - confirmed on real hardware to knock the controller
@@ -1270,7 +1332,7 @@ namespace BetterJoyForCemu {
                     Array.Clear(hostCopy, 0, hostCopy.Length);
                     Array.Clear(controllerCopy, 0, controllerCopy.Length);
                 }
-            });
+            }));
             if (!queued) {
                 Array.Clear(hostCopy, 0, hostCopy.Length);
                 Array.Clear(controllerCopy, 0, controllerCopy.Length);
@@ -1486,7 +1548,7 @@ namespace BetterJoyForCemu {
                 return;
             }
 
-            ThreadPool.QueueUserWorkItem(_ => {
+            ThreadPool.QueueUserWorkItem(_ => Program.mgr.RunControllerUsbWork(() => {
                 // Give the wired interface a moment: the controller going dark can briefly take the
                 // path with it before it settles back as charge-only. Retry the open rather than
                 // deciding "gone" on one attempt.
@@ -1494,6 +1556,8 @@ namespace BetterJoyForCemu {
                 for (int attempt = 0; attempt < 8 && wakeHandle == IntPtr.Zero; attempt++) {
                     if (attempt > 0)
                         Thread.Sleep(250);
+                    if (Program.mgr.IsStopping)
+                        return;
                     wakeHandle = HIDapi.hid_open_path(wiredPath);
                 }
                 bool wokeOn = false;
@@ -1520,7 +1584,7 @@ namespace BetterJoyForCemu {
                     " sentConnectTrigger=" + wokeOn + " sentUsbWake=" + wokeUsb);
                 // Deliberately nothing further: no low-power park, no wake monitor. If the
                 // controller comes back, the normal scan adopts it like any other connection.
-            });
+            }));
         }
 
         // NATIVE Bluetooth power-off - restored verbatim from df0514e. Sony's own low-power command
@@ -1570,6 +1634,38 @@ namespace BetterJoyForCemu {
 
             return HIDapi.hid_send_feature_report(targetHandle, report,
                 new UIntPtr((uint)report.Length)) == report.Length;
+        }
+
+        // A hub port cycle gets the controller back to its firmware-owned plug-in state. Once
+        // that reset interface is available, make low-power the final command BetterJoy sends and
+        // immediately close the temporary handle. The bounded retry covers normal PnP reappearance
+        // latency without holding up suspend indefinitely.
+        internal static bool TrySendLowPowerAfterUsbCycle(string usbPath,
+                out string detail) {
+            detail = "no path";
+            if (String.IsNullOrWhiteSpace(usbPath))
+                return false;
+
+            Thread.Sleep(100);
+            for (int attempt = 1; attempt <= 20; attempt++) {
+                IntPtr usbHandle = HIDapi.hid_open_path(usbPath);
+                if (usbHandle != IntPtr.Zero) {
+                    try {
+                        if (SendBluetoothControlFeatureReport(usbHandle, false,
+                                DualSenseBluetoothControlOff)) {
+                            detail = "sent after " + attempt + " open attempt(s)";
+                            return true;
+                        }
+                    } finally {
+                        HIDapi.hid_close(usbHandle);
+                    }
+                }
+                if (attempt < 20)
+                    Thread.Sleep(50);
+            }
+
+            detail = "USB HID interface did not accept 0x08/0x02 after cycle";
+            return false;
         }
 
         public override void PrepareLongPressPowerOff() {
@@ -1635,7 +1731,8 @@ namespace BetterJoyForCemu {
             // Opening the USB HID interface during teardown prevents the firmware from reaching
             // its native orange charging state. Let that transition finish first; only then own
             // the input endpoint while waiting for the PS wake edge.
-            Thread.Sleep(FirmwarePowerOffWakeSettleMs);
+            if (Program.mgr.WaitForStop(FirmwarePowerOffWakeSettleMs))
+                return;
             bool fakeUsbChargeGlow = ControllerMappings.ChargeGlowEnabled(profileId);
             bool glowFollowsBattery = ControllerMappings.ChargeGlowUsesBattery(profileId);
             byte glowRed, glowGreen, glowBlue;

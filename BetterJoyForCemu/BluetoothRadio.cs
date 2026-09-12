@@ -589,7 +589,7 @@ namespace BetterJoyForCemu {
         // that got furthest (real connections observed staying up on their own).
         internal static bool TryFinalizeClassicHidPairing(byte[] hostMacLittleEndian,
                 byte[] deviceMac, string fallbackName, bool discoverUnknownDevice,
-                int timeoutMilliseconds) {
+                int timeoutMilliseconds, Func<bool> cancellationRequested = null) {
             if (hostMacLittleEndian == null || hostMacLittleEndian.Length != 6 ||
                     deviceMac == null || deviceMac.Length != 6)
                 return false;
@@ -597,6 +597,8 @@ namespace BetterJoyForCemu {
             timeoutMilliseconds = Math.Max(0, timeoutMilliseconds);
             long started = Stopwatch.GetTimestamp();
             while (true) {
+                if (cancellationRequested != null && cancellationRequested())
+                    return false;
                 if (TryFinalizeClassicHidPairingOnce(hostMacLittleEndian,
                         deviceMac, fallbackName, discoverUnknownDevice))
                     return true;

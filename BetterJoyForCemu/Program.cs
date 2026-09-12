@@ -503,6 +503,17 @@ namespace BetterJoyForCemu {
         // at any point after this is set - whether it was already queued or not - sees it and
         // exits without doing any scan work, instead of racing full teardown.
         volatile bool scanningStopped = false;
+        private readonly ManualResetEventSlim stopping = new ManualResetEventSlim(false);
+        private readonly object controllerUsbWorkLock = new object();
+        internal bool IsStopping => scanningStopped;
+        internal bool WaitForStop(int milliseconds) => stopping.Wait(milliseconds);
+
+        internal void RunControllerUsbWork(Action action) {
+            lock (controllerUsbWorkLock) {
+                if (!scanningStopped)
+                    action();
+            }
+        }
 
 
         public static JoyconManager Instance {
@@ -531,9 +542,12 @@ namespace BetterJoyForCemu {
         // before doing anything and exits immediately.
         public void StopScanning() {
             scanningStopped = true;
+            stopping.Set();
             controllerCheck?.Stop();
             lock (scanLock) { }
             controllerCheck?.Dispose();
+            controllerCheck = null;
+            lock (controllerUsbWorkLock) { }
             lock (chargeOnlyWakeMonitorLock) {
                 while (activeChargeOnlyWakeMonitors > 0)
                     Monitor.Wait(chargeOnlyWakeMonitorLock);
@@ -549,6 +563,8 @@ namespace BetterJoyForCemu {
 
         public void ApplyControllerProfileOptions() {
             RunExclusiveOfScanning(() => {
+                if (scanningStopped)
+                    return;
                 var handledProfiles = new HashSet<string>(StringComparer.Ordinal);
                 foreach (Controller jc in j) {
                     if (jc.state == Controller.state_.DROPPED)
@@ -889,25 +905,63 @@ namespace BetterJoyForCemu {
         // own iteration over them. Those are plain Lists, not ConcurrentList, so a Clear()+
         // AddRange() from another thread while a scan enumerates them could throw "Collection
         // was modified" or hand device classification a half-rebuilt list.
-        // Steps every controller off the way a suspend wants it: wired pads into the charge-only
-        // park so the firmware can go dark, Bluetooth pads onto a plain radio disconnect.
-        //
-        // Runs BEFORE StopScanning, deliberately. The park arms a charge-only wake monitor, and
-        // ShouldMonitorChargeOnlyUsbWake refuses to arm one once scanningStopped is set - so doing
-        // this after the scan had already been torn down (which is the order Stop() otherwise uses)
-        // parked the pad without the monitor that owns the interface while the firmware settles,
-        // and the controller just sat there lit.
-        public void ParkControllersForSuspend() {
-            lock (scanLock) {
-                foreach (Controller v in j.ToList()) {
-                    DebugLog.Write("Power: suspend parking pad=" + v.PadId +
-                        " usb=" + v.isUSB + " path=" + v.path);
-                    try { v.DisconnectForSuspend(); } catch (Exception e) {
-                        DebugLog.Write("Power: suspend park failed for pad=" + v.PadId + ": " +
-                            e.GetType().Name + ": " + e.Message);
-                    }
+        // Scanning and USB workers must already be stopped. This closes the active controller
+        // handles after each Sony controller has received its low-power command; suppressed USB
+        // wake-monitor handles were already closed by StopScanning.
+        internal List<UsbDeviceReenumerator.PortTarget> ReleaseControllersForSuspend() {
+            var usbPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            lock (suppressedUsbControllerLock) {
+                foreach (string path in suppressedUsbControllerProfiles.Keys) {
+                    if (path.IndexOf("vid_054c&pid_0ce6",
+                                StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            path.IndexOf("vid_054c&pid_0df2",
+                                StringComparison.OrdinalIgnoreCase) >= 0)
+                        usbPaths.Add(path);
                 }
             }
+            foreach (Controller controller in j.ToList()) {
+                if (controller is DualSenseController && controller.isUSB &&
+                        !String.IsNullOrEmpty(controller.path))
+                    usbPaths.Add(controller.path);
+            }
+
+            var portTargets = new List<UsbDeviceReenumerator.PortTarget>();
+            foreach (string usbPath in usbPaths) {
+                bool resolved = UsbDeviceReenumerator.TryResolveDualSensePort(
+                    usbPath, out UsbDeviceReenumerator.PortTarget target,
+                    out string detail);
+                DebugLog.Write("Power: suspend USB port resolve result=" + resolved +
+                    " path=" + usbPath + " detail=" + detail);
+                if (resolved && !portTargets.Any(existing =>
+                        String.Equals(existing.HubPath, target.HubPath,
+                            StringComparison.OrdinalIgnoreCase) &&
+                        existing.PortNumber == target.PortNumber))
+                    portTargets.Add(target);
+            }
+
+            foreach (Controller controller in j.ToList()) {
+                if (controller is DualSenseController)
+                    controller.RequestStopPollingForSuspend();
+            }
+            bool allReleased = true;
+            foreach (Controller controller in j.ToList()) {
+                try {
+                    if (controller is DualSenseController dualSense) {
+                        if (!dualSense.ReleaseForSuspend())
+                            allReleased = false;
+                    }
+                    else
+                        controller.DisconnectForSuspend();
+                } catch (Exception ex) {
+                    allReleased = false;
+                    DebugLog.Write("Power: suspend release failed for pad=" + controller.PadId + ": " + ex.Message);
+                }
+            }
+            if (!allReleased) {
+                DebugLog.Write("Power: suspend USB port cycle skipped because a controller handle did not release");
+                portTargets.Clear();
+            }
+            return portTargets;
         }
 
         public void RunExclusiveOfScanning(Action action) {
@@ -2264,19 +2318,16 @@ namespace BetterJoyForCemu {
         public static void OnMouseButtonDown(int buttonCode) => InputState.MouseDown(buttonCode);
         public static void OnMouseButtonUp(int buttonCode) => InputState.MouseUp(buttonCode);
 
-        public static void Stop(bool suspending = false) {
+        public static List<UsbDeviceReenumerator.PortTarget> Stop(bool suspending = false) {
+            var suspendPortTargets = new List<UsbDeviceReenumerator.PortTarget>();
             try {
-                // Park before the scan is torn down - see ParkControllersForSuspend for why the
-                // order is load-bearing. StopScanning below then ends the short-lived wake monitor
-                // it armed, which is all the life that monitor needs.
-                if (suspending)
-                    mgr.ParkControllersForSuspend();
-
                 // Stop the background scan first - otherwise it can still be adding to
                 // hiddenInstanceIds (TryHideController) while the loop below enumerates/clears it.
                 mgr.StopScanning();
+                if (suspending)
+                    suspendPortTargets = mgr.ReleaseControllersForSuspend();
 
-                if (useHidHide && hidHide != null && Boolean.Parse(ConfigurationManager.AppSettings["UnhideOnExit"])) {
+                if (!suspending && useHidHide && hidHide != null && Boolean.Parse(ConfigurationManager.AppSettings["UnhideOnExit"])) {
                     lock (hiddenInstanceIdsLock) {
                         foreach (string id in hiddenInstanceIds) {
                             try { hidHide.RemoveBlockedInstanceId(id); } catch { }
@@ -2294,6 +2345,7 @@ namespace BetterJoyForCemu {
                 // Start() must not inherit a stale client.
                 ReleaseVigemClient();
             }
+            return suspendPortTargets;
         }
 
         // Sleeping yanks the HID stack out from under every open handle. An attached

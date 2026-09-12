@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.ServiceProcess;
 
@@ -61,12 +62,34 @@ namespace BetterJoyForCemu {
         // watcher for free, and a suspend/resume no longer has that luxury.
         private void StopPipeline(bool suspending = false) {
             lock (pipelineLock) {
+                var suspendPortTargets =
+                    new List<UsbDeviceReenumerator.PortTarget>();
                 try {
-                    Program.Stop(suspending);
+                    suspendPortTargets = Program.Stop(suspending);
                 } catch { } finally {
                     if (host != null) {
                         host.Shutdown();
                         host = null;
+                    }
+                }
+
+                if (suspending) {
+                    foreach (UsbDeviceReenumerator.PortTarget target in
+                            suspendPortTargets) {
+                        bool cycled = UsbDeviceReenumerator.TryCyclePort(
+                            target, out string cycleDetail);
+                        DebugLog.Write("Power: suspend USB port cycle result=" +
+                            cycled + " path=" + target.HidPath +
+                            " detail=" + cycleDetail);
+                        if (!cycled)
+                            continue;
+
+                        bool sentLowPower =
+                            DualSenseController.TrySendLowPowerAfterUsbCycle(
+                                target.HidPath, out string lowPowerDetail);
+                        DebugLog.Write("Power: suspend post-cycle 0x08/0x02 sent=" +
+                            sentLowPower + " path=" + target.HidPath +
+                            " detail=" + lowPowerDetail);
                     }
                 }
             }

@@ -477,7 +477,7 @@ namespace BetterJoyForCemu {
         // device-agnostic (every controller type talks over one), even though what gets written
         // through it is not.
         protected IntPtr handle;
-        protected bool stop_polling = true;
+        protected volatile bool stop_polling = true;
 
         // Host callback for UI/status updates (AssignSlot, AppendTextBox, etc.) - every
         // controller type needs one, regardless of device kind.
@@ -490,6 +490,7 @@ namespace BetterJoyForCemu {
         // worth splitting on its own), just referenced by name. Fully device-agnostic otherwise.
         public void Begin() {
             if (PollThreadObj == null) {
+                stop_polling = false;
                 PollThreadObj = new Thread(new ThreadStart(Poll));
                 PollThreadObj.IsBackground = true;
                 PollThreadObj.Start();
@@ -536,7 +537,6 @@ namespace BetterJoyForCemu {
         // unrelated), so it stays abstract; the rest default to a no-op and Joycon overrides them
         // with its existing bodies unchanged.
         public void Poll() {
-            stop_polling = false;
             int attempts = 0;
             long lastSuccessTimestamp = Stopwatch.GetTimestamp();
             while (!stop_polling & state > state_.NO_JOYCONS) {
@@ -962,14 +962,27 @@ namespace BetterJoyForCemu {
                 try { out_dualsense.Disconnect(); } catch { }
             }
 
-            if (state > state_.NO_JOYCONS) {
+            if (state > state_.NO_JOYCONS && handle != IntPtr.Zero) {
                 HIDapi.hid_set_nonblocking(handle, 0);
                 OnDetachingWhileAttached();
             }
             if (close || state > state_.DROPPED) {
-                HIDapi.hid_close(handle);
+                if (handle != IntPtr.Zero) {
+                    HIDapi.hid_close(handle);
+                    handle = IntPtr.Zero;
+                }
             }
             state = state_.NOT_ATTACHED;
+        }
+
+        internal void RequestStopPollingForSuspend() {
+            stop_polling = true;
+        }
+
+        internal bool StopPollingForSuspend() {
+            RequestStopPollingForSuspend();
+            Thread worker = PollThreadObj;
+            return worker == null || worker == Thread.CurrentThread || worker.Join(1500);
         }
 
         // No-op by default; subclasses can release transport-specific resources before the HID
