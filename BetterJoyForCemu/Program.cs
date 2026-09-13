@@ -213,17 +213,6 @@ namespace BetterJoyForCemu {
                 chargeOnlyParkedUsbPaths.Remove(devicePath);
         }
 
-        public void ReleaseUsbControllerSuppression(string devicePath) {
-            if (String.IsNullOrEmpty(devicePath))
-                return;
-
-            lock (suppressedUsbControllerLock) {
-                suppressedUsbControllerProfiles.Remove(devicePath);
-                suppressedUsbPowerOffGraceUntil.Remove(devicePath);
-                chargeOnlyParkedUsbPaths.Remove(devicePath);
-            }
-        }
-
         // Controllers BetterJoy deliberately powered off (roaming sleep, long-press, inactivity,
         // app exit). Keyed by MAC and held HERE rather than on the pad object on purpose: the pad
         // that a power-off ran on is destroyed and rebuilt by the scan as a brand-new object, so

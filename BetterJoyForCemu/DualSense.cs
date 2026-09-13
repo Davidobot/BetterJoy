@@ -1510,20 +1510,6 @@ namespace BetterJoyForCemu {
                 return;
             }
 
-            string sleepMode = ControllerMappings.USBSleepOnConnectMode(profileId);
-            bool shouldParkForWake = sleepMode == ControllerMappings.USBSleepOnConnectEnabled ||
-                (sleepMode == ControllerMappings.USBSleepOnConnectBluetooth &&
-                    ControllerMappings.UsablePreferredTransport(profileId) ==
-                        ControllerMappings.PreferredTransportBluetooth);
-            if (!shouldParkForWake) {
-                Program.mgr.ReleaseUsbControllerSuppression(wiredPath);
-                DebugLog.Write("DualSense disappeared - firmware power-off released to " +
-                    "normal preferred transport: pad=" + PadId +
-                    " path=" + wiredPath +
-                    " usbSleepMode=" + sleepMode);
-                return;
-            }
-
             chargeOnlyUsbPath = wiredPath;
             appInitiatedPowerOff = true;
             Program.mgr.MarkDeliberatePowerOff(mac);
