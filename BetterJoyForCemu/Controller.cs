@@ -599,6 +599,12 @@ namespace BetterJoyForCemu {
                     // No need to increase attempts because it's not an error.
                 }
 
+                long pollTimestamp = Stopwatch.GetTimestamp();
+                bool longPowerOffPending = state > state_.DROPPED && a <= 0 &&
+                    HomeLongPowerOffPending();
+                if (longPowerOffPending && TryHandleHomeLongPowerOff(pollTimestamp))
+                    break;
+
                 // Belt-and-suspenders on top of the attempts>240 hard-error threshold above: a
                 // connection whose transport just goes quiet (e.g. a Bluetooth radio link
                 // dropping) rather than the HID handle itself becoming invalid can have
@@ -608,7 +614,7 @@ namespace BetterJoyForCemu {
                 // frozen "connected" entry (and virtual controller) indefinitely. This is a
                 // second, independent detector using elapsed wall-clock time since the last
                 // genuinely successful read, regardless of why reads have been failing.
-                if (state > state_.DROPPED && !AllowsSilentHidIdle &&
+                if (state > state_.DROPPED && !AllowsSilentHidIdle && !longPowerOffPending &&
                     (Stopwatch.GetTimestamp() - lastSuccessTimestamp) / (double)Stopwatch.Frequency > StaleConnectionSeconds) {
                     DebugLog.Write("Poll stale drop: pad=" + PadId +
                         " kind=" + Kind +
@@ -2929,6 +2935,48 @@ namespace BetterJoyForCemu {
         // and this base class's own fields.
         protected virtual void DoDeviceSpecificButtonActions() { }
 
+        private int HomeLongPowerOffButtonIndex() {
+            return (int)((!SupportsPairing || !isLeft || other != null)
+                ? Button.HOME
+                : Button.CAPTURE);
+        }
+
+        private int HomeLongPowerOffHoldSeconds() {
+            return Math.Max(1, Math.Min(10,
+                ProfileIntOption("HomeLongPowerOffHoldSeconds", 2)));
+        }
+
+        private bool HomeLongPowerOffPending() {
+            if (!ProfileBoolOption("HomeLongPowerOff"))
+                return false;
+
+            int powerOffButton = HomeLongPowerOffButtonIndex();
+            return buttons[powerOffButton] && buttons_down_timestamp[powerOffButton] > 0;
+        }
+
+        private bool TryHandleHomeLongPowerOff(long timestamp) {
+            if (!HomeLongPowerOffPending())
+                return false;
+
+            int powerOffButton = HomeLongPowerOffButtonIndex();
+            int holdSeconds = HomeLongPowerOffHoldSeconds();
+            double heldSeconds =
+                (timestamp - buttons_down_timestamp[powerOffButton]) /
+                (double)Stopwatch.Frequency;
+            if (heldSeconds <= holdSeconds)
+                return false;
+
+            if (other != null) {
+                other.PrepareLongPressPowerOff();
+                other.PowerOff();
+            }
+
+            ReleaseGyroMouseActions();
+            PrepareLongPressPowerOff();
+            PowerOff();
+            return true;
+        }
+
         protected void DoThingsWithButtons() {
             // Fresh per report - every SimulateContinous call below accumulates into this same
             // array for this one report, then GetButtonsForVigem folds it into vigemButtons.
@@ -2946,29 +2994,9 @@ namespace BetterJoyForCemu {
                 return;
             }
 
-            int powerOffButton = (int)((!SupportsPairing || !isLeft || other != null) ? Button.HOME : Button.CAPTURE);
-
             long timestamp = Stopwatch.GetTimestamp();
-            if (ProfileBoolOption("HomeLongPowerOff") && buttons[powerOffButton]) {
-                // Configurable rather than a fixed 2 seconds - too short for a profile that also
-                // uses this same button as a modifier key, where any combo held a little long
-                // would otherwise power the controller off. DualSense/DualShock4 have their own
-                // ~5-second hardware timeout that powers them off regardless of this setting -
-                // not something BetterJoy can override, so values past that are effectively
-                // moot for those controllers specifically.
-                int holdSeconds = Math.Max(1, Math.Min(10, ProfileIntOption("HomeLongPowerOffHoldSeconds", 2)));
-                if ((timestamp - buttons_down_timestamp[powerOffButton]) / 10000 > holdSeconds * 1000.0) {
-                    if (other != null) {
-                        other.PrepareLongPressPowerOff();
-                        other.PowerOff();
-                    }
-
-                    ReleaseGyroMouseActions();
-                    PrepareLongPressPowerOff();
-                    PowerOff();
-                    return;
-                }
-            }
+            if (TryHandleHomeLongPowerOff(timestamp))
+                return;
 
             if (ChangeOrientationDoubleClick && buttons_down[(int)Button.STICK] && lastDoubleClick != -1 && SupportsPairing) {
                 if ((buttons_down_timestamp[(int)Button.STICK] - lastDoubleClick) < 3000000) {

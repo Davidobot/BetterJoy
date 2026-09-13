@@ -1528,9 +1528,8 @@ namespace BetterJoyForCemu {
             homeLongPowerOffHoldInput = CreateProfileSecondsInput(page, 340, sectionTop + 20, "HomeLongPowerOffHoldSeconds");
             page.Controls.Add(CreateLabel("seconds", 396, sectionTop + 26, ProfileText, false));
             tip_reassign.SetToolTip(homeLongPowerOffHoldInput,
-                "DualSense and DualShock4 controllers have their own built-in ~5 second hold " +
-                "timeout that powers them off regardless of this setting - BetterJoy can't " +
-                "override that, so a value past 5s won't do anything for those specifically.");
+                "Some controller firmware may also react to a long PS hold. BetterJoy keeps " +
+                "watching the configured timer while the held controller stays available.");
             page.Controls.Add(CreateLabel("After inactivity", 24, sectionTop + 71, ProfileText, false));
             inactivitySelector = CreateProfileChoiceSelector(145, sectionTop + 65, 180);
             inactivitySelector.Items.AddRange(new object[] {
