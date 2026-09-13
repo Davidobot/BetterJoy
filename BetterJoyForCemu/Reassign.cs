@@ -132,6 +132,11 @@ namespace BetterJoyForCemu {
         private readonly Dictionary<string, Button> profileNavigationButtons = new Dictionary<string, Button>();
         private Panel profilePageHost;
         private Panel profileNavigationAccent;
+        private FlowLayoutPanel customBindingsRowsPanel;
+        private Button addCustomBindingButton;
+        private Label noCustomBindingsLabel;
+        private readonly List<CustomBindingRow> customBindingRows =
+            new List<CustomBindingRow>();
         private bool updatingControllerSelector;
         private bool initialControllerSelection = true;
         private long newestControllerSequence = -1;
@@ -154,6 +159,18 @@ namespace BetterJoyForCemu {
         // runtime OR-of-alternatives semantics this produces) - lets one action fire from either
         // of two unrelated inputs/combos.
         private bool comboCaptureAppend;
+
+        private sealed class CustomBindingRow {
+            public Panel Panel;
+            public SplitButton Input;
+            public SplitButton Output;
+            public Button Remove;
+        }
+
+        private sealed class CustomCaptureTarget {
+            public CustomBindingRow Row;
+            public bool IsInput;
+        }
 
         // These actions only accept controller inputs at runtime. Keyboard/mouse capture is
         // intentionally rejected for them below, just as before profiles were introduced.
@@ -193,6 +210,38 @@ namespace BetterJoyForCemu {
         private void SetBindValue(string key, string value) {
             if (!String.IsNullOrEmpty(SelectedProfileId))
                 ControllerMappings.SetValue(SelectedProfileId, key, value);
+        }
+
+        private string GetAssignmentValue(Control control) {
+            if (control?.Tag is string key)
+                return GetBindValue(key);
+            if (control?.Tag is CustomCaptureTarget target) {
+                int index = customBindingRows.IndexOf(target.Row);
+                ControllerMappings.CustomBinding[] bindings =
+                    ControllerMappings.CustomBindings(SelectedProfileId);
+                if (index >= 0 && index < bindings.Length)
+                    return target.IsInput ? bindings[index].Input : bindings[index].Output;
+            }
+            return String.Empty;
+        }
+
+        private void SetAssignmentValue(Control control, string value) {
+            if (control?.Tag is string key) {
+                SetBindValue(key, value);
+                return;
+            }
+            if (!(control?.Tag is CustomCaptureTarget target) ||
+                    String.IsNullOrEmpty(SelectedProfileId))
+                return;
+            int index = customBindingRows.IndexOf(target.Row);
+            var bindings = ControllerMappings.CustomBindings(SelectedProfileId).ToList();
+            if (index < 0 || index >= bindings.Count)
+                return;
+            ControllerMappings.CustomBinding binding = bindings[index];
+            bindings[index] = target.IsInput
+                ? new ControllerMappings.CustomBinding(value, binding.Output)
+                : new ControllerMappings.CustomBinding(binding.Input, value);
+            ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
         }
 
         public Reassign(ServiceControlClient serviceClient,
@@ -694,6 +743,7 @@ namespace BetterJoyForCemu {
             Controls.Add(header);
 
             Panel bindingsPage = BuildBindingsPage();
+            Panel customBindingsPage = BuildCustomBindingsPage();
             Panel gyroPage = BuildGyroPage();
             Panel touchpadPage = BuildTouchpadPage();
             Panel adaptiveTriggersPage = BuildAdaptiveTriggersPage();
@@ -701,6 +751,7 @@ namespace BetterJoyForCemu {
             Panel virtualControllerPage = BuildVirtualControllerPage();
             Panel globalPage = BuildGlobalPage();
             profilePages.Add("bindings", bindingsPage);
+            profilePages.Add("custom_bindings", customBindingsPage);
             profilePages.Add("gyro", gyroPage);
             profilePages.Add("touchpad", touchpadPage);
             profilePages.Add("adaptive_triggers", adaptiveTriggersPage);
@@ -708,6 +759,7 @@ namespace BetterJoyForCemu {
             profilePages.Add("virtual", virtualControllerPage);
             profilePages.Add("global", globalPage);
             profilePageHost.Controls.Add(bindingsPage);
+            profilePageHost.Controls.Add(customBindingsPage);
             profilePageHost.Controls.Add(gyroPage);
             profilePageHost.Controls.Add(touchpadPage);
             profilePageHost.Controls.Add(adaptiveTriggersPage);
@@ -843,14 +895,15 @@ namespace BetterJoyForCemu {
             };
             sidebar.Controls.Add(profileNavigationAccent);
             sidebar.Controls.Add(CreateNavigationButton("Bindings", "bindings", 60));
-            sidebar.Controls.Add(CreateNavigationButton("Gyro", "gyro", 104));
-            sidebar.Controls.Add(CreateNavigationButton("Touchpad", "touchpad", 148));
-            sidebar.Controls.Add(CreateNavigationButton("Adaptive triggers", "adaptive_triggers", 192));
-            sidebar.Controls.Add(CreateNavigationButton("Device behavior", "behavior", 236));
-            sidebar.Controls.Add(CreateNavigationButton("Virtual controller", "virtual", 280));
-            sidebar.Controls.Add(CreateLabel("GLOBAL", 20, 350,
+            sidebar.Controls.Add(CreateNavigationButton("Custom binds", "custom_bindings", 104));
+            sidebar.Controls.Add(CreateNavigationButton("Gyro", "gyro", 148));
+            sidebar.Controls.Add(CreateNavigationButton("Touchpad", "touchpad", 192));
+            sidebar.Controls.Add(CreateNavigationButton("Adaptive triggers", "adaptive_triggers", 236));
+            sidebar.Controls.Add(CreateNavigationButton("Device behavior", "behavior", 280));
+            sidebar.Controls.Add(CreateNavigationButton("Virtual controller", "virtual", 324));
+            sidebar.Controls.Add(CreateLabel("GLOBAL", 20, 386,
                 Color.FromArgb(151, 174, 205), false, 8F));
-            sidebar.Controls.Add(CreateNavigationButton("Global options", "global", 380));
+            sidebar.Controls.Add(CreateNavigationButton("Global options", "global", 416));
             return sidebar;
         }
 
@@ -984,6 +1037,157 @@ namespace BetterJoyForCemu {
 
             page.AutoScrollMinSize = new Size(0, layout.Y);
             return page;
+        }
+
+        private Panel BuildCustomBindingsPage() {
+            Panel page = CreateProfilePage("Custom binds",
+                "Map controller chords to virtual controller, mouse, or keyboard output.");
+
+            page.Controls.Add(CreateLabel("CONTROLLER CHORD", 24, 101,
+                ProfileMuted, false, 8.25F));
+            page.Controls.Add(CreateLabel("OUTPUT BIND", 294, 101,
+                ProfileMuted, false, 8.25F));
+
+            addCustomBindingButton = new Button {
+                Text = "+ Add bind",
+                Location = new Point(494, 91),
+                Size = new Size(100, 30),
+            };
+            StyleStandardButton(addCustomBindingButton, true);
+            addCustomBindingButton.Click += AddCustomBindingButton_Click;
+            page.Controls.Add(addCustomBindingButton);
+
+            customBindingsRowsPanel = new FlowLayoutPanel {
+                Location = new Point(24, 135),
+                Size = new Size(570, 385),
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0),
+            };
+            page.Controls.Add(customBindingsRowsPanel);
+
+            noCustomBindingsLabel = CreateLabel(
+                "No custom binds yet. Add one to choose a controller chord and its output.",
+                24, 143, ProfileMuted, false, 9F);
+            noCustomBindingsLabel.AutoSize = false;
+            noCustomBindingsLabel.Size = new Size(500, 30);
+            page.Controls.Add(noCustomBindingsLabel);
+
+            Label note = CreateLabel(
+                "Sources need at least two controller buttons. Set one under Bindings > Modifier " +
+                "if the source chord should not also pass through normally.",
+                24, 535, ProfileMuted, false, 8.5F);
+            note.AutoSize = false;
+            note.Size = new Size(570, 42);
+            page.Controls.Add(note);
+            return page;
+        }
+
+        private void AddCustomBindingButton_Click(object sender, EventArgs e) {
+            if (String.IsNullOrEmpty(SelectedProfileId))
+                return;
+            var bindings = ControllerMappings.CustomBindings(SelectedProfileId).ToList();
+            bindings.Add(new ControllerMappings.CustomBinding(String.Empty, String.Empty));
+            ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
+            LoadCustomBindings();
+        }
+
+        private void LoadCustomBindings() {
+            CancelComboCapture();
+            foreach (CustomBindingRow row in customBindingRows)
+                row.Panel.Dispose();
+            customBindingRows.Clear();
+            customBindingsRowsPanel.Controls.Clear();
+
+            ControllerMappings.CustomBinding[] bindings = String.IsNullOrEmpty(SelectedProfileId)
+                ? new ControllerMappings.CustomBinding[0]
+                : ControllerMappings.CustomBindings(SelectedProfileId);
+            foreach (ControllerMappings.CustomBinding binding in bindings)
+                AddCustomBindingRow(binding);
+
+            noCustomBindingsLabel.Visible = bindings.Length == 0;
+            addCustomBindingButton.Enabled = !String.IsNullOrEmpty(SelectedProfileId);
+        }
+
+        private void AddCustomBindingRow(ControllerMappings.CustomBinding binding) {
+            int Scale(int value) => (int)Math.Round(value * ProfileUiScale);
+            var row = new CustomBindingRow();
+            row.Panel = new Panel {
+                Size = new Size(customBindingsRowsPanel.ClientSize.Width - Scale(4), Scale(43)),
+                Margin = new Padding(0, 0, 0, Scale(4)),
+                BackColor = Color.Transparent,
+            };
+            row.Input = new SplitButton { SplitWidth = 0 };
+            row.Output = new SplitButton { SplitWidth = 0 };
+            row.Remove = new Button { Text = "×" };
+
+            ConfigureCustomBindingButton(row.Input, row, true,
+                0, Scale(246), binding.Input);
+            ConfigureCustomBindingButton(row.Output, row, false,
+                Scale(258), Scale(246), binding.Output);
+            StyleStandardButton(row.Remove, false);
+            row.Remove.Location = new Point(Scale(516), 0);
+            row.Remove.Size = new Size(Scale(50), Scale(31));
+            row.Remove.Font = new Font("Segoe UI", 10F * ProfileUiScale, FontStyle.Bold);
+            row.Remove.Click += (sender, e) => RemoveCustomBindingRow(row);
+            tip_reassign.SetToolTip(row.Remove, "Remove this custom bind.");
+
+            row.Panel.Controls.Add(row.Input);
+            row.Panel.Controls.Add(row.Output);
+            row.Panel.Controls.Add(row.Remove);
+            customBindingRows.Add(row);
+            customBindingsRowsPanel.Controls.Add(row.Panel);
+        }
+
+        private void ConfigureCustomBindingButton(SplitButton button, CustomBindingRow row,
+                bool isInput, int left, int width, string value) {
+            StyleMappingButton(button);
+            button.Location = new Point(left, 0);
+            button.Size = new Size(width, (int)Math.Round(31 * ProfileUiScale));
+            button.Font = new Font("Segoe UI", 9F * ProfileUiScale);
+            button.Tag = new CustomCaptureTarget { Row = row, IsInput = isInput };
+            button.MouseDown += CustomBindingButton_MouseDown;
+            SetCustomBindingPrettyName(button, value);
+        }
+
+        private void CustomBindingButton_MouseDown(object sender, MouseEventArgs e) {
+            SplitButton button = sender as SplitButton;
+            if (button == null)
+                return;
+            if (e.Button == MouseButtons.Left) {
+                curAssignment = button;
+                StartComboCapture(button, append: false);
+            } else if (e.Button == MouseButtons.Middle) {
+                CancelComboCapture();
+                SetAssignmentValue(button, String.Empty);
+                SetCustomBindingPrettyName(button, String.Empty);
+            }
+        }
+
+        private void RemoveCustomBindingRow(CustomBindingRow row) {
+            if (curAssignment?.Tag is CustomCaptureTarget target && target.Row == row)
+                CancelComboCapture();
+            int index = customBindingRows.IndexOf(row);
+            if (index < 0 || String.IsNullOrEmpty(SelectedProfileId))
+                return;
+            var bindings = ControllerMappings.CustomBindings(SelectedProfileId).ToList();
+            if (index < bindings.Count)
+                bindings.RemoveAt(index);
+            ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
+            LoadCustomBindings();
+        }
+
+        private void SetCustomBindingPrettyName(Control control, string value) {
+            string description = String.IsNullOrEmpty(value)
+                ? "(not set)"
+                : String.Join("+", value.Split('+').Select(DescribeBindPart));
+            control.Text = String.IsNullOrEmpty(value) ? "Click to assign" : description;
+            bool isInput = control.Tag is CustomCaptureTarget target && target.IsInput;
+            tip_reassign.SetToolTip(control, description + "\r\n\r\nLeft-click to detect " +
+                (isInput ? "a controller chord (two or more buttons)." : "an output bind or shortcut.") +
+                "\r\nMiddle-click to clear.");
         }
 
         private Panel BuildGyroPage() {
@@ -3040,6 +3244,7 @@ namespace BetterJoyForCemu {
             btn_apply.Enabled = hasController;
             gameControllersButton.Enabled = hasController;
             LoadProfileOptions(hasController);
+            LoadCustomBindings();
             bool supportsAutomaticBluetoothPairing = selected != null &&
                 (selected.Kind == ControllerKind.DualSense ||
                  selected.Kind == ControllerKind.DualShock4);
@@ -3518,7 +3723,8 @@ namespace BetterJoyForCemu {
             BeginBindingCaptureSuppression();
             comboMembers = new List<string>();
             comboHeldNow = new HashSet<string>();
-            comboCaptureAppend = append && IsAppendableBindValue(GetBindValue((string)c.Tag));
+            comboCaptureAppend = append && c.Tag is string &&
+                IsAppendableBindValue(GetAssignmentValue(c));
             c.Text = comboCaptureAppend ? "Press combo to add..." : "Press combo...";
 
             // Button's own MouseDown handling grabs native Win32 mouse capture on press - normally
@@ -3558,8 +3764,12 @@ namespace BetterJoyForCemu {
             comboCaptureAppend = false;
             EndBindingCaptureSuppression();
 
-            if (target != null)
-                GetPrettyName(target); // drop the "Press combo..." placeholder, restore the real value
+            if (target != null) {
+                if (target.Tag is CustomCaptureTarget)
+                    SetCustomBindingPrettyName(target, GetAssignmentValue(target));
+                else
+                    GetPrettyName(target); // restore the real value after "Press combo..."
+            }
         }
 
         // Called for every down/up transition seen while curAssignment is combo-capturing -
@@ -3606,12 +3816,29 @@ namespace BetterJoyForCemu {
             // Real press order now, not an alphabetical/canonical one - see comboMembers' own
             // comment for why that distinction actually matters at match time.
             string combo = String.Join("+", comboMembers);
+            if (curAssignment.Tag is CustomCaptureTarget customTarget && customTarget.IsInput &&
+                    !ControllerMappings.IsValidCustomBindingInput(combo)) {
+                Control invalidTarget = curAssignment;
+                curAssignment = null;
+                comboMembers = null;
+                comboHeldNow = null;
+                comboCaptureAppend = false;
+                EndBindingCaptureSuppression();
+                SetCustomBindingPrettyName(invalidTarget, GetAssignmentValue(invalidTarget));
+                MessageBox.Show(this,
+                    "A custom source must contain at least two different controller buttons.",
+                    "Custom binds", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             if (comboCaptureAppend) {
-                string existing = GetBindValue((string)curAssignment.Tag);
+                string existing = GetAssignmentValue(curAssignment);
                 combo = existing + "," + combo;
             }
-            SetBindValue((string)curAssignment.Tag, combo);
-            GetPrettyName(curAssignment);
+            SetAssignmentValue(curAssignment, combo);
+            if (curAssignment.Tag is CustomCaptureTarget)
+                SetCustomBindingPrettyName(curAssignment, combo);
+            else
+                GetPrettyName(curAssignment);
 
             curAssignment = null;
             comboMembers = null;
@@ -3674,8 +3901,11 @@ namespace BetterJoyForCemu {
             if (comboMembers != null) {
                 HandleComboInput(now ? "joy_" + bi : null, now ? null : "joy_" + bi);
             } else if (now) {
-                SetBindValue((string)curAssignment.Tag, "joy_" + bi);
-                GetPrettyName(curAssignment);
+                SetAssignmentValue(curAssignment, "joy_" + bi);
+                if (curAssignment.Tag is CustomCaptureTarget)
+                    SetCustomBindingPrettyName(curAssignment, "joy_" + bi);
+                else
+                    GetPrettyName(curAssignment);
                 curAssignment = null;
                 EndBindingCaptureSuppression();
             }
@@ -3686,6 +3916,10 @@ namespace BetterJoyForCemu {
                 return;
 
             if (comboMembers != null) {
+                if (curAssignment.Tag is CustomCaptureTarget inputTarget && inputTarget.IsInput) {
+                    e.Next_Hook_Enabled = false;
+                    return;
+                }
                 // Left click is how this box gets opened for capture in the first place - the
                 // global hook sees every left click system-wide and can't tell "the click that
                 // opened the box" apart from "a left click somewhere else" by timing alone. It
@@ -3708,8 +3942,8 @@ namespace BetterJoyForCemu {
             // Controller.SimulateMouseActionButton/Scroll). A keyboard/mouse trigger would capture fine
             // here but then silently do nothing, so leave those actions uncaptured. Activation
             // mappings are not controller-only and may still use keyboard or mouse input.
-            if (e.Data.ButtonDown != null && !ControllerOnlyKeys.Contains((string)curAssignment.Tag)) {
-                SetBindValue((string)curAssignment.Tag, "mse_" + ((int)e.Data.ButtonDown.Button));
+            if (e.Data.ButtonDown != null && !IsControllerOnlyAssignment(curAssignment)) {
+                SetAssignmentValue(curAssignment, "mse_" + ((int)e.Data.ButtonDown.Button));
                 AsyncPrettyName(curAssignment);
                 curAssignment = null;
                 EndBindingCaptureSuppression();
@@ -3722,6 +3956,10 @@ namespace BetterJoyForCemu {
                 return;
 
             if (comboMembers != null) {
+                if (curAssignment.Tag is CustomCaptureTarget inputTarget && inputTarget.IsInput) {
+                    e.Next_Hook_Enabled = false;
+                    return;
+                }
                 if (e.Data.KeyDown != null)
                     HandleComboInput("key_" + (int)e.Data.KeyDown.Key, null);
                 if (e.Data.KeyUp != null)
@@ -3731,8 +3969,8 @@ namespace BetterJoyForCemu {
             }
 
             // See the same guard in Mouse_MouseEvent above.
-            if (e.Data.KeyDown != null && !ControllerOnlyKeys.Contains((string)curAssignment.Tag)) {
-                SetBindValue((string)curAssignment.Tag, "key_" + ((int)e.Data.KeyDown.Key));
+            if (e.Data.KeyDown != null && !IsControllerOnlyAssignment(curAssignment)) {
+                SetAssignmentValue(curAssignment, "key_" + ((int)e.Data.KeyDown.Key));
                 AsyncPrettyName(curAssignment);
                 curAssignment = null;
                 EndBindingCaptureSuppression();
@@ -3762,7 +4000,16 @@ namespace BetterJoyForCemu {
                 this.Invoke(new Action<Control>(AsyncPrettyName), new object[] { c });
                 return;
             }
-            GetPrettyName(c);
+            if (c.Tag is CustomCaptureTarget)
+                SetCustomBindingPrettyName(c, GetAssignmentValue(c));
+            else
+                GetPrettyName(c);
+        }
+
+        private static bool IsControllerOnlyAssignment(Control control) {
+            if (control?.Tag is CustomCaptureTarget customTarget)
+                return customTarget.IsInput;
+            return control?.Tag is string key && ControllerOnlyKeys.Contains(key);
         }
 
         private void GetPrettyName(Control c) {

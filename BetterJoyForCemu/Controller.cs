@@ -628,6 +628,7 @@ namespace BetterJoyForCemu {
             // a button-down whose corresponding physical controller can no longer report up.
             ReleaseGyroMouseActions();
             ReleaseTouchpadMouseActions();
+            ReleaseCustomBindingOutputs();
             FinishTouchpadColorWheel();
             if (HasTouchpad)
                 ReleaseMappedHold(MappingValue("touchpad_click"));
@@ -944,6 +945,7 @@ namespace BetterJoyForCemu {
         // type.
         public void Detach(bool close = false) {
             stop_polling = true;
+            ReleaseCustomBindingOutputs();
 
             // A target that was created but never actually got plugged in (or was already
             // unplugged) throws on Disconnect() - the same "wasn't connected in the first place"
@@ -1180,6 +1182,17 @@ namespace BetterJoyForCemu {
         // report, then folded into vigemButtons (virtual-controller-output only) by
         // GetButtonsForVigem - buttons[] itself is never touched.
         protected readonly bool[] continuousRemapButtons = new bool[ButtonCount];
+        protected readonly bool[] customRemapButtons = new bool[ButtonCount];
+        private string lastCustomBindingsValue;
+        private ControllerMappings.CustomBinding[] customBindings =
+            new ControllerMappings.CustomBinding[0];
+        private readonly List<string> heldCustomDesktopOutputs = new List<string>();
+        private readonly List<string> desiredCustomDesktopOutputs = new List<string>();
+        private readonly HashSet<string> seenCustomDesktopOutputs =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly object customBindingsLock = new object();
+        private static readonly float[] NeutralCustomStick = new float[2];
+        private static readonly byte[] NeutralCustomSliders = new byte[2];
 
         // Controller definitions decode their own report offsets, then submit this canonical
         // contact shape to the shared activation/actions/pointer pipeline below. Sony touchpads
@@ -1937,6 +1950,7 @@ namespace BetterJoyForCemu {
 
             ReleaseGyroMouseActions();
             ReleaseTouchpadMouseActions();
+            ReleaseCustomBindingOutputs();
             FinishTouchpadColorWheel();
             if (HasTouchpad)
                 ReleaseMappedHold(MappingValue("touchpad_click"));
@@ -1974,6 +1988,84 @@ namespace BetterJoyForCemu {
             prevResetMouseComboHeld = false;
             gyroMouseClenched = false;
             gyroStickRatcheted = false;
+            lastCustomBindingsValue = null;
+        }
+
+        // Reconcile every complete custom row against the current physical controller state.
+        // Desktop outputs are diffed as a union so two held rows targeting the same key cannot
+        // release one another. Virtual-controller parts join the existing per-report remap mask.
+        private void ProcessCustomBindings() {
+            if (mappingProfileId == null)
+                mappingProfileId = ControllerMappings.ProfileIdFor(this);
+
+            lock (customBindingsLock) {
+                string currentValue = ControllerMappings.CustomBindingsValue(mappingProfileId);
+                if (!String.Equals(lastCustomBindingsValue, currentValue, StringComparison.Ordinal)) {
+                    ReleaseCustomDesktopOutputsLocked();
+                    customBindings = ControllerMappings.CustomBindings(mappingProfileId)
+                        .Where(binding =>
+                            ControllerMappings.IsValidCustomBindingInput(binding.Input) &&
+                            ControllerMappings.IsValidCustomBindingOutput(binding.Output))
+                        .ToArray();
+                    lastCustomBindingsValue = currentValue;
+                }
+
+                desiredCustomDesktopOutputs.Clear();
+                seenCustomDesktopOutputs.Clear();
+                foreach (ControllerMappings.CustomBinding binding in customBindings) {
+                    if (!IsComboHeld(binding.Input))
+                        continue;
+
+                    foreach (string part in binding.Output.Split('+')) {
+                        if (part.StartsWith("joy_", StringComparison.Ordinal)) {
+                            int buttonIndex;
+                            if (Int32.TryParse(part.Substring(4), out buttonIndex) &&
+                                    buttonIndex >= 0 && buttonIndex < continuousRemapButtons.Length)
+                                continuousRemapButtons[buttonIndex] =
+                                    customRemapButtons[buttonIndex] = true;
+                        } else if (seenCustomDesktopOutputs.Add(part)) {
+                            // Captured shortcut order is meaningful: modifier down precedes its
+                            // key, and the release path below unwinds that order.
+                            desiredCustomDesktopOutputs.Add(part);
+                        }
+                    }
+                }
+
+                for (int i = heldCustomDesktopOutputs.Count - 1; i >= 0; i--) {
+                    string part = heldCustomDesktopOutputs[i];
+                    if (!seenCustomDesktopOutputs.Contains(part))
+                        SetCustomDesktopOutput(part, false);
+                }
+                foreach (string part in desiredCustomDesktopOutputs) {
+                    if (!heldCustomDesktopOutputs.Contains(part))
+                        SetCustomDesktopOutput(part, true);
+                }
+                heldCustomDesktopOutputs.Clear();
+                heldCustomDesktopOutputs.AddRange(desiredCustomDesktopOutputs);
+            }
+        }
+
+        private void SetCustomDesktopOutput(string part, bool held) {
+            int code;
+            if (form == null || part.Length <= 4 ||
+                    !Int32.TryParse(part.Substring(4), out code))
+                return;
+            if (part.StartsWith("key_", StringComparison.Ordinal)) {
+                if (held) form.SimulateKeyHold(code); else form.SimulateKeyRelease(code);
+            } else if (part.StartsWith("mse_", StringComparison.Ordinal)) {
+                if (held) form.SimulateButtonHold(code); else form.SimulateButtonRelease(code);
+            }
+        }
+
+        private void ReleaseCustomBindingOutputs() {
+            lock (customBindingsLock)
+                ReleaseCustomDesktopOutputsLocked();
+        }
+
+        private void ReleaseCustomDesktopOutputsLocked() {
+            for (int i = heldCustomDesktopOutputs.Count - 1; i >= 0; i--)
+                SetCustomDesktopOutput(heldCustomDesktopOutputs[i], false);
+            heldCustomDesktopOutputs.Clear();
         }
 
         protected void ReleaseMappedHold(string mapping) {
@@ -2610,6 +2702,18 @@ namespace BetterJoyForCemu {
             return vigemButtons;
         }
 
+        // Modifier suppresses raw passthrough and the fixed remaps, but a custom row explicitly
+        // targeting a virtual-controller button must still be able to produce that button.
+        protected bool[] GetCustomButtonsForVigem() {
+            Array.Clear(vigemButtons, 0, vigemButtons.Length);
+            for (int canonicalIndex = 0; canonicalIndex < customRemapButtons.Length;
+                    canonicalIndex++) {
+                if (customRemapButtons[canonicalIndex])
+                    vigemButtons[CanonicalButtonToLocalVigemIndex(canonicalIndex)] = true;
+            }
+            return vigemButtons;
+        }
+
         protected readonly Stopwatch shakeTimer = Stopwatch.StartNew(); //Setup a timer for measuring shake in milliseconds
         protected long shakedTime = 0;
         protected bool hasShaked;
@@ -2829,6 +2933,7 @@ namespace BetterJoyForCemu {
             // Fresh per report - every SimulateContinous call below accumulates into this same
             // array for this one report, then GetButtonsForVigem folds it into vigemButtons.
             Array.Clear(continuousRemapButtons, 0, continuousRemapButtons.Length);
+            Array.Clear(customRemapButtons, 0, customRemapButtons.Length);
 
             // Checked first and returns early like the other button-driven side effects below -
             // a face button doubling as "confirm" only ever matters while a calibration prompt
@@ -2898,6 +3003,7 @@ namespace BetterJoyForCemu {
             TryAutoCalibrate();
 
             DetectShake();
+            ProcessCustomBindings();
 
             if (buttons_down[(int)Button.CAPTURE])
                 Simulate(MappingValue("capture"));
@@ -3205,12 +3311,7 @@ namespace BetterJoyForCemu {
             // gate raw button/stick passthrough while letting chords that use it as a prefix
             // still fire - defaultState is forced false so the *unbound* Home-passthrough rule
             // stays suppressed, only an explicit "guide" mapping can still produce output here.
-            if (input.IsModifierHeld()) {
-                return new OutputControllerXbox360InputState {
-                    guide = input.ResolveVirtualGuideState(false),
-                };
-            }
-
+            bool modifierHeld = input.IsModifierHeld();
             var output = new OutputControllerXbox360InputState();
 
 
@@ -3221,14 +3322,16 @@ namespace BetterJoyForCemu {
             var isSnes = input.Kind == ControllerKind.Snes;
             var is64 = input.Kind == ControllerKind.N64;
             var hasDualSticks = input.HasDualSticks;
-            var hasAnalogTriggers = input.HasAnalogTriggers;
+            var hasAnalogTriggers = input.HasAnalogTriggers && !modifierHeld;
             var other = input.other;
             var GyroAnalogSliders = input.GyroAnalogSliders;
 
-            var buttons = input.GetButtonsForVigem();
-            var stick = input.stick;
-            var stick2 = input.stick2;
-            var sliderVal = input.sliderVal;
+            var buttons = modifierHeld
+                ? input.GetCustomButtonsForVigem()
+                : input.GetButtonsForVigem();
+            var stick = modifierHeld ? NeutralCustomStick : input.stick;
+            var stick2 = modifierHeld ? NeutralCustomStick : input.stick2;
+            var sliderVal = modifierHeld ? NeutralCustomSliders : input.sliderVal;
 
             if (is64)
             {
@@ -3238,7 +3341,9 @@ namespace BetterJoyForCemu {
                 // N64's stick-drift-tracking calibration (minX/maxX/minY/maxY) is N64-only state
                 // that stays on N64Controller - is64 being true already guarantees input actually
                 // is one (no other Kind ever reports N64), so this cast is safe.
-                var n64Stick = N64Controller.Getn64StickValues((N64Controller)input);
+                var n64Stick = modifierHeld
+                    ? NeutralCustomStick
+                    : N64Controller.Getn64StickValues((N64Controller)input);
 
                 output.axis_left_x = CastStickValue(n64Stick[0]);
                 output.axis_left_y = CastStickValue(n64Stick[1]);
@@ -3317,7 +3422,9 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            output.guide = input.ResolveVirtualGuideState(output.guide);
+            output.guide = modifierHeld
+                ? output.guide || input.ResolveVirtualGuideState(false)
+                : input.ResolveVirtualGuideState(output.guide);
 
             if (!(isSnes || is64)) {
                 if (other != null || hasDualSticks) { // no need for && other != this
@@ -3360,18 +3467,16 @@ namespace BetterJoyForCemu {
             // centered, so the neutral state needs to say so explicitly. See IsModifierHeld's own
             // comment. ps is still resolved for the same reason MapToXbox360Input resolves guide -
             // an explicit chord binding, not raw passthrough, so Modifier shouldn't block it.
-            if (input.IsModifierHeld()) {
-                return new OutputControllerDualShock4InputState {
+            bool modifierHeld = input.IsModifierHeld();
+            var output = modifierHeld
+                ? new OutputControllerDualShock4InputState {
                     thumb_left_x = 128,
                     thumb_left_y = 128,
                     thumb_right_x = 128,
                     thumb_right_y = 128,
                     dPad = DpadDirection.None,
-                    ps = input.ResolveVirtualGuideState(false),
-                };
-            }
-
-            var output = new OutputControllerDualShock4InputState();
+                }
+                : new OutputControllerDualShock4InputState();
 
             var swapAB = input.swapAB;
             var swapXY = input.swapXY;
@@ -3383,10 +3488,12 @@ namespace BetterJoyForCemu {
             var other = input.other;
             var GyroAnalogSliders = input.GyroAnalogSliders;
 
-            var buttons = input.GetButtonsForVigem();
-            var stick = input.stick;
-            var stick2 = input.stick2;
-            var sliderVal = input.sliderVal;
+            var buttons = modifierHeld
+                ? input.GetCustomButtonsForVigem()
+                : input.GetButtonsForVigem();
+            var stick = modifierHeld ? NeutralCustomStick : input.stick;
+            var stick2 = modifierHeld ? NeutralCustomStick : input.stick2;
+            var sliderVal = modifierHeld ? NeutralCustomSliders : input.sliderVal;
 
             if (is64)
             {
@@ -3514,7 +3621,9 @@ namespace BetterJoyForCemu {
                 }
             }
 
-            output.ps = input.ResolveVirtualGuideState(output.ps);
+            output.ps = modifierHeld
+                ? output.ps || input.ResolveVirtualGuideState(false)
+                : input.ResolveVirtualGuideState(output.ps);
 
             if (!(isSnes || is64)) {
                 if (other != null || hasDualSticks) { // no need for && other != this
