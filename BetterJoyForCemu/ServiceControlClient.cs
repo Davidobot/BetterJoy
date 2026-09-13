@@ -10,7 +10,7 @@ namespace BetterJoyForCemu {
     // running service, to still show live controller status and trigger rumble test/join-split/
     // calibration against the service's real Joycon instances. All events fire from a
     // background read thread - subscribers marshal onto the UI thread themselves.
-    public class ServiceControlClient {
+    public class ServiceControlClient : IDisposable {
         public event Action<List<ControllerRecord>> SnapshotReceived;
         public event Action<int> CalibrationStarted;
         public event Action<int> CalibrationComplete;
@@ -23,6 +23,9 @@ namespace BetterJoyForCemu {
         private NamedPipeClientStream pipe;
         private BinaryWriter writer;
         private readonly object writeLock = new object();
+        private bool disposed;
+
+        public bool IsConnected => pipe != null && pipe.IsConnected;
 
         // Returns false if the service isn't listening within the timeout (e.g. it just
         // stopped) - caller decides what that means for it.
@@ -97,7 +100,7 @@ namespace BetterJoyForCemu {
 
         private void Send(Action<BinaryWriter> write) {
             lock (writeLock) {
-                if (pipe == null || !pipe.IsConnected)
+                if (disposed || pipe == null || !pipe.IsConnected)
                     return;
 
                 try {
@@ -105,6 +108,16 @@ namespace BetterJoyForCemu {
                 } catch {
                     // best-effort - a mid-write disconnect just drops this one command
                 }
+            }
+        }
+
+        public void Dispose() {
+            disposed = true;
+            lock (writeLock) {
+                try { writer?.Dispose(); } catch { }
+                try { pipe?.Dispose(); } catch { }
+                writer = null;
+                pipe = null;
             }
         }
     }

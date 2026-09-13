@@ -57,10 +57,13 @@ namespace BetterJoyForCemu {
         // HeadlessJoyconHost), this GUI never runs its own HID/ViGEm pipeline at all - it just
         // shows live status pushed over ServiceControlClient and forwards a handful of commands
         // (rumble test/join-split/calibration) instead of acting on a live Joycon directly.
-        // Decided once in MainForm_Load; not re-evaluated mid-session.
-        private bool isRemoteMode = false;
         private ServiceControlClient serviceClient;
         private List<ControllerRecord> lastControllerSnapshot = new List<ControllerRecord>();
+        private Timer serviceReconnectTimer;
+        private bool serviceReconnectInProgress;
+        private int serviceReconnectAttempts;
+        private const int ServiceReconnectIntervalMs = 1000;
+        private const int ServiceReconnectPipeTimeoutMs = 500;
 
         public enum NonOriginalController : int {
             Disabled = 0,
@@ -186,51 +189,32 @@ namespace BetterJoyForCemu {
             // pre-check gating it - a service that's genuinely up answers regardless of what the
             // SCM reports at this exact instant), and only consult IsBetterJoyServiceRunning()
             // afterward, purely to shape the error message if that connection attempt failed.
-            serviceClient = new ServiceControlClient();
-            isRemoteMode = TryConnectWithRetries(serviceClient);
+            // Config.Init() normally runs inside Program.Start() (see its comment there for
+            // why) - remote mode never calls that, so without this, Config.variables stays
+            // completely empty and every Config.Value(...) lookup returns "". Controller Profiles
+            // (Reassign.GetPrettyName) doesn't guard against that, so it crashed with
+            // ArgumentOutOfRangeException the moment anyone opened it in remote mode.
+            Config.Init(CalibrationState.CaliData, CalibrationState.StickCaliData, CalibrationState.Stick2CaliData);
 
-            if (isRemoteMode) {
-                WireServiceClientEvents();
+            // Add Controllers/blacklist (_3rdPartyControllers dialog) reads/edits these two
+            // in-memory lists - normally populated by Program.Start()'s GUI branch, which
+            // never runs here. Load them the same way headless mode does, so the dialog
+            // isn't working from an empty list.
+            _3rdPartyControllers.LoadIntoProgramLists();
 
-                // Config.Init() normally runs inside Program.Start() (see its comment there for
-                // why) - remote mode never calls that, so without this, Config.variables stays
-                // completely empty and every Config.Value(...) lookup returns "". Controller Profiles
-                // (Reassign.GetPrettyName) doesn't guard against that, so it crashed with
-                // ArgumentOutOfRangeException the moment anyone opened it in remote mode.
-                Config.Init(CalibrationState.CaliData, CalibrationState.StickCaliData, CalibrationState.Stick2CaliData);
+            if (!AppPaths.ServiceModeEnabled)
+                AppendTextBox("Config isn't synced with the service yet - settings/remap changes made here won't reach it until you use \"Sync Config with Service\".\r\n");
 
-                // Add Controllers/blacklist (_3rdPartyControllers dialog) reads/edits these two
-                // in-memory lists - normally populated by Program.Start()'s GUI branch, which
-                // never runs here. Load them the same way headless mode does, so the dialog
-                // isn't working from an empty list.
-                _3rdPartyControllers.LoadIntoProgramLists();
-
-                AppendTextBox("Connected to the BetterJoy service - it owns the controllers; this window shows live status only.\r\n");
-                if (!AppPaths.ServiceModeEnabled)
-                    AppendTextBox("Config isn't synced with the service yet - settings/remap changes made here won't reach it until you use \"Sync Config with Service\".\r\n");
-
-                serviceClient.RequestSnapshot();
-            } else if (IsBetterJoyServiceRunning()) {
-                // The SCM says the service is Running, but its control pipe never answered after
-                // retries - an ambiguous state (AV/firewall interference, pipe instance
-                // exhaustion, some transient error), not evidence the service is actually down.
-                // There's no local fallback to fall back to anymore, so this is a dead end until
-                // one side restarts.
-                AppendTextBox("The BetterJoy service appears to be running, but its status connection couldn't be reached. Restart BetterJoy (or the service) to retry.\r\n");
-                MessageBox.Show(
-                    "The BetterJoy service appears to be running, but this window couldn't reach its status connection.\r\n\r\n" +
-                    "Restart BetterJoy (or the service) to retry.",
-                    "BetterJoy2");
+            ServiceControlClient initialClient = new ServiceControlClient();
+            if (TryConnectWithRetries(initialClient)) {
+                AdoptServiceClient(initialClient, "Connected to the BetterJoy service - it owns the controllers; this window shows live status only.\r\n");
             } else {
-                // Not installed, or installed but not running - either way, there is no local
-                // pipeline to fall back to anymore. The installer sets the service to start
-                // automatically; this is the "something's wrong with that" path, not the normal
-                // first-run path.
-                AppendTextBox("The BetterJoy service isn't running - this window has nothing to show or control until it is. Start the BetterJoy service (or reinstall BetterJoy) and reopen this window.\r\n");
-                MessageBox.Show(
-                    "The BetterJoy service isn't running, so this window has nothing to show or control.\r\n\r\n" +
-                    "Start the BetterJoy service (via Services.msc, or by reinstalling BetterJoy), then reopen this window.",
-                    "BetterJoy2");
+                initialClient.Dispose();
+                AppendTextBox(IsBetterJoyServiceRunning()
+                    ? "The BetterJoy service is running, but its status connection is not ready yet. Waiting to reconnect...\r\n"
+                    : "The BetterJoy service is not reachable yet. Waiting to reconnect...\r\n");
+                RenderSnapshot(new List<ControllerRecord>());
+                StartServiceReconnectLoop();
             }
 
             console.Visible = !Boolean.Parse(ConfigurationManager.AppSettings["HideStatus"]);
@@ -279,6 +263,9 @@ namespace BetterJoyForCemu {
             notifyIcon.Visible = false; // remove the tray icon immediately so no further tray messages can reach it
 
             desktopInput.Dispose();
+            serviceReconnectTimer?.Stop();
+            serviceReconnectTimer?.Dispose();
+            serviceClient?.Dispose();
             Environment.Exit(0);
         }
 
@@ -384,13 +371,69 @@ namespace BetterJoyForCemu {
             return false;
         }
 
+        private void AdoptServiceClient(ServiceControlClient client, string message) {
+            serviceReconnectTimer?.Stop();
+            serviceReconnectInProgress = false;
+            serviceReconnectAttempts = 0;
+
+            ServiceControlClient oldClient = serviceClient;
+            serviceClient = client;
+            WireServiceClientEvents(client);
+            oldClient?.Dispose();
+
+            AppendTextBox(message);
+            client.RequestSnapshot();
+        }
+
+        private void StartServiceReconnectLoop() {
+            if (isExiting)
+                return;
+
+            serviceClient?.Dispose();
+            serviceClient = null;
+
+            if (serviceReconnectTimer == null) {
+                serviceReconnectTimer = new Timer {
+                    Interval = ServiceReconnectIntervalMs
+                };
+                serviceReconnectTimer.Tick += ServiceReconnectTimer_Tick;
+            }
+
+            if (!serviceReconnectTimer.Enabled)
+                serviceReconnectTimer.Start();
+        }
+
+        private void ServiceReconnectTimer_Tick(object sender, EventArgs e) {
+            if (isExiting || serviceReconnectInProgress)
+                return;
+
+            serviceReconnectInProgress = true;
+            ServiceControlClient client = new ServiceControlClient();
+            try {
+                if (client.Connect(ServiceReconnectPipeTimeoutMs)) {
+                    AdoptServiceClient(client, "Reconnected to the BetterJoy service.\r\n");
+                    return;
+                }
+
+                client.Dispose();
+                serviceReconnectAttempts++;
+                if (serviceReconnectAttempts == 1 || serviceReconnectAttempts % 10 == 0) {
+                    AppendTextBox(IsBetterJoyServiceRunning()
+                        ? "Still waiting for the BetterJoy service status connection...\r\n"
+                        : "Still waiting for the BetterJoy service to start...\r\n");
+                }
+            } finally {
+                serviceReconnectInProgress = false;
+            }
+        }
+
         // All ServiceControlClient events fire from a background read thread - each handler
         // marshals onto the UI thread itself (RenderSnapshot does its own Invoke check; the
         // rest are simple enough to wrap inline here).
-        private void WireServiceClientEvents() {
-            serviceClient.SnapshotReceived += RenderSnapshot;
+        private void WireServiceClientEvents(ServiceControlClient client) {
+            client.SnapshotReceived += RenderSnapshot;
 
-            serviceClient.CalibrationStarted += padId => this.Invoke(new MethodInvoker(delegate {
+            client.CalibrationStarted += padId => this.Invoke(new MethodInvoker(delegate {
                 console.Text = "Calibration started." + "\r\n";
                 if (calibDialog == null) {
                     calibDialog = new CalibrationDialog();
@@ -405,7 +448,7 @@ namespace BetterJoyForCemu {
             // service sends one message per second for the gyro countdown, so there's no need
             // for a local cosmetic timer the way an earlier version of this had - the displayed
             // number is always exactly what the service just said.
-            serviceClient.CalibrationStep += step => this.Invoke(new MethodInvoker(delegate {
+            client.CalibrationStep += step => this.Invoke(new MethodInvoker(delegate {
                 if (calibDialog == null) {
                     calibDialog = new CalibrationDialog();
                     calibDialog.ButtonClicked += OnRemoteCalibButtonClicked;
@@ -428,28 +471,33 @@ namespace BetterJoyForCemu {
                 }
             }));
 
-            serviceClient.CalibrationComplete += padId => this.Invoke(new MethodInvoker(delegate {
+            client.CalibrationComplete += padId => this.Invoke(new MethodInvoker(delegate {
                 console.Text += "\r\nCalibration completed!!!\r\n";
                 RestoreCalibrateIcon();
                 CloseRemoteCalibDialog("Calibration complete!");
             }));
 
-            serviceClient.CalibrationFailed += padId => this.Invoke(new MethodInvoker(delegate {
+            client.CalibrationFailed += padId => this.Invoke(new MethodInvoker(delegate {
                 console.Text += "\r\nCalibration failed - was the controller disconnected?\r\n";
                 RestoreCalibrateIcon();
                 CloseRemoteCalibDialog("Failed - was the controller disconnected?");
             }));
 
-            serviceClient.Disconnected += () => this.Invoke(new MethodInvoker(delegate {
+            client.Disconnected += () => this.Invoke(new MethodInvoker(delegate {
+                if (client != serviceClient || isExiting)
+                    return;
+
                 AppendTextBox("Lost connection to the BetterJoy service.\r\n");
                 CloseRemoteCalibDialog("Lost connection to the service.");
+                RenderSnapshot(new List<ControllerRecord>());
+                StartServiceReconnectLoop();
             }));
 
             // Not Invoke-wrapped, matching the prior inline behavior in the local
             // NotifyLowBattery this replaces - NotifyIcon operations aren't Control-handle-affine
             // the way Buttons are, so the fire-and-forget ServiceControlClient read thread can
             // call this directly.
-            serviceClient.LowBattery += info => {
+            client.LowBattery += info => {
                 notifyIcon.Visible = true;
                 notifyIcon.BalloonTipText = String.Format("Controller {0} ({1}) - low battery notification!",
                     info.PadId, ControllerKindLabel(info.Kind));
@@ -464,8 +512,20 @@ namespace BetterJoyForCemu {
         // asked for (it's the only thing that can be pending), same as it's the sole source of
         // truth for what the button currently means (see the CalibrationStep handler above).
         private void OnRemoteCalibButtonClicked() {
+            if (!HasServiceConnection())
+                return;
+
             calibDialog.HidePrompt();
             serviceClient.CalibrationReady(remoteCalibPadId);
+        }
+
+        private bool HasServiceConnection() {
+            if (serviceClient != null && serviceClient.IsConnected)
+                return true;
+
+            AppendTextBox("Waiting for the BetterJoy service connection to come back.\r\n");
+            StartServiceReconnectLoop();
+            return false;
         }
 
         private void CloseRemoteCalibDialog(string message) {
@@ -510,7 +570,7 @@ namespace BetterJoyForCemu {
             // onto slots with no de-duplication needed here.
             int slotIndex = 0;
 
-            foreach (ControllerRecord record in records) {
+            foreach (ControllerRecord record in lastControllerSnapshot) {
                 if (slotIndex >= con.Count)
                     continue;
 
@@ -566,6 +626,10 @@ namespace BetterJoyForCemu {
 
             int padId = (int)button.Tag;
             console.Text = "Requesting calibration from service...";
+            if (!HasServiceConnection()) {
+                RestoreCalibrateIcon();
+                return;
+            }
             serviceClient.StartCalibration(padId);
             // calibrateIconButton keeps flashing until CalibrationComplete/Failed arrives (see
             // WireServiceClientEvents) - not cleared immediately here.
@@ -576,7 +640,7 @@ namespace BetterJoyForCemu {
 
             if (bb.Tag.GetType() == typeof(Button)) {
                 Button button = bb.Tag as Button;
-                if (button.Tag is int)
+                if (button.Tag is int && HasServiceConnection())
                     serviceClient.TestRumble((int)button.Tag);
             }
         }
@@ -684,6 +748,9 @@ namespace BetterJoyForCemu {
 
         private void ExecuteJoinOrSplit(Button button, bool forceSelfPair) {
             if (button.Tag is int padId) {
+                if (!HasServiceConnection())
+                    return;
+
                 if (forceSelfPair)
                     serviceClient.ForceSelfPair(padId);
                 else
@@ -948,9 +1015,12 @@ namespace BetterJoyForCemu {
         private CalibrationDialog calibDialog;
 
         private void btn_reassign_open_Click(object sender, EventArgs e) {
-            // serviceClient is never null now - Reassign uses it to relay controller-button
-            // presses for its "left-click then press" auto-detect, since this process never has
-            // any Joycon instances of its own to poll (the service owns the hardware).
+            // Reassign uses serviceClient to relay controller-button presses for its
+            // "left-click then press" auto-detect, since this process never has any Joycon
+            // instances of its own to poll (the service owns the hardware).
+            if (!HasServiceConnection())
+                return;
+
             string preferredProfileId = null;
             Button sourceButton = sender as Button;
             if (sourceButton != null && sourceButton.Tag is int) {
