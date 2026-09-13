@@ -135,6 +135,7 @@ namespace BetterJoyForCemu {
         private FlowLayoutPanel customBindingsRowsPanel;
         private Button addCustomBindingButton;
         private Label noCustomBindingsLabel;
+        private Label customBindingsNote;
         private readonly List<CustomBindingRow> customBindingRows =
             new List<CustomBindingRow>();
         private bool updatingControllerSelector;
@@ -1061,10 +1062,10 @@ namespace BetterJoyForCemu {
 
             customBindingsRowsPanel = new FlowLayoutPanel {
                 Location = new Point(24, 135),
-                Size = new Size(570, 385),
+                Size = new Size(570, 1),
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                AutoScroll = true,
+                AutoScroll = false,
                 BackColor = Color.Transparent,
                 Padding = new Padding(0),
             };
@@ -1077,14 +1078,14 @@ namespace BetterJoyForCemu {
             noCustomBindingsLabel.Size = new Size(500, 30);
             page.Controls.Add(noCustomBindingsLabel);
 
-            Label note = CreateLabel(
+            customBindingsNote = CreateLabel(
                 "Sources need at least two controller buttons. Set one under Bindings > Modifier " +
                 "if the source chord should not also pass through normally. Preset actions fire " +
                 "once each time the chord is pressed.",
-                24, 535, ProfileMuted, false, 8.5F);
-            note.AutoSize = false;
-            note.Size = new Size(570, 54);
-            page.Controls.Add(note);
+                24, 185, ProfileMuted, false, 8.5F);
+            customBindingsNote.AutoSize = false;
+            customBindingsNote.Size = new Size(570, 54);
+            page.Controls.Add(customBindingsNote);
             return page;
         }
 
@@ -1115,6 +1116,22 @@ namespace BetterJoyForCemu {
 
             noCustomBindingsLabel.Visible = bindings.Length == 0;
             addCustomBindingButton.Enabled = !String.IsNullOrEmpty(SelectedProfileId);
+            LayoutCustomBindingsPage();
+        }
+
+        private void LayoutCustomBindingsPage() {
+            int rowsHeight = customBindingsRowsPanel.Controls.Cast<Control>()
+                .Sum(control => control.Height + control.Margin.Vertical);
+            customBindingsRowsPanel.Height = Math.Max(1, rowsHeight);
+
+            int contentBottom = customBindingRows.Count == 0
+                ? noCustomBindingsLabel.Bottom
+                : customBindingsRowsPanel.Bottom;
+            customBindingsNote.Top = contentBottom + (int)Math.Round(15 * ProfileUiScale);
+
+            Panel page = customBindingsRowsPanel.Parent as Panel;
+            page.AutoScrollMinSize = new Size(0,
+                customBindingsNote.Bottom + (int)Math.Round(20 * ProfileUiScale));
         }
 
         private void AddCustomBindingRow(ControllerMappings.CustomBinding binding) {
