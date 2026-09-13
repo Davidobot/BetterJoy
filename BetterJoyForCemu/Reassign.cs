@@ -165,6 +165,8 @@ namespace BetterJoyForCemu {
             public SplitButton Input;
             public SplitButton Output;
             public Button Remove;
+            public ContextMenuStrip InputMenu;
+            public ContextMenuStrip OutputMenu;
         }
 
         private sealed class CustomCaptureTarget {
@@ -1077,10 +1079,11 @@ namespace BetterJoyForCemu {
 
             Label note = CreateLabel(
                 "Sources need at least two controller buttons. Set one under Bindings > Modifier " +
-                "if the source chord should not also pass through normally.",
+                "if the source chord should not also pass through normally. Preset actions fire " +
+                "once each time the chord is pressed.",
                 24, 535, ProfileMuted, false, 8.5F);
             note.AutoSize = false;
-            note.Size = new Size(570, 42);
+            note.Size = new Size(570, 54);
             page.Controls.Add(note);
             return page;
         }
@@ -1096,8 +1099,11 @@ namespace BetterJoyForCemu {
 
         private void LoadCustomBindings() {
             CancelComboCapture();
-            foreach (CustomBindingRow row in customBindingRows)
+            foreach (CustomBindingRow row in customBindingRows) {
+                row.InputMenu?.Dispose();
+                row.OutputMenu?.Dispose();
                 row.Panel.Dispose();
+            }
             customBindingRows.Clear();
             customBindingsRowsPanel.Controls.Clear();
 
@@ -1119,14 +1125,18 @@ namespace BetterJoyForCemu {
                 Margin = new Padding(0, 0, 0, Scale(4)),
                 BackColor = Color.Transparent,
             };
-            row.Input = new SplitButton { SplitWidth = 0 };
-            row.Output = new SplitButton { SplitWidth = 0 };
+            row.Input = new SplitButton();
+            row.Output = new SplitButton();
             row.Remove = new Button { Text = "×" };
 
             ConfigureCustomBindingButton(row.Input, row, true,
                 0, Scale(246), binding.Input);
             ConfigureCustomBindingButton(row.Output, row, false,
                 Scale(258), Scale(246), binding.Output);
+            row.InputMenu = BuildCustomBindingInputMenu(row);
+            row.OutputMenu = BuildCustomBindingOutputMenu(row);
+            row.Input.Menu = row.InputMenu;
+            row.Output.Menu = row.OutputMenu;
             StyleStandardButton(row.Remove, false);
             row.Remove.Location = new Point(Scale(516), 0);
             row.Remove.Size = new Size(Scale(50), Scale(31));
@@ -1152,13 +1162,116 @@ namespace BetterJoyForCemu {
             SetCustomBindingPrettyName(button, value);
         }
 
+        private ContextMenuStrip BuildCustomBindingInputMenu(CustomBindingRow row) {
+            ContextMenuStrip menu = CreateCustomBindingMenu();
+            ToolStripMenuItem capture = new ToolStripMenuItem("Capture controller chord…");
+            capture.Click += (sender, e) => StartCustomBindingCapture(row.Input);
+            menu.Items.Add(capture);
+            menu.Items.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem buttons = new ToolStripMenuItem("Controller buttons");
+            foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
+                string part = "joy_" + value;
+                ToolStripMenuItem item = new ToolStripMenuItem(
+                    ControllerButtonDisplayName(value)) { Tag = part };
+                item.Click += (sender, e) => ToggleCustomBindingInputPart(
+                    row.Input, (string)((ToolStripItem)sender).Tag);
+                buttons.DropDownItems.Add(item);
+            }
+            menu.Items.Add(buttons);
+            menu.Items.Add(new ToolStripSeparator());
+            ToolStripMenuItem clear = new ToolStripMenuItem("Clear");
+            clear.Click += (sender, e) => SetCustomBindingSelection(row.Input, String.Empty);
+            menu.Items.Add(clear);
+            menu.Opening += (sender, e) => {
+                HashSet<string> selected = new HashSet<string>(
+                    GetAssignmentValue(row.Input).Split('+'), StringComparer.Ordinal);
+                foreach (ToolStripItem child in buttons.DropDownItems) {
+                    ToolStripMenuItem item = child as ToolStripMenuItem;
+                    if (item != null)
+                        item.Checked = selected.Contains((string)item.Tag);
+                }
+            };
+            return menu;
+        }
+
+        private ContextMenuStrip BuildCustomBindingOutputMenu(CustomBindingRow row) {
+            ContextMenuStrip menu = CreateCustomBindingMenu();
+            ToolStripMenuItem capture = new ToolStripMenuItem("Capture custom output…");
+            capture.Click += (sender, e) => StartCustomBindingCapture(row.Output);
+            menu.Items.Add(capture);
+            menu.Items.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem controller = new ToolStripMenuItem("Controller bind");
+            foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
+                ToolStripMenuItem item = new ToolStripMenuItem(
+                    ControllerButtonDisplayName(value)) { Tag = "joy_" + value };
+                item.Click += (sender, e) => SetCustomBindingSelection(
+                    row.Output, (string)((ToolStripItem)sender).Tag);
+                controller.DropDownItems.Add(item);
+            }
+            menu.Items.Add(controller);
+
+            foreach (string category in new[] { "Media", "Windows" }) {
+                ToolStripMenuItem categoryMenu = new ToolStripMenuItem(category);
+                foreach (ControllerMappings.CustomActionChoice choice in
+                        ControllerMappings.CustomActionChoices.Where(
+                            candidate => candidate.Category == category)) {
+                    ToolStripMenuItem item = new ToolStripMenuItem(choice.Label) {
+                        Tag = choice.Value,
+                    };
+                    item.Click += (sender, e) => SetCustomBindingSelection(
+                        row.Output, (string)((ToolStripItem)sender).Tag);
+                    categoryMenu.DropDownItems.Add(item);
+                }
+                menu.Items.Add(categoryMenu);
+            }
+
+            menu.Items.Add(new ToolStripSeparator());
+            ToolStripMenuItem clear = new ToolStripMenuItem("Clear");
+            clear.Click += (sender, e) => SetCustomBindingSelection(row.Output, String.Empty);
+            menu.Items.Add(clear);
+            return menu;
+        }
+
+        private ContextMenuStrip CreateCustomBindingMenu() {
+            ContextMenuStrip menu = new ContextMenuStrip {
+                BackColor = ProfileSurface,
+                ForeColor = ProfileText,
+                ShowImageMargin = false,
+                Font = new Font("Segoe UI", 9F),
+            };
+            menu.Renderer = new ToolStripProfessionalRenderer();
+            return menu;
+        }
+
+        private void StartCustomBindingCapture(SplitButton button) {
+            curAssignment = button;
+            StartComboCapture(button, append: false);
+        }
+
+        private void ToggleCustomBindingInputPart(SplitButton button, string part) {
+            List<string> parts = GetAssignmentValue(button)
+                .Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (parts.Contains(part))
+                parts.Remove(part);
+            else
+                parts.Add(part);
+            SetCustomBindingSelection(button, String.Join("+", parts));
+        }
+
+        private void SetCustomBindingSelection(SplitButton button, string value) {
+            CancelComboCapture();
+            SetAssignmentValue(button, value);
+            SetCustomBindingPrettyName(button, value);
+        }
+
         private void CustomBindingButton_MouseDown(object sender, MouseEventArgs e) {
             SplitButton button = sender as SplitButton;
             if (button == null)
                 return;
             if (e.Button == MouseButtons.Left) {
-                curAssignment = button;
-                StartComboCapture(button, append: false);
+                StartCustomBindingCapture(button);
             } else if (e.Button == MouseButtons.Middle) {
                 CancelComboCapture();
                 SetAssignmentValue(button, String.Empty);
@@ -1180,13 +1293,26 @@ namespace BetterJoyForCemu {
         }
 
         private void SetCustomBindingPrettyName(Control control, string value) {
-            string description = String.IsNullOrEmpty(value)
-                ? "(not set)"
-                : String.Join("+", value.Split('+').Select(DescribeBindPart));
-            control.Text = String.IsNullOrEmpty(value) ? "Click to assign" : description;
+            string description;
+            if (String.IsNullOrEmpty(value))
+                description = "(not set)";
+            else if (ControllerMappings.IsCustomAction(value))
+                description = ControllerMappings.CustomActionLabel(value);
+            else
+                description = String.Join("+", value.Split('+').Select(DescribeBindPart));
             bool isInput = control.Tag is CustomCaptureTarget target && target.IsInput;
+            bool incompleteInput = isInput && !String.IsNullOrEmpty(value) &&
+                !ControllerMappings.IsValidCustomBindingInput(value);
+            control.Text = String.IsNullOrEmpty(value)
+                ? "Click to assign"
+                : description + (incompleteInput ? "  ·  add another button" : String.Empty);
             tip_reassign.SetToolTip(control, description + "\r\n\r\nLeft-click to detect " +
                 (isInput ? "a controller chord (two or more buttons)." : "an output bind or shortcut.") +
+                (incompleteInput ? "\r\nThis chord needs at least one more controller button." : String.Empty) +
+                "\r\nClick the ▼ " + (isInput
+                    ? "to add or remove controller buttons."
+                    : "for presets and controller outputs.") +
+                (value == "act_ctrl_alt_delete" ? "\r\nRequires FakerInput." : String.Empty) +
                 "\r\nMiddle-click to clear.");
         }
 

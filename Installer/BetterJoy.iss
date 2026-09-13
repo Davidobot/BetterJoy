@@ -45,7 +45,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "vigembus"; Description: "Install the ViGEmBus driver (required for XInput/DS4 output)"; GroupDescription: "Drivers:"; Flags: checkedonce
 Name: "hidhide"; Description: "Install the HidHide driver (hides controllers from other programs, e.g. Steam)"; GroupDescription: "Drivers:"; Flags: unchecked
-Name: "fakerinput"; Description: "Install FakerInput virtual mouse (works in elevated apps, UAC, and before login in service mode)"; GroupDescription: "Drivers:"; Flags: unchecked
+Name: "fakerinput"; Description: "Install FakerInput virtual keyboard/mouse (supports elevated apps, secure screens, and custom shortcuts)"; GroupDescription: "Drivers:"; Flags: unchecked
 Name: "dualsensemic"; Description: "Install the Bluetooth microphone backend (VIIPER + signed usbip-win2 driver)"; GroupDescription: "Drivers:"; Flags: checkedonce
 Name: "steammic"; Description: "Install the Steam Streaming Microphone driver (fallback Bluetooth microphone backend, used if VIIPER is off/unavailable)"; GroupDescription: "Drivers:"; Flags: checkedonce
 

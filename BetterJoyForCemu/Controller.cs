@@ -1196,6 +1196,10 @@ namespace BetterJoyForCemu {
         private readonly List<string> desiredCustomDesktopOutputs = new List<string>();
         private readonly HashSet<string> seenCustomDesktopOutputs =
             new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> activeCustomActions =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> seenCustomActions =
+            new HashSet<string>(StringComparer.Ordinal);
         private readonly object customBindingsLock = new object();
         private static readonly float[] NeutralCustomStick = new float[2];
         private static readonly byte[] NeutralCustomSliders = new byte[2];
@@ -2018,12 +2022,21 @@ namespace BetterJoyForCemu {
 
                 desiredCustomDesktopOutputs.Clear();
                 seenCustomDesktopOutputs.Clear();
+                seenCustomActions.Clear();
                 foreach (ControllerMappings.CustomBinding binding in customBindings) {
                     if (!IsComboHeld(binding.Input))
                         continue;
 
                     foreach (string part in binding.Output.Split('+')) {
-                        if (part.StartsWith("joy_", StringComparison.Ordinal)) {
+                        DesktopInputAction action;
+                        if (ControllerMappings.TryGetCustomAction(part, out action)) {
+                            // Presets are commands rather than held state. Fire only on the
+                            // source chord's rising edge, including when two rows target the
+                            // same action and overlap.
+                            if (seenCustomActions.Add(part) && !activeCustomActions.Contains(part) &&
+                                    form != null)
+                                form.SimulateDesktopAction((int)action);
+                        } else if (part.StartsWith("joy_", StringComparison.Ordinal)) {
                             int buttonIndex;
                             if (Int32.TryParse(part.Substring(4), out buttonIndex) &&
                                     buttonIndex >= 0 && buttonIndex < continuousRemapButtons.Length)
@@ -2048,6 +2061,9 @@ namespace BetterJoyForCemu {
                 }
                 heldCustomDesktopOutputs.Clear();
                 heldCustomDesktopOutputs.AddRange(desiredCustomDesktopOutputs);
+                activeCustomActions.Clear();
+                foreach (string action in seenCustomActions)
+                    activeCustomActions.Add(action);
             }
         }
 
@@ -2072,6 +2088,8 @@ namespace BetterJoyForCemu {
             for (int i = heldCustomDesktopOutputs.Count - 1; i >= 0; i--)
                 SetCustomDesktopOutput(heldCustomDesktopOutputs[i], false);
             heldCustomDesktopOutputs.Clear();
+            activeCustomActions.Clear();
+            seenCustomActions.Clear();
         }
 
         protected void ReleaseMappedHold(string mapping) {

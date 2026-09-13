@@ -331,7 +331,7 @@ namespace BetterJoyForCemu {
                 if (!helperReady || pipe == null || !pipe.IsConnected) {
                     if (!loggedNoHelperConnected) {
                         loggedNoHelperConnected = true;
-                        AppendTextBox("No input helper connected - routing controller mouse output through FakerInput for the login/lock screen when available. Keyboard and physical input-hook mappings wait for login.");
+                        AppendTextBox("No input helper connected - routing supported controller mouse, media, and shortcut output through FakerInput for the login/lock screen when available. Physical input-hook mappings wait for login.");
                     }
                     ExecuteServiceInputLocked(msg);
                     return;
@@ -475,6 +475,10 @@ namespace BetterJoyForCemu {
                 SendStatefulMessage(InputMessageType.SimulateKeyHold, keyCode);
         }
         public void SimulateKeyRelease(int keyCode) => SendStatefulMessage(InputMessageType.SimulateKeyRelease, keyCode);
+        public void SimulateDesktopAction(int actionCode) {
+            if (!bindingCaptureSuppressesMappedOutput)
+                SendMessage(InputMessageType.SimulateDesktopAction, actionCode);
+        }
         public void SimulateButtonClick(int buttonCode) {
             if (!bindingCaptureSuppressesMappedOutput)
                 SendMessage(InputMessageType.SimulateButtonClick, buttonCode);

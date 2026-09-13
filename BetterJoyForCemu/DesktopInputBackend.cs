@@ -16,7 +16,7 @@ namespace BetterJoyForCemu {
         private readonly object sync = new object();
         private readonly bool fakerInputEnabled;
         private readonly bool allowDesktopFallback;
-        private FakerInputMouseClient fakerInput;
+        private FakerInputClient fakerInput;
         private bool fakerInputAttempted;
         private DateTime fakerInputRetryAfterUtc;
         private bool fakerInputUsed;
@@ -47,6 +47,8 @@ namespace BetterJoyForCemu {
                 case InputMessageType.SimulateKeyClick: backend.KeyClick(msg.A); break;
                 case InputMessageType.SimulateKeyHold: backend.KeyHold(msg.A); break;
                 case InputMessageType.SimulateKeyRelease: backend.KeyRelease(msg.A); break;
+                case InputMessageType.SimulateDesktopAction:
+                    backend.ActionClick((DesktopInputAction)msg.A); break;
                 case InputMessageType.SimulateButtonClick: backend.ButtonClick(msg.A); break;
                 case InputMessageType.SimulateButtonHold: backend.ButtonHold(msg.A); break;
                 case InputMessageType.SimulateButtonRelease: backend.ButtonRelease(msg.A); break;
@@ -75,6 +77,136 @@ namespace BetterJoyForCemu {
         public void KeyRelease(int keyCode) {
             if (allowDesktopFallback)
                 WindowsInput.Simulate.Events().Release((WindowsInput.Events.KeyCode)keyCode).Invoke();
+        }
+
+        public void ActionClick(DesktopInputAction action) {
+            lock (sync) {
+                switch (action) {
+                    case DesktopInputAction.MediaPlay: SendAppCommand(46); return;
+                    case DesktopInputAction.MediaPause: SendAppCommand(47); return;
+                    case DesktopInputAction.MediaPlayPause: ClickConsumerKey(0x08, 0xB3); return;
+                    case DesktopInputAction.MediaStop: ClickConsumerKey(0x04, 0xB2); return;
+                    case DesktopInputAction.MediaNextTrack: ClickConsumerKey(0x01, 0xB0); return;
+                    case DesktopInputAction.MediaPreviousTrack: ClickConsumerKey(0x02, 0xB1); return;
+                    case DesktopInputAction.VolumeMute: ClickConsumerKey(0x10, 0xAD); return;
+                    case DesktopInputAction.VolumeDown: ClickConsumerKey(0x20, 0xAE); return;
+                    case DesktopInputAction.VolumeUp: ClickConsumerKey(0x40, 0xAF); return;
+                    case DesktopInputAction.CtrlAltDelete:
+                        if (!TryClickFakerKeyboard(0x05, 0x4C))
+                            Debug.WriteLine("Ctrl+Alt+Delete requires the FakerInput driver.");
+                        return;
+                    case DesktopInputAction.CtrlShiftEscape:
+                        ClickKeyboardChord(0x03, new byte[] { 0x29 },
+                            new int[] { 0x11, 0x10 }, new int[] { 0x1B });
+                        return;
+                    case DesktopInputAction.AltTabNext:
+                        ClickKeyboardChord(0x04, new byte[] { 0x2B },
+                            new int[] { 0x12 }, new int[] { 0x09 });
+                        return;
+                    case DesktopInputAction.AltShiftTabPrevious:
+                        ClickKeyboardChord(0x06, new byte[] { 0x2B },
+                            new int[] { 0x12, 0x10 }, new int[] { 0x09 });
+                        return;
+                    case DesktopInputAction.AltTabLeft:
+                        ClickKeyboardSequence(0x04, new byte[] { 0x2B, 0x50 },
+                            new int[] { 0x12 }, new int[] { 0x09, 0x25 });
+                        return;
+                    case DesktopInputAction.AltTabRight:
+                        ClickKeyboardSequence(0x04, new byte[] { 0x2B, 0x4F },
+                            new int[] { 0x12 }, new int[] { 0x09, 0x27 });
+                        return;
+                }
+            }
+        }
+
+        private void ClickConsumerKey(byte mask, int fallbackVirtualKey) {
+            if (!TryClickFakerMultimedia(mask) && allowDesktopFallback)
+                WindowsInput.Simulate.Events().Click(
+                    (WindowsInput.Events.KeyCode)fallbackVirtualKey).Invoke();
+        }
+
+        private void ClickKeyboardChord(byte modifiers, byte[] hidKeys,
+                int[] fallbackModifiers, int[] fallbackKeys) {
+            if (TryClickFakerKeyboard(modifiers, hidKeys))
+                return;
+            ClickFallbackChord(fallbackModifiers, fallbackKeys);
+        }
+
+        private void ClickKeyboardSequence(byte modifiers, byte[] hidKeys,
+                int[] fallbackModifiers, int[] fallbackKeys) {
+            if (TryClickFakerKeyboardSequence(modifiers, hidKeys))
+                return;
+            ClickFallbackChord(fallbackModifiers, fallbackKeys);
+        }
+
+        private void ClickFallbackChord(int[] modifiers, int[] keys) {
+            if (!allowDesktopFallback)
+                return;
+            try {
+                foreach (int key in modifiers)
+                    WindowsInput.Simulate.Events().Hold((WindowsInput.Events.KeyCode)key).Invoke();
+                foreach (int key in keys)
+                    WindowsInput.Simulate.Events().Click((WindowsInput.Events.KeyCode)key).Invoke();
+            } finally {
+                for (int i = modifiers.Length - 1; i >= 0; i--)
+                    WindowsInput.Simulate.Events().Release(
+                        (WindowsInput.Events.KeyCode)modifiers[i]).Invoke();
+            }
+        }
+
+        private bool TryClickFakerKeyboard(byte modifiers, params byte[] keys) {
+            if (!EnsureFakerInput() || !fakerInput.TrySendKeyboard(modifiers, keys)) {
+                if (fakerInput != null)
+                    DisableFakerInput();
+                return false;
+            }
+            fakerInputUsed = true;
+            if (!fakerInput.TrySendKeyboard(0))
+                DisableFakerInput();
+            return true;
+        }
+
+        private bool TryClickFakerKeyboardSequence(byte modifiers, params byte[] keys) {
+            if (!EnsureFakerInput())
+                return false;
+            bool sentAny = false;
+            foreach (byte key in keys) {
+                if (!fakerInput.TrySendKeyboard(modifiers, key)) {
+                    DisableFakerInput();
+                    return sentAny;
+                }
+                sentAny = true;
+                fakerInputUsed = true;
+                if (!fakerInput.TrySendKeyboard(modifiers)) {
+                    DisableFakerInput();
+                    return true;
+                }
+            }
+            if (!fakerInput.TrySendKeyboard(0))
+                DisableFakerInput();
+            return true;
+        }
+
+        private bool TryClickFakerMultimedia(byte mask) {
+            if (!EnsureFakerInput() || !fakerInput.TrySendMultimedia(mask, 0, 0)) {
+                if (fakerInput != null)
+                    DisableFakerInput();
+                return false;
+            }
+            fakerInputUsed = true;
+            if (!fakerInput.TrySendMultimedia(0, 0, 0))
+                DisableFakerInput();
+            return true;
+        }
+
+        private bool SendAppCommand(int command) {
+            if (!allowDesktopFallback)
+                return false;
+            IntPtr target = GetForegroundWindow();
+            if (target == IntPtr.Zero)
+                return false;
+            SendMessage(target, 0x0319, target, new IntPtr(command << 16));
+            return true;
         }
 
         public void ButtonClick(int buttonCode) {
@@ -303,7 +435,7 @@ namespace BetterJoyForCemu {
 
             fakerInputAttempted = true;
             try {
-                fakerInput = FakerInputMouseClient.TryOpen();
+                fakerInput = FakerInputClient.TryOpen();
             } catch {
                 // Optional means optional: an unexpected HID/SetupAPI failure must never
                 // prevent BetterJoy itself (or the service's input helper) from running.
@@ -324,7 +456,7 @@ namespace BetterJoyForCemu {
             // on a transport failure, but this still releases held buttons for callers that are
             // explicitly disposing a healthy backend.
             if (fakerInputUsed)
-                fakerInput.TrySendRelative(0, 0, 0, 0, 0);
+                fakerInput.TryReleaseAll();
             fakerInput.Dispose();
             fakerInput = null;
             fakerInputUsed = false;
@@ -388,12 +520,19 @@ namespace BetterJoyForCemu {
             double normalized = (value - minimum) / (double)(length - 1);
             return (ushort)Math.Round(Math.Max(0.0, Math.Min(1.0, normalized)) * 32767.0);
         }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr SendMessage(
+            IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
     }
 
     // Minimal native client for FakerInput's vendor control collection. This intentionally uses
     // only Windows HID/SetupAPI calls and the MIT-licensed wire protocol from FakerInput v0.1.1;
     // it avoids redistributing the GPL application wrapper used by other controller mappers.
-    internal sealed class FakerInputMouseClient : IDisposable {
+    internal sealed class FakerInputClient : IDisposable {
         private const ushort VendorId = 0xFE0F;
         private const ushort ProductId = 0x00FF;
         private const ushort ControlUsagePage = 0xFF00;
@@ -412,11 +551,11 @@ namespace BetterJoyForCemu {
 
         private SafeFileHandle handle;
 
-        private FakerInputMouseClient(SafeFileHandle handle) {
+        private FakerInputClient(SafeFileHandle handle) {
             this.handle = handle;
         }
 
-        public static FakerInputMouseClient TryOpen() {
+        public static FakerInputClient TryOpen() {
             Guid hidGuid;
             HidD_GetHidGuid(out hidGuid);
             IntPtr deviceInfoSet = SetupDiGetClassDevs(
@@ -457,7 +596,7 @@ namespace BetterJoyForCemu {
                             continue;
                         }
 
-                        return new FakerInputMouseClient(candidate);
+                        return new FakerInputClient(candidate);
                     } finally {
                         Marshal.FreeHGlobal(detail);
                     }
@@ -478,6 +617,26 @@ namespace BetterJoyForCemu {
             report[6] = unchecked((byte)wheel);
             report[7] = unchecked((byte)horizontalWheel);
             return TryWriteControlReport(report);
+        }
+
+        public bool TrySendKeyboard(byte modifiers, params byte[] keys) {
+            byte[] report = new byte[9];
+            report[0] = 0x01;
+            report[1] = modifiers;
+            int count = Math.Min(keys == null ? 0 : keys.Length, 6);
+            for (int i = 0; i < count; i++)
+                report[3 + i] = keys[i];
+            return TryWriteControlReport(report);
+        }
+
+        public bool TrySendMultimedia(byte keys0, byte keys1, byte keys2) {
+            return TryWriteControlReport(new byte[] { 0x02, keys0, keys1, keys2 });
+        }
+
+        public void TryReleaseAll() {
+            TrySendKeyboard(0);
+            TrySendMultimedia(0, 0, 0);
+            TrySendRelative(0, 0, 0, 0, 0);
         }
 
         public bool TrySendAbsolute(ushort x, ushort y) {

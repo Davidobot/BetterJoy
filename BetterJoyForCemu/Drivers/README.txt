@@ -1,10 +1,11 @@
 Driver installer provided for convenience.
 
 FakerInput (https://github.com/Ryochan7/FakerInput) is an optional signed virtual
-keyboard/mouse driver. BetterJoy2 uses its mouse interface when available so gyro mouse
-movement and controller clicks continue to work in elevated applications and on the UAC
-desktop, where Windows blocks ordinary SendInput injection. When BetterJoy2 runs as a service,
-the same virtual mouse also works before login and after logoff. Select it in BetterJoy Setup,
+keyboard/mouse driver. BetterJoy2 uses its mouse, keyboard, and consumer-control interfaces when
+available so gyro mouse movement, controller clicks, custom shortcuts, and media actions continue
+to work in elevated applications and on the UAC desktop, where Windows blocks ordinary SendInput
+injection. Its virtual keyboard also provides the Ctrl+Alt+Delete custom-bind preset. When
+BetterJoy2 runs as a service, the same virtual devices work before login and after logoff. Select it in BetterJoy Setup,
 or run FakerInput_Setup_0.1.1_x64.msi manually. Set UseFakerInput=false to keep using the
 legacy input path even when the driver is installed. Its MIT license is included in
 FakerInput-LICENSE.txt.

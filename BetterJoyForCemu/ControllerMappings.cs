@@ -50,6 +50,41 @@ namespace BetterJoyForCemu {
             }
         }
 
+        public sealed class CustomActionChoice {
+            public string Value { get; private set; }
+            public string Label { get; private set; }
+            public string Category { get; private set; }
+            public DesktopInputAction Action { get; private set; }
+
+            public CustomActionChoice(string value, string label, string category,
+                    DesktopInputAction action) {
+                Value = value;
+                Label = label;
+                Category = category;
+                Action = action;
+            }
+        }
+
+        // Stable, readable values are persisted in controller_mappings.xml. Keeping the display
+        // label separate lets the UI improve wording without invalidating saved profiles.
+        public static readonly CustomActionChoice[] CustomActionChoices = {
+            new CustomActionChoice("act_media_play", "Play", "Media", DesktopInputAction.MediaPlay),
+            new CustomActionChoice("act_media_pause", "Pause", "Media", DesktopInputAction.MediaPause),
+            new CustomActionChoice("act_media_play_pause", "Play / Pause", "Media", DesktopInputAction.MediaPlayPause),
+            new CustomActionChoice("act_media_stop", "Stop", "Media", DesktopInputAction.MediaStop),
+            new CustomActionChoice("act_media_next", "Next track", "Media", DesktopInputAction.MediaNextTrack),
+            new CustomActionChoice("act_media_previous", "Previous track", "Media", DesktopInputAction.MediaPreviousTrack),
+            new CustomActionChoice("act_volume_up", "Volume up", "Media", DesktopInputAction.VolumeUp),
+            new CustomActionChoice("act_volume_down", "Volume down", "Media", DesktopInputAction.VolumeDown),
+            new CustomActionChoice("act_volume_mute", "Mute", "Media", DesktopInputAction.VolumeMute),
+            new CustomActionChoice("act_ctrl_alt_delete", "Ctrl + Alt + Delete", "Windows", DesktopInputAction.CtrlAltDelete),
+            new CustomActionChoice("act_ctrl_shift_escape", "Task Manager (Ctrl + Shift + Esc)", "Windows", DesktopInputAction.CtrlShiftEscape),
+            new CustomActionChoice("act_alt_tab_next", "Next window (Alt + Tab)", "Windows", DesktopInputAction.AltTabNext),
+            new CustomActionChoice("act_alt_shift_tab_previous", "Previous window (Alt + Shift + Tab)", "Windows", DesktopInputAction.AltShiftTabPrevious),
+            new CustomActionChoice("act_alt_tab_left", "Alt + Tab + Left", "Windows", DesktopInputAction.AltTabLeft),
+            new CustomActionChoice("act_alt_tab_right", "Alt + Tab + Right", "Windows", DesktopInputAction.AltTabRight),
+        };
+
         public const string FileName = "controller_mappings.xml";
         public const string DefaultLightColor = "#0000FF";
         public const string ModeEnable = "enable";
@@ -582,7 +617,31 @@ namespace BetterJoyForCemu {
 
         public static bool IsValidCustomBindingOutput(string value) {
             string[] parts = String.IsNullOrEmpty(value) ? new string[0] : value.Split('+');
+            if (parts.Length == 1 && IsCustomAction(parts[0]))
+                return true;
             return parts.Length > 0 && parts.All(part => IsValidBindPart(part, controllerOnly: false));
+        }
+
+        public static bool IsCustomAction(string value) {
+            return CustomActionChoices.Any(choice =>
+                String.Equals(choice.Value, value, StringComparison.Ordinal));
+        }
+
+        public static bool TryGetCustomAction(string value, out DesktopInputAction action) {
+            CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
+                String.Equals(candidate.Value, value, StringComparison.Ordinal));
+            if (choice == null) {
+                action = default(DesktopInputAction);
+                return false;
+            }
+            action = choice.Action;
+            return true;
+        }
+
+        public static string CustomActionLabel(string value) {
+            CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
+                String.Equals(candidate.Value, value, StringComparison.Ordinal));
+            return choice == null ? value : choice.Label;
         }
 
         private static bool IsValidBindPart(string part, bool controllerOnly) {

@@ -11,6 +11,27 @@ namespace BetterJoyForCemu {
         DualSenseOpus = 1,
     }
 
+    // One-shot desktop actions exposed by Custom binds. These travel as an int through the
+    // existing fixed-size input pipe, while DesktopInputBackend chooses the appropriate
+    // implementation (FakerInput keyboard/consumer HID or a Windows app command).
+    public enum DesktopInputAction : int {
+        MediaPlay = 1,
+        MediaPause = 2,
+        MediaPlayPause = 3,
+        MediaStop = 4,
+        MediaNextTrack = 5,
+        MediaPreviousTrack = 6,
+        VolumeUp = 7,
+        VolumeDown = 8,
+        VolumeMute = 9,
+        CtrlAltDelete = 10,
+        CtrlShiftEscape = 11,
+        AltTabNext = 12,
+        AltShiftTabPrevious = 13,
+        AltTabLeft = 14,
+        AltTabRight = 15,
+    }
+
     // Message types carried over the named pipe between BetterJoyService (Session 0, no
     // desktop) and the session-launched input helper (has one) - see HeadlessJoyconHost for the
     // service side and InputHelper for the helper side.
@@ -36,6 +57,7 @@ namespace BetterJoyForCemu {
         SimulateScroll = 19, // A: 1 = scroll up (Forwards), 0 = scroll down (Backwards)
         SimulateCursorMoveBy = 20, // Exact pixel delta; bypasses Windows relative-pointer scaling.
         SimulateWrappedCursorMoveBy = 21, // Exact delta; wraps inside the cursor's current monitor.
+        SimulateDesktopAction = 22, // A = DesktopInputAction; one click per chord activation.
 
         // Service -> helper: start/stop continuous WASAPI loopback capture and controller-selected
         // encoding. A = padId, B = BluetoothAudioCodec. StartAudioCapture carries one extra

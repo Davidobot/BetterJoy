@@ -49,8 +49,8 @@ People should be paid for great software BUT nickle and diming + subscription pr
 BetterJoy² takes the opposite approach:
 
 * **Works system-wide** - the controller service does not depend on a game launcher or the GUI
-  remaining open, and the optional virtual HID mouse reaches elevated applications and Windows
-  session boundaries. Controllers should "Just work" without clunky UIs, startup apps or any nonsense!
+  remaining open, and the optional virtual HID input backend reaches elevated applications and
+  Windows session boundaries. Controllers should "Just work" without clunky UIs, startup apps or any nonsense!
 * **The software remains yours** - no DRM, account activation, storefront launcher, machine
   entitlement, concurrent-use restriction, or feature DLC. I paid for DSX on Steam and still feel ripped!
 * **Remapping is optional** - choose XInput or DualShock 4 output and play, or layer Steam Input or
@@ -161,9 +161,9 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
   doesn't touch the controller's Bluetooth report stream by itself - the recording endpoint only
   actually opens, and the controller only switches into its mic-duplex reporting mode, once
   something genuinely starts capturing from it.
-* **Optional virtual HID mouse backend** (via FakerInput) - lets gyro mouse work across elevated
-  windows, the Windows sign-in screen, and service/session boundaries where the standard approach
-  can't reach.
+* **Optional virtual HID input backend** (via FakerInput) - lets gyro mouse, media controls, and
+  custom shortcut presets (including Ctrl+Alt+Delete) work across elevated windows, secure/sign-in
+  screens, and service/session boundaries where the standard approach can't reach.
 * **Controller blacklist** - block specific controllers from being auto-added over USB/Bluetooth.
 
 ## OpenRGB integration and lighting effects
@@ -372,9 +372,10 @@ this repository:
   recenter behavior.
 * [FakerInput](https://github.com/Ryochan7/FakerInput) by Ryochan7 supplies the optional signed
   virtual HID input driver. BetterJoy's FakerInput backend implements its HID control protocol
-  for relative/absolute mouse movement, wheel reports, and mouse-button state so gyro mouse can
-  work across elevated windows, the Windows sign-in screen, and service/session boundaries. The
-  bundled installer and license remain attributable to the upstream project.
+  for keyboard shortcuts, consumer/media keys, relative/absolute mouse movement, wheel reports,
+  and mouse-button state so mapped input can work across elevated windows, secure/sign-in screens,
+  and service/session boundaries. The bundled installer and license remain attributable to the
+  upstream project.
 * The UDP server is largely derived from rajkosto's
   [ScpToolkit](https://github.com/rajkosto/ScpToolkit). ViGEmBus, ViGEmClient, HidHide, and their
   management libraries come from [Nefarius](https://github.com/nefarius).

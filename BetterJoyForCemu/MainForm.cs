@@ -296,6 +296,10 @@ namespace BetterJoyForCemu {
             desktopInput.KeyRelease(keyCode);
         }
 
+        public void SimulateDesktopAction(int actionCode) {
+            desktopInput.ActionClick((DesktopInputAction)actionCode);
+        }
+
         public void SimulateButtonClick(int buttonCode) {
             desktopInput.ButtonClick(buttonCode);
         }

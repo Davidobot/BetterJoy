@@ -50,6 +50,7 @@ namespace BetterJoyForCemu {
         void SimulateKeyClick(int keyCode);
         void SimulateKeyHold(int keyCode);
         void SimulateKeyRelease(int keyCode);
+        void SimulateDesktopAction(int actionCode);
         void SimulateButtonClick(int buttonCode);
         void SimulateButtonHold(int buttonCode);
         void SimulateButtonRelease(int buttonCode);
