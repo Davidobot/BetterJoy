@@ -334,10 +334,19 @@
     <EmbeddedResource Include="Reassign.resx">
       <DependentUpon>Reassign.cs</DependentUpon>
     </EmbeddedResource>
-    <!-- PlayStation button glyphs for the bindings UI (Kenney Input Prompts, CC0 - see
+    <!-- Controller button glyphs for the bindings UI (Kenney Input Prompts, CC0 - see
          ATTRIBUTION.md, plus BetterJoy's own glyphs from Tools\New-PsButtonGlyph.ps1). Loaded by
          file name through Reassign.ControllerButtonGlyph. -->
     <EmbeddedResource Include="Assets\InputPrompts\Kenney\PlayStation\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\NintendoSwitch\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\Touch\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\MrBreakfast\Keyboard\*.png">
       <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Assets\InputPrompts\BetterJoy\PlayStation\*.png">

@@ -1232,7 +1232,7 @@ namespace BetterJoyForCemu {
 
             ToolStripMenuItem buttons = new ToolStripMenuItem("Controller buttons");
             buttons.DropDown.ImageScalingSize = ButtonGlyphMenuSize;
-            ControllerKind? labelKind = PlayStationLabelKind(false);
+            ControllerKind? labelKind = ControllerLabelKind(false);
             foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
                 string part = "joy_" + value;
                 ToolStripMenuItem item = new ToolStripMenuItem { Tag = part };
@@ -1267,7 +1267,7 @@ namespace BetterJoyForCemu {
 
             ToolStripMenuItem controller = new ToolStripMenuItem("Controller bind");
             controller.DropDown.ImageScalingSize = ButtonGlyphMenuSize;
-            ControllerKind? labelKind = PlayStationLabelKind(true);
+            ControllerKind? labelKind = ControllerLabelKind(true);
             foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
                 ToolStripMenuItem item = new ToolStripMenuItem { Tag = "joy_" + value };
                 SetButtonMenuItemLabel(item, value, labelKind);
@@ -1362,7 +1362,7 @@ namespace BetterJoyForCemu {
         private void SetCustomBindingPrettyName(Control control, string value) {
             CustomCaptureTarget target = control.Tag as CustomCaptureTarget;
             bool isInput = target != null && target.IsInput;
-            ControllerKind? labelKind = PlayStationLabelKind(!isInput);
+            ControllerKind? labelKind = ControllerLabelKind(!isInput);
             bool isCustomAction = ControllerMappings.IsCustomAction(value);
             string description;
             if (String.IsNullOrEmpty(value))
@@ -1371,7 +1371,7 @@ namespace BetterJoyForCemu {
                 description = ControllerMappings.CustomActionLabel(value);
             else
                 description = String.Join("+", value.Split('+').Select(part =>
-                    DescribeBindPart(part, labelKind != null)));
+                    DescribeBindPart(part, labelKind)));
             bool rebind = isInput && target.Row.Rebind.SelectedIndex == 1;
             bool incompleteInput = isInput && !String.IsNullOrEmpty(value) &&
                 !ControllerMappings.IsValidCustomBindingInput(value, rebind);
@@ -1379,9 +1379,12 @@ namespace BetterJoyForCemu {
             control.Text = String.IsNullOrEmpty(value)
                 ? "Click to assign"
                 : description + suffix;
-            if (!String.IsNullOrEmpty(value) && !isCustomAction)
+            string displayBinding = isCustomAction
+                ? ControllerMappings.CustomActionDisplayBinding(value)
+                : value;
+            if (!String.IsNullOrEmpty(displayBinding))
                 (control as SplitButton)?.SetLabelParts(control.Text,
-                    BindLabelParts(value, labelKind, suffix));
+                    BindLabelParts(displayBinding, labelKind, suffix));
             tip_reassign.SetToolTip(control, description + "\r\n\r\nLeft-click to detect " +
                 (isInput ? (rebind ? "one or more controller buttons."
                                    : "a controller chord (two or more buttons).")
@@ -3366,7 +3369,7 @@ namespace BetterJoyForCemu {
 
             ControllerProfileInfo selected = SelectedProfile;
             bool hasController = selected != null && !String.IsNullOrEmpty(selected.ProfileId);
-            ControllerKind? labelKind = PlayStationLabelKind(false);
+            ControllerKind? labelKind = ControllerLabelKind(false);
             foreach (ContextMenuStrip menu in new[] { menu_joy_buttons, menu_gyro_activation }) {
                 foreach (ToolStripItem item in menu.Items) {
                     if (item.Tag is int buttonCode)
@@ -4298,7 +4301,7 @@ namespace BetterJoyForCemu {
                 : (unassigned ? "" : description);
             if (!unassigned)
                 (c as SplitButton)?.SetLabelParts(description,
-                    BindLabelParts(val, PlayStationLabelKind(false), null));
+                    BindLabelParts(val, ControllerLabelKind(false), null));
 
             // Long combos can still run out of room on the button itself (see Reassign.Designer.cs
             // for the width these buttons get) - the tooltip always shows the full, untruncated
@@ -4310,20 +4313,20 @@ namespace BetterJoyForCemu {
         }
 
         private string DescribeBindPart(string part) {
-            return DescribeBindPart(part, PlayStationLabelKind(false) != null);
+            return DescribeBindPart(part, ControllerLabelKind(false));
         }
 
-        private static string DescribeBindPart(string part, bool playStationLabels) {
+        private static string DescribeBindPart(string part, ControllerKind? kind) {
             Type t = part.StartsWith("joy_") ? typeof(Controller.Button) : (part.StartsWith("key_") ? typeof(WindowsInput.Events.KeyCode) : typeof(WindowsInput.Events.ButtonCode));
             int value = Int32.Parse(part.Substring(4));
             return t == typeof(Controller.Button)
-                ? ControllerButtonDisplayName(value, playStationLabels)
+                ? ControllerButtonDisplayName(value, kind)
                 : Enum.GetName(t, value);
         }
 
         // Inputs follow the selected physical controller; Custom bind outputs follow the virtual
-        // controller the profile drives. null keeps the default (non-PlayStation) labels.
-        private ControllerKind? PlayStationLabelKind(bool output) {
+        // controller the profile drives. null keeps the canonical fallback labels.
+        private ControllerKind? ControllerLabelKind(bool output) {
             if (output) {
                 string useAs = ControllerMappings.OptionValue(SelectedProfileId, "UseAs");
                 if (useAs == ControllerMappings.UseAsDualShock4)
@@ -4332,10 +4335,7 @@ namespace BetterJoyForCemu {
                     ? ControllerKind.DualSense
                     : (ControllerKind?)null;
             }
-            ControllerKind? kind = SelectedProfile?.Kind;
-            return kind == ControllerKind.DualSense || kind == ControllerKind.DualShock4
-                ? kind
-                : null;
+            return SelectedProfile?.Kind;
         }
 
         private static readonly Size ButtonGlyphMenuSize = new Size(20, 20);
@@ -4347,7 +4347,7 @@ namespace BetterJoyForCemu {
                 ControllerKind? kind) {
             item.Image = ControllerButtonGlyph(value, kind);
             item.Text = item.Image == null
-                ? ControllerButtonDisplayName(value, kind != null)
+                ? ControllerButtonDisplayName(value, kind)
                 : String.Empty;
         }
 
@@ -4364,11 +4364,9 @@ namespace BetterJoyForCemu {
                 for (int m = 0; m < members.Length; m++) {
                     if (m > 0)
                         parts.Add("+");
-                    Image glyph = members[m].StartsWith("joy_", StringComparison.Ordinal)
-                        ? ControllerButtonGlyph(Int32.Parse(members[m].Substring(4)), kind)
-                        : null;
+                    Image glyph = BindPartGlyph(members[m], kind);
                     hasGlyph |= glyph != null;
-                    parts.Add(glyph ?? (object)DescribeBindPart(members[m], kind != null));
+                    parts.Add(glyph ?? (object)DescribeBindPart(members[m], kind));
                 }
             }
             if (!String.IsNullOrEmpty(suffix))
@@ -4376,14 +4374,30 @@ namespace BetterJoyForCemu {
             return hasGlyph ? parts.ToArray() : null;
         }
 
-        // Embedded Kenney glyph (see BetterJoy.csproj) for a canonical button code on a PlayStation
-        // layout, or null where the set has none so callers fall back to the text label.
+        // Embedded glyph (see BetterJoy.csproj) for a canonical button code on the selected
+        // controller model, or null where the set has none so callers fall back to text.
         internal static Image ControllerButtonGlyph(int value, ControllerKind? kind) {
-            if (kind != ControllerKind.DualSense && kind != ControllerKind.DualShock4)
-                return null;
-            string name = ControllerButtonGlyphName(value, kind == ControllerKind.DualShock4);
+            string name = ControllerButtonGlyphName(value, kind);
             if (name == null)
                 return null;
+
+            return GlyphImage(name);
+        }
+
+        private static Image BindPartGlyph(string part, ControllerKind? kind) {
+            if (part.StartsWith("joy_", StringComparison.Ordinal))
+                return ControllerButtonGlyph(Int32.Parse(part.Substring(4)), kind);
+            if (part.StartsWith("key_", StringComparison.Ordinal))
+                return KeyboardKeyGlyph(Int32.Parse(part.Substring(4)));
+            return null;
+        }
+
+        internal static Image KeyboardKeyGlyph(int value) {
+            string name = KeyboardKeyGlyphName(value);
+            return name == null ? null : GlyphImage(name);
+        }
+
+        private static Image GlyphImage(string name) {
 
             Image glyph;
             if (!buttonGlyphs.TryGetValue(name, out glyph)) {
@@ -4401,7 +4415,117 @@ namespace BetterJoyForCemu {
             return glyph;
         }
 
-        private static string ControllerButtonGlyphName(int value, bool dualShock4) {
+        // Mr. Breakfast light keycaps for standard Windows virtual keys. Unsupported and
+        // ambiguous keys (for example numpad digits without numpad-specific art) stay as text.
+        private static string KeyboardKeyGlyphName(int value) {
+            if (value >= 48 && value <= 57)
+                return ((char)value) + "_light";
+            if (value >= 65 && value <= 90) {
+                char letter = Char.ToLowerInvariant((char)value);
+                return letter + ((letter == 'a' || letter == 'b' ||
+                    letter == 'x' || letter == 'y') ? "_key_light" : "_light");
+            }
+            if (value >= 112 && value <= 123)
+                return "f" + (value - 111) + "_light";
+
+            switch (value) {
+                case 8: return "backspace_light";
+                case 9: return "tab_light";
+                case 13: return "return_light";
+                case 16:
+                case 160:
+                case 161: return "shift_light";
+                case 17:
+                case 162:
+                case 163: return "control_light";
+                case 18:
+                case 164:
+                case 165: return "alt_light";
+                case 19: return "pause_light";
+                case 20: return "caps_lock_light";
+                case 27: return "escape_light";
+                case 32: return "space_text_light";
+                case 33: return "page_up_light";
+                case 34: return "page_down_light";
+                case 35: return "end_light";
+                case 36: return "home_light";
+                case 37: return "arrow_left_light";
+                case 38: return "arrow_up_light";
+                case 39: return "arrow_right_light";
+                case 40: return "arrow_down_light";
+                case 44: return "print_light";
+                case 45: return "insert_light";
+                case 46: return "delete_light";
+                case 91:
+                case 92: return "super_light";
+                case 144: return "num_light";
+                case 145: return "scroll_light";
+                case 186: return ";_light";
+                case 187: return "=_light";
+                case 188: return ",_light";
+                case 189: return "-_light";
+                case 190: return "._light";
+                case 191: return "forward_slash_light";
+                case 192: return "`_light";
+                case 219: return "[_light";
+                case 220:
+                case 226: return "backslash_light";
+                case 221: return "]_light";
+                case 222: return "'_light";
+                default: return null;
+            }
+        }
+
+        private static string ControllerButtonGlyphName(int value, ControllerKind? kind) {
+            bool playStation = kind == ControllerKind.DualSense ||
+                kind == ControllerKind.DualShock4;
+            bool switchController = kind == ControllerKind.Left ||
+                kind == ControllerKind.Right || kind == ControllerKind.Pro;
+            if (!playStation && !switchController)
+                return null;
+
+            if (switchController) {
+                bool rightJoyCon = kind == ControllerKind.Right;
+                switch ((Controller.Button)value) {
+                    case Controller.Button.DPAD_DOWN:
+                        return rightJoyCon ? "switch_button_b" : "switch_dpad_down";
+                    case Controller.Button.DPAD_RIGHT:
+                        return rightJoyCon ? "switch_button_a" : "switch_dpad_right";
+                    case Controller.Button.DPAD_LEFT:
+                        return rightJoyCon ? "switch_button_y" : "switch_dpad_left";
+                    case Controller.Button.DPAD_UP:
+                        return rightJoyCon ? "switch_button_x" : "switch_dpad_up";
+                    case Controller.Button.B:
+                        return rightJoyCon ? "switch_dpad_down" : "switch_button_b";
+                    case Controller.Button.A:
+                        return rightJoyCon ? "switch_dpad_right" : "switch_button_a";
+                    case Controller.Button.Y:
+                        return rightJoyCon ? "switch_dpad_left" : "switch_button_y";
+                    case Controller.Button.X:
+                        return rightJoyCon ? "switch_dpad_up" : "switch_button_x";
+                    case Controller.Button.SHOULDER_1:
+                        return rightJoyCon ? "switch_button_r" : "switch_button_l";
+                    case Controller.Button.SHOULDER_2:
+                        return rightJoyCon ? "switch_button_zr" : "switch_button_zl";
+                    case Controller.Button.SHOULDER2_1:
+                        return rightJoyCon ? "switch_button_l" : "switch_button_r";
+                    case Controller.Button.SHOULDER2_2:
+                        return rightJoyCon ? "switch_button_zl" : "switch_button_zr";
+                    case Controller.Button.STICK:
+                        return rightJoyCon ? "switch_stick_r_press" : "switch_stick_l_press";
+                    case Controller.Button.STICK2:
+                        return rightJoyCon ? "switch_stick_l_press" : "switch_stick_r_press";
+                    case Controller.Button.SL: return "switch_button_sl";
+                    case Controller.Button.SR: return "switch_button_sr";
+                    case Controller.Button.MINUS: return "switch_button_minus";
+                    case Controller.Button.PLUS: return "switch_button_plus";
+                    case Controller.Button.HOME: return "switch_button_home";
+                    case Controller.Button.CAPTURE: return "switch_capture";
+                    default: return null;
+                }
+            }
+
+            bool dualShock4 = kind == ControllerKind.DualShock4;
             switch ((Controller.Button)value) {
                 case Controller.Button.B: return "playstation_button_cross";
                 case Controller.Button.A: return "playstation_button_circle";
@@ -4427,6 +4551,12 @@ namespace BetterJoyForCemu {
                     return dualShock4 ? "playstation4_touchpad_press" : "playstation5_touchpad_press";
                 case Controller.Button.TOUCHPAD_TAP:
                     return dualShock4 ? "playstation4_touchpad_touch" : "playstation5_touchpad_touch";
+                case Controller.Button.TOUCHPAD_TWO_FINGER_TAP:
+                    return "touch_two";
+                case Controller.Button.TOUCHPAD_TWO_FINGER_SCROLL_UP:
+                    return "touch_swipe_two_up";
+                case Controller.Button.TOUCHPAD_TWO_FINGER_SCROLL_DOWN:
+                    return "touch_swipe_two_down";
                 case Controller.Button.MIC_MUTE: return dualShock4 ? null : "playstation5_button_mute";
                 case Controller.Button.FN1: return dualShock4 ? null : "playstation5_elite_fn_l";
                 case Controller.Button.FN2: return dualShock4 ? null : "playstation5_elite_fn_r";
@@ -4442,27 +4572,59 @@ namespace BetterJoyForCemu {
 
         // UI labels come directly from the canonical numeric button code for the selected model.
         // Stored joy_<code> values and runtime mappings are unchanged.
-        internal static string ControllerButtonDisplayName(
-                int value, bool playStationLabels) {
-            if (!playStationLabels)
-                return ControllerButtonDisplayName(value);
-
-            switch ((Controller.Button)value) {
-                case Controller.Button.Y: return "SQUARE";
-                case Controller.Button.X: return "TRIANGLE";
-                case Controller.Button.A: return "CIRCLE";
-                case Controller.Button.B: return "CROSS";
-                case Controller.Button.SHOULDER_1: return "L1";
-                case Controller.Button.SHOULDER2_1: return "R1";
-                case Controller.Button.SHOULDER_2: return "L2";
-                case Controller.Button.SHOULDER2_2: return "R2";
-                case Controller.Button.STICK: return "L3";
-                case Controller.Button.STICK2: return "R3";
-                case Controller.Button.HOME: return "PS";
-                case Controller.Button.MINUS: return "SHARE";
-                case Controller.Button.PLUS: return "MENU";
-                default: return ControllerButtonDisplayName(value);
+        internal static string ControllerButtonDisplayName(int value, ControllerKind? kind) {
+            if (kind == ControllerKind.DualSense || kind == ControllerKind.DualShock4) {
+                switch ((Controller.Button)value) {
+                    case Controller.Button.Y: return "SQUARE";
+                    case Controller.Button.X: return "TRIANGLE";
+                    case Controller.Button.A: return "CIRCLE";
+                    case Controller.Button.B: return "CROSS";
+                    case Controller.Button.SHOULDER_1: return "L1";
+                    case Controller.Button.SHOULDER2_1: return "R1";
+                    case Controller.Button.SHOULDER_2: return "L2";
+                    case Controller.Button.SHOULDER2_2: return "R2";
+                    case Controller.Button.STICK: return "L3";
+                    case Controller.Button.STICK2: return "R3";
+                    case Controller.Button.HOME: return "PS";
+                    case Controller.Button.MINUS: return "SHARE";
+                    case Controller.Button.PLUS: return "MENU";
+                    default: return ControllerButtonDisplayName(value);
+                }
             }
+
+            if (kind == ControllerKind.Left || kind == ControllerKind.Pro) {
+                switch ((Controller.Button)value) {
+                    case Controller.Button.SHOULDER_1: return "L";
+                    case Controller.Button.SHOULDER_2: return "ZL";
+                    case Controller.Button.SHOULDER2_1: return "R";
+                    case Controller.Button.SHOULDER2_2: return "ZR";
+                    case Controller.Button.STICK: return "L STICK";
+                    case Controller.Button.STICK2: return "R STICK";
+                    default: return ControllerButtonDisplayName(value);
+                }
+            }
+
+            if (kind == ControllerKind.Right) {
+                switch ((Controller.Button)value) {
+                    case Controller.Button.DPAD_DOWN: return "B";
+                    case Controller.Button.DPAD_RIGHT: return "A";
+                    case Controller.Button.DPAD_LEFT: return "Y";
+                    case Controller.Button.DPAD_UP: return "X";
+                    case Controller.Button.B: return "DPAD_DOWN";
+                    case Controller.Button.A: return "DPAD_RIGHT";
+                    case Controller.Button.Y: return "DPAD_LEFT";
+                    case Controller.Button.X: return "DPAD_UP";
+                    case Controller.Button.SHOULDER_1: return "R";
+                    case Controller.Button.SHOULDER_2: return "ZR";
+                    case Controller.Button.SHOULDER2_1: return "L";
+                    case Controller.Button.SHOULDER2_2: return "ZL";
+                    case Controller.Button.STICK: return "R STICK";
+                    case Controller.Button.STICK2: return "L STICK";
+                    default: return ControllerButtonDisplayName(value);
+                }
+            }
+
+            return ControllerButtonDisplayName(value);
         }
 
         private void btn_apply_Click(object sender, EventArgs e) {

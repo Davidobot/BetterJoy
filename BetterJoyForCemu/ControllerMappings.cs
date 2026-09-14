@@ -62,13 +62,15 @@ namespace BetterJoyForCemu {
             public string Label { get; private set; }
             public string Category { get; private set; }
             public DesktopInputAction Action { get; private set; }
+            public string DisplayBinding { get; private set; }
 
             public CustomActionChoice(string value, string label, string category,
-                    DesktopInputAction action) {
+                    DesktopInputAction action, string displayBinding = null) {
                 Value = value;
                 Label = label;
                 Category = category;
                 Action = action;
+                DisplayBinding = displayBinding;
             }
         }
 
@@ -84,12 +86,12 @@ namespace BetterJoyForCemu {
             new CustomActionChoice("act_volume_up", "Volume up", "Media", DesktopInputAction.VolumeUp),
             new CustomActionChoice("act_volume_down", "Volume down", "Media", DesktopInputAction.VolumeDown),
             new CustomActionChoice("act_volume_mute", "Mute", "Media", DesktopInputAction.VolumeMute),
-            new CustomActionChoice("act_ctrl_alt_delete", "Ctrl + Alt + Delete", "Windows", DesktopInputAction.CtrlAltDelete),
-            new CustomActionChoice("act_ctrl_shift_escape", "Task Manager (Ctrl + Shift + Esc)", "Windows", DesktopInputAction.CtrlShiftEscape),
-            new CustomActionChoice("act_alt_tab_next", "Next window (Alt + Tab)", "Windows", DesktopInputAction.AltTabNext),
-            new CustomActionChoice("act_alt_shift_tab_previous", "Previous window (Alt + Shift + Tab)", "Windows", DesktopInputAction.AltShiftTabPrevious),
-            new CustomActionChoice("act_alt_tab_left", "Alt + Tab + Left", "Windows", DesktopInputAction.AltTabLeft),
-            new CustomActionChoice("act_alt_tab_right", "Alt + Tab + Right", "Windows", DesktopInputAction.AltTabRight),
+            new CustomActionChoice("act_ctrl_alt_delete", "Ctrl + Alt + Delete", "Windows", DesktopInputAction.CtrlAltDelete, "key_17+key_18+key_46"),
+            new CustomActionChoice("act_ctrl_shift_escape", "Task Manager (Ctrl + Shift + Esc)", "Windows", DesktopInputAction.CtrlShiftEscape, "key_17+key_16+key_27"),
+            new CustomActionChoice("act_alt_tab_next", "Next window (Alt + Tab)", "Windows", DesktopInputAction.AltTabNext, "key_18+key_9"),
+            new CustomActionChoice("act_alt_shift_tab_previous", "Previous window (Alt + Shift + Tab)", "Windows", DesktopInputAction.AltShiftTabPrevious, "key_18+key_16+key_9"),
+            new CustomActionChoice("act_alt_tab_left", "Alt + Tab + Left", "Windows", DesktopInputAction.AltTabLeft, "key_18+key_9+key_37"),
+            new CustomActionChoice("act_alt_tab_right", "Alt + Tab + Right", "Windows", DesktopInputAction.AltTabRight, "key_18+key_9+key_39"),
         };
 
         public const string FileName = "controller_mappings.xml";
@@ -654,6 +656,12 @@ namespace BetterJoyForCemu {
             CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
                 String.Equals(candidate.Value, value, StringComparison.Ordinal));
             return choice == null ? value : choice.Label;
+        }
+
+        public static string CustomActionDisplayBinding(string value) {
+            CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
+                String.Equals(candidate.Value, value, StringComparison.Ordinal));
+            return choice == null ? null : choice.DisplayBinding;
         }
 
         private static bool IsValidBindPart(string part, bool controllerOnly) {

@@ -61,15 +61,18 @@ namespace BetterJoyForCemu {
 						var bounds = new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height);
 						TextRenderer.DrawText(g, text, Font, bounds, textColor, flags);
 						x += TextRenderer.MeasureText(g, text, Font, bounds.Size, flags).Width;
-					} else if (x + glyphSize + 2 <= right) {
-						g.DrawImage(glyph,
-							new Rectangle(x + 1, (ClientRectangle.Height - glyphSize) / 2, glyphSize, glyphSize),
-							0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel, attributes);
-						x += glyphSize + 2;
 					} else {
-						TextRenderer.DrawText(g, "…", Font,
-							new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height), textColor, flags);
-						break;
+						int glyphWidth = Math.Max(1, glyph.Width * glyphSize / glyph.Height);
+						if (x + glyphWidth + 2 > right) {
+							TextRenderer.DrawText(g, "…", Font,
+								new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height), textColor, flags);
+							break;
+						}
+						g.DrawImage(glyph,
+							new Rectangle(x + 1, (ClientRectangle.Height - glyphSize) / 2,
+								glyphWidth, glyphSize),
+							0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel, attributes);
+						x += glyphWidth + 2;
 					}
 					if (x >= right)
 						break;
