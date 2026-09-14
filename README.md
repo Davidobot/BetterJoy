@@ -130,8 +130,9 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
   remain attached to the physical device rather than being reduced to generic remapping concepts.
 * **Sony connection and power handling** - a per-profile preferred transport keeps either the
   Bluetooth link (leaving the cable for charging) or the USB connection when both are present.
-  Repair mode lets a DualSense roam between a PS5 and this PC: plugging it in over USB restores
-  this PC's Bluetooth bond only if another host took it, with no trip through Windows Bluetooth
+  Repair mode restores a DualSense's Bluetooth connection to this PC after it has been paired with
+  another device (a PS5, another PC, a phone): plugging it in over USB rewrites the controller's
+  bond back to this PC only if another host took it, with no trip through Windows Bluetooth
   settings (DualShock 4 Repair is WIP). Fully automatic out-of-band (OOB) Bluetooth pairing, with the
   pairing set up over USB, is DualSense only and experimental. DualSense can optionally sleep charge-only when plugged in, waking on a PS press,
   with a configurable charging glow (custom color or battery gradient, adjustable pulse length).
