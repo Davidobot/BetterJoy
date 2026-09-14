@@ -1234,10 +1234,14 @@ namespace BetterJoyForCemu {
             menu.Items.Add(new ToolStripSeparator());
 
             ToolStripMenuItem buttons = new ToolStripMenuItem("Controller buttons");
+            bool playStationLabels = SelectedProfile?.Kind == ControllerKind.DualSense ||
+                SelectedProfile?.Kind == ControllerKind.DualShock4;
             foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
                 string part = "joy_" + value;
                 ToolStripMenuItem item = new ToolStripMenuItem(
-                    ControllerButtonDisplayName(value)) { Tag = part };
+                    ControllerButtonDisplayName(value, playStationLabels)) {
+                        Tag = part,
+                    };
                 item.Click += (sender, e) => ToggleCustomBindingInputPart(
                     row.Input, (string)((ToolStripItem)sender).Tag);
                 buttons.DropDownItems.Add(item);
@@ -1267,9 +1271,14 @@ namespace BetterJoyForCemu {
             menu.Items.Add(new ToolStripSeparator());
 
             ToolStripMenuItem controller = new ToolStripMenuItem("Controller bind");
+            string useAs = ControllerMappings.OptionValue(SelectedProfileId, "UseAs");
+            bool playStationLabels = useAs == ControllerMappings.UseAsDualShock4 ||
+                useAs == ControllerMappings.UseAsDualSenseViiper;
             foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
                 ToolStripMenuItem item = new ToolStripMenuItem(
-                    ControllerButtonDisplayName(value)) { Tag = "joy_" + value };
+                    ControllerButtonDisplayName(value, playStationLabels)) {
+                        Tag = "joy_" + value,
+                    };
                 item.Click += (sender, e) => SetCustomBindingSelection(
                     row.Output, (string)((ToolStripItem)sender).Tag);
                 controller.DropDownItems.Add(item);
@@ -1359,15 +1368,25 @@ namespace BetterJoyForCemu {
         }
 
         private void SetCustomBindingPrettyName(Control control, string value) {
+            CustomCaptureTarget target = control.Tag as CustomCaptureTarget;
+            bool isInput = target != null && target.IsInput;
+            string useAs = ControllerMappings.OptionValue(SelectedProfileId, "UseAs");
+            bool playStationLabels = isInput
+                ? SelectedProfile?.Kind == ControllerKind.DualSense ||
+                    SelectedProfile?.Kind == ControllerKind.DualShock4
+                : useAs == ControllerMappings.UseAsDualShock4 ||
+                    useAs == ControllerMappings.UseAsDualSenseViiper;
             string description;
             if (String.IsNullOrEmpty(value))
                 description = "(not set)";
             else if (ControllerMappings.IsCustomAction(value))
                 description = ControllerMappings.CustomActionLabel(value);
             else
-                description = String.Join("+", value.Split('+').Select(DescribeBindPart));
-            CustomCaptureTarget target = control.Tag as CustomCaptureTarget;
-            bool isInput = target != null && target.IsInput;
+                description = String.Join("+", value.Split('+').Select(part =>
+                    part.StartsWith("joy_", StringComparison.Ordinal)
+                        ? ControllerButtonDisplayName(
+                            Int32.Parse(part.Substring(4)), playStationLabels)
+                        : DescribeBindPart(part)));
             bool rebind = isInput && target.Row.Rebind.SelectedIndex == 1;
             bool incompleteInput = isInput && !String.IsNullOrEmpty(value) &&
                 !ControllerMappings.IsValidCustomBindingInput(value, rebind);
@@ -2526,6 +2545,7 @@ namespace BetterJoyForCemu {
                 }
                 ControllerMappings.SetOptionValue(SelectedProfileId, "UseAs", value);
                 UpdateProfilePresentation(SelectedProfile);
+                LoadCustomBindings();
             } else if (sender == gyroActivationModeSelector) {
                 ControllerMappings.SetOptionValue(SelectedProfileId, "GyroHoldToggle",
                     (gyroActivationModeSelector.SelectedIndex == 0).ToString().ToLowerInvariant());
@@ -3354,6 +3374,14 @@ namespace BetterJoyForCemu {
 
             ControllerProfileInfo selected = SelectedProfile;
             bool hasController = selected != null && !String.IsNullOrEmpty(selected.ProfileId);
+            bool playStationLabels = selected?.Kind == ControllerKind.DualSense ||
+                selected?.Kind == ControllerKind.DualShock4;
+            foreach (ContextMenuStrip menu in new[] { menu_joy_buttons, menu_gyro_activation }) {
+                foreach (ToolStripItem item in menu.Items) {
+                    if (item.Tag is int buttonCode)
+                        item.Text = ControllerButtonDisplayName(buttonCode, playStationLabels);
+                }
+            }
             bool hasTouchpad = selected != null &&
                 (selected.Kind == ControllerKind.DualSense ||
                  selected.Kind == ControllerKind.DualShock4);
@@ -4287,11 +4315,13 @@ namespace BetterJoyForCemu {
                 "Click the ▼ for a specific-button menu.");
         }
 
-        private static string DescribeBindPart(string part) {
+        private string DescribeBindPart(string part) {
             Type t = part.StartsWith("joy_") ? typeof(Controller.Button) : (part.StartsWith("key_") ? typeof(WindowsInput.Events.KeyCode) : typeof(WindowsInput.Events.ButtonCode));
             int value = Int32.Parse(part.Substring(4));
             return t == typeof(Controller.Button)
-                ? ControllerButtonDisplayName(value)
+                ? ControllerButtonDisplayName(value,
+                    SelectedProfile?.Kind == ControllerKind.DualSense ||
+                    SelectedProfile?.Kind == ControllerKind.DualShock4)
                 : Enum.GetName(t, value);
         }
 
@@ -4299,6 +4329,31 @@ namespace BetterJoyForCemu {
             return value == (int)Controller.Button.TOUCHPAD_TAP
                 ? "TOUCHPAD_TAP"
                 : Enum.GetName(typeof(Controller.Button), value);
+        }
+
+        // UI labels come directly from the canonical numeric button code for the selected model.
+        // Stored joy_<code> values and runtime mappings are unchanged.
+        internal static string ControllerButtonDisplayName(
+                int value, bool playStationLabels) {
+            if (!playStationLabels)
+                return ControllerButtonDisplayName(value);
+
+            switch ((Controller.Button)value) {
+                case Controller.Button.Y: return "SQUARE";
+                case Controller.Button.X: return "TRIANGLE";
+                case Controller.Button.A: return "CIRCLE";
+                case Controller.Button.B: return "CROSS";
+                case Controller.Button.SHOULDER_1: return "L1";
+                case Controller.Button.SHOULDER2_1: return "R1";
+                case Controller.Button.SHOULDER_2: return "L2";
+                case Controller.Button.SHOULDER2_2: return "R2";
+                case Controller.Button.STICK: return "L3";
+                case Controller.Button.STICK2: return "R3";
+                case Controller.Button.HOME: return "PS";
+                case Controller.Button.MINUS: return "SHARE";
+                case Controller.Button.PLUS: return "MENU";
+                default: return ControllerButtonDisplayName(value);
+            }
         }
 
         private void btn_apply_Click(object sender, EventArgs e) {

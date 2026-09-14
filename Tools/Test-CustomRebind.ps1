@@ -19,6 +19,7 @@ try {
     $mappingsType = $assembly.GetType('BetterJoyForCemu.ControllerMappings', $true)
     $bindingType = $assembly.GetType('BetterJoyForCemu.ControllerMappings+CustomBinding', $true)
     $controllerType = $assembly.GetType('BetterJoyForCemu.Controller', $true)
+    $reassignType = $assembly.GetType('BetterJoyForCemu.Reassign', $true)
 
     $validateInput = $mappingsType.GetMethod(
         'IsValidCustomBindingInput',
@@ -128,6 +129,29 @@ try {
         'Normalized capture lost the physical B input.'
     Assert-True (-not $controller.GetButton([Enum]::ToObject($buttonType, 15))) `
         'Generated Y output leaked into normalized controller capture.'
+
+    # User contract: PlayStation names are assigned directly to the canonical numeric button
+    # code throughout the bindings UI. They are display labels only; stored joy_<code> values stay
+    # unchanged.
+    $displayName = $reassignType.GetMethod(
+        'ControllerButtonDisplayName',
+        [Reflection.BindingFlags]'NonPublic,Static',
+        $null,
+        [Type[]]@([int], [bool]),
+        $null)
+    $playStationLabels = @{
+        15 = 'SQUARE'; 16 = 'TRIANGLE'; 14 = 'CIRCLE'; 13 = 'CROSS'
+        11 = 'L1'; 18 = 'R1'; 12 = 'L2'; 19 = 'R2'; 10 = 'L3'; 17 = 'R3'
+        7 = 'PS'; 6 = 'SHARE'; 8 = 'MENU'; 25 = 'MIC_MUTE'; 26 = 'FN1'; 27 = 'FN2'
+        20 = 'TOUCHPAD'; 21 = 'TOUCHPAD_TAP'; 3 = 'DPAD_UP'
+    }
+    foreach ($entry in $playStationLabels.GetEnumerator()) {
+        $actual = [string]$displayName.Invoke($null, @([int]$entry.Key, $true))
+        Assert-True ($actual -eq $entry.Value) `
+            "PlayStation button code $($entry.Key) displayed '$actual' instead of '$($entry.Value)'."
+    }
+    Assert-True ($displayName.Invoke($null, @(15, $false)) -eq 'Y') `
+        'Non-PlayStation bindings must retain their existing label until mapped explicitly.'
 
     Write-Host 'Custom Rebind regression tests passed.'
 } finally {
