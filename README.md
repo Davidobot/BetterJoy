@@ -2,24 +2,57 @@
   <img src="title.png">
 </p>
 
-# BetterJoy² v7.3.0
+# BetterJoy² v7.3.X
+
+### HELP BetterJoy²
+**Code signing requirements** are already threatening this project before it has ANY chance to gain 
+recognition. Windows Defender and SmartScreen treat our application as a virus or malicious software 
+simply because we have not paid for siging, and in practice the only realistic way out of that trap 
+is to start forking over money!
+
+BetterJoy² did try to utilize SignPath.io for free sigining BUT we don't have a good enough "reputation".
+GO FIGURE! Apparently it is a popularity contest where GitHub stars and forks are treated as indicators of 
+reputation, rather than what they actually are: indicators of popularity and visibility. So once again, 
+a new project is told it needs reputation before it can gain the thing that would help it build reputation 
+in the first place:
+
+"After reviewing your submission, we're unable to approve your application at this time.
+
+The Foundation program is designed for projects that have already established a certain level of public trust 
+and visibility, so when evaluating applications we look for external signals such as community adoption 
+(GitHub stars, forks, contributors), external articles, independent references or discussions 
+(Reddit, Stack Overflow, YouTube, etc.) or institutional backing, and evidence of sustained activity and 
+engagement."
+
+Let’s be clear: this is a money problem disguised as a "trust" problem. They can call it security, reputation, 
+or user protection all they want, but when legitimate unsigned software is treated like malware until the 
+developer pays into a signing ecosystem, the message is obvious pay $$$$ or accept being treated like 
+a third class citizen. Meanwhile software gets compromised at the supply chain and you'll happily install
+it! 
+
+YES BetterJoy2 is a SYSTEM service BUT you happily give Google system level access to update your browser
+when that shouldn't be a requirement for application updates...
+
+It has gotten so absurd that even Google Drive would not allow us to share development builds with friends 
+and family without blatantly lying and claiming the software was a virus and marking our distrubution as
+abuse of their platform.
 
 ### Controller freedom, squared.
 
 **BetterJoy² is a free, [MIT-licensed](LICENSE), system-wide controller compatibility layer for
-Windows.** It
-makes Joy-Cons, Switch Pro, Switch SNES/N64, DualShock 4, and DualSense controllers usable through
-standard virtual XInput or DualShock 4 output while preserving the motion, touch, lighting, audio,
-adaptive triggers, and device features that make the physical controllers worth owning.
+Windows.** It makes Joy-Cons, Switch Pro, Switch SNES/N64, DualShock 4, and DualSense controllers 
+usable through standard virtual XInput or DualShock 4 output while preserving the motion, touch, 
+lighting, audio, adaptive triggers, and device features that make the physical controllers worth 
+owning.
 
 BetterJoy² does not require Steam, an account, online ownership checks, per-machine purchases, or
 paid feature tiers. Install it on the computers you own and use your controllers where you want.
 It can run independently as a Windows service, including across sign-in sessions and elevated
 applications.
 
-The default goal is a clean, conventional virtual controller—not mandatory input remapping. For
+The default goal is a clean, conventional virtual controller, not mandatory input remapping. For
 people who do want another mapping layer, BetterJoy²'s standard virtual output remains compatible
-with Steam Input and other remappers. Optional BetterJoy² profiles provide controller-native
+with Steam Input and other remappers. Optionally BetterJoy² profiles provide controller-native
 configuration, motion and touch behavior, button chords, and keyboard/mouse actions without making
 any of that a prerequisite for ordinary play.
 
@@ -27,32 +60,32 @@ BetterJoy² is growing beyond a collection of fixed controller shortcuts into a 
 system. Physical buttons, ordered chords, alternative binds, modifiers, touch gestures, and motion
 can activate controller, mouse, keyboard, lighting, audio, and hardware actions without generated
 outputs feeding back into the real-input state. The goal is simple: bindings should be limited by
-the user's imagination, not by collisions between features.
+the user's imagination, not by collisions between features. It's currently a bit clunky, yet 
+extremely powerful! 
 
 BetterJoy² also provides [Cemuhook](https://sshnuke.net/cemuhook/)/DSU motion for
 [Cemu](http://cemu.info/), [Dolphin](https://dolphin-emu.org/), Citra-compatible emulators, and
 other compatible applications.
 
 The executable, repository, packages, and filesystem paths retain the ASCII-safe `BetterJoy2`
-name where required; **BetterJoy²** is the project and product identity.
+name where required; **BetterJoy²** is the project identity.
 
 ## Why BetterJoy² exists
 
-Controller support should behave like a system utility, not like a licensed game. BetterJoy² grew
-out of frustration with controller software that requires user intervention, ties access to a storefront, 
-limits simultaneous use across a person's own devices, divides hardware support into additional paid
-tiers, or requires users to assemble fragile remapping and device-hiding workarounds merely to
-avoid double input. 
+Controller support should behave like a system utility! BetterJoy² grew out of frustration with controller 
+software that requires user intervention, tray icons, access tied to storefronts, limited simultaneous use 
+across a person's own devices, divided hardware support tiers, and requirements for users to consider manually
+configuring device-hiding workarounds to avoid double input.
 
-People should be paid for great software BUT nickle and diming + subscription practice is DISGUSTING!
+BetterJoy² takes the another approach:
 
-BetterJoy² takes the opposite approach:
-
-* **Works system-wide** - the controller service does not depend on a game launcher or the GUI
-  remaining open, and the optional virtual HID input backend reaches elevated applications and
-  Windows session boundaries. Controllers should "Just work" without clunky UIs, startup apps or any nonsense!
-* **The software remains yours** - no DRM, account activation, storefront launcher, machine
-  entitlement, concurrent-use restriction, or feature DLC. I paid for DSX on Steam and still feel ripped!
+* **Works system-wide** - the service does not depend on an application launcher or GUI remaining open. 
+  The virtual HID input backend reaches elevated applications (UAC) and all Windows session boundaries.
+  Controllers "Just work" without clunky UIs, startup apps or nonsense! Due to the nature of our design
+  it allows the application to maintain an extremely low memory footprint of 30-40MB in testing.
+* **The software remains free** - Free as in BEER, free as in Speech... No DRM, account activation, 
+  storefront launcher, machine entitlement, concurrent-use restrictions, or feature DLC. 
+  I suported DSX on Steam and still feel ripped, BetterJoy² will not support that model. 
 * **Remapping is optional** - choose XInput or DualShock 4 output and play, or layer Steam Input or
   another remapper on top when its additional behavior is actually wanted.
 * **Double input is handled at the source** - when HidHide is installed, BetterJoy² can manage the
@@ -72,8 +105,8 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
   DualShock 4 virtual output. Sony support includes buttons, sticks, analog triggers, battery state,
   rumble, lightbars, touchpads, audio and calibrated gyro/accelerometer motion, plus the DualSense
   Edge FN1/FN2 buttons.
-* **Two virtual-controller backends, plus a Passthrough option** - the standard XInput/DualShock 4
-  output uses ViGEmBus, or profiles can instead use an alternative backend built on
+* **Multiple virtual-controller backends, plus a Passthrough option** - the standard XInput/DualShock 4
+  output uses ViGEmBus, controllers can use an alternative backend built on (set in the profile)
   [VIIPER](https://github.com/Alia5/VIIPER)/usbip-win2, which adds genuine DualSense virtual
   output - ViGEmBus has no DualSense target at all, so VIIPER is the only way to expose a real
   PS5-shaped virtual controller. A separate Passthrough mode skips virtual output entirely and
@@ -130,12 +163,12 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
   remain attached to the physical device rather than being reduced to generic remapping concepts.
 * **Sony connection and power handling** - a per-profile preferred transport keeps either the
   Bluetooth link (leaving the cable for charging) or the USB connection when both are present.
-  Repair mode restores a DualSense's Bluetooth connection to this PC after it has been paired with
-  another device (a PS5, another PC, a phone): plugging it in over USB rewrites the controller's
-  bond back to this PC only if another host took it, with no trip through Windows Bluetooth
+  Repair mode restores a DualSense's Bluetooth connection to a PC after it has been paired with
+  another device (a PS5, another PC, a phone): plugging it in over USB rewrites the computers
+  bond back to the controller after another host taken it, with no trip through Windows Bluetooth
   settings (DualShock 4 Repair is WIP). Fully automatic out-of-band (OOB) Bluetooth pairing, with the
-  pairing set up over USB, is DualSense only and experimental. DualSense can optionally sleep charge-only when plugged in, waking on a PS press,
-  with a configurable charging glow (custom color or battery gradient, adjustable pulse length).
+  pairing set up over USB, is DualSense only and experimental. DualSense can optionally sleep charge-only 
+  when plugged in, waking on a PS press, with a configurable charging glow (custom color or battery gradient, adjustable pulse length).
 * **Native OpenRGB SDK server and lighting effects** - BetterJoy² can present itself as one stable
   OpenRGB gamepad on the loopback-only `127.0.0.1:6743` endpoint. Add it to OpenRGB's SDK Client
   list, or point a compatible lighting application such as Artemis directly at BetterJoy² without
@@ -186,7 +219,7 @@ BetterJoy² includes a native implementation of the OpenRGB SDK protocol. This i
 BetterJoy-specific plugin bridge: OpenRGB and other applications that already speak the OpenRGB
 protocol can connect to BetterJoy² as though it were an RGB device server.
 
-The built-in server deliberately exposes one fixed **BetterJoy2** gamepad rather than adding and
+The built-in server deliberately exposes one fixed **BetterJoy²** device rather than adding and
 removing a device for every controller connection. A color or effect is applied to all currently
 connected DualShock 4 and DualSense profiles whose lighting mode is **OpenRGB**; a controller that
 connects later immediately receives the current state. Keeping the advertised device stable also
@@ -230,8 +263,6 @@ profile lighting hands-off and can ask a locally running OpenRGB server on its d
 to rescan when a controller becomes visible. The raw-device path and BetterJoy²'s SDK server can be
 used independently or together, depending on which application should own the hardware.
 
-If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
-
 #### Original BetterJoy author's note
 
 The note below is retained from the upstream BetterJoy project whose work and history this fork
@@ -241,6 +272,8 @@ Thank you for using my software and all the constructive feedback I've been gett
 
 It's been quite a wild ride, with nearly **590k** (!!) official download on GitHub and probably many more through the nightlies. I think this project was responsible for both software jobs I landed so far, so I am quite proud of it.
 
+If anyone would like to donate (for whatever reason), [you can do so here](https://www.paypal.me/DavidKhachaturov/5). 
+
 ### Screenshot
 ![Example](https://raw.githubusercontent.com/Geofferey/BetterJoy2/b1378869a53dfe976f1677d887a6298f6e84b334/screenshots/BetterJoy_Screenshot_Main_UI.png)
 
@@ -248,24 +281,16 @@ It's been quite a wild ride, with nearly **590k** (!!) official download on GitH
 Go to the [BetterJoy² Releases tab](https://github.com/Geofferey/BetterJoy2/releases/)!
 
 # How to use
-1. Install drivers
-    1. Read the READMEs (they're there for a reason!)
-    1. Run *Drivers/ViGEmBus_1.22.0_x64_x86_arm64.exe*
-    1. Restart your computer
-    1. Recommended: install *Drivers/HidHide_1.5.230_x64.exe*. On a fresh install BetterJoy²
-       enables **Use HidHide** automatically when the driver is detected, then manages each
-       physical controller's visibility so games see only the selected virtual output. If HidHide
-       is installed later, enable it under **Global** options and restart BetterJoy².
+1. Install the application using the distributable executable installer
+    * Leave all features checked for full experience / capabilites
 2. Run *BetterJoy2.exe* 
-    1. Run as Administrator if your keyboard/mouse button mappings don't work
+    * Run as Administrator if your keyboard/mouse button mappings don't work
 3. Connect your controllers.
-4. For normal PC games, select XInput or DualShock 4 as the profile's virtual-controller output,
-   then configure that controller normally in the game. BetterJoy² profiles and downstream
-   remapping are optional.
-5. For CemuHook/DSU applications, start the application and select BetterJoy2 as the motion source.
+4. For advanced configuration click on your controller in the main UI 
+5. ~~For CemuHook/DSU applications, start the application and select BetterJoy2 as the motion source.
     1. If using Joycons, CemuHook will detect two controllers - each will give all buttons, but choosing one over the other just chooses preference for which hand to use for gyro controls.
 6. In Cemu's *Input Settings*, choose XInput as a source and assign buttons normally.
-    1. If you don't want to do this for some reason, just have one input profile set up with *Wii U Gamepad* as the controller and enable "Also use for buttons/axes" under *GamePad motion source*. **This is no longer required as of version 3**
+    1. If you don't want to do this for some reason, just have one input profile set up with *Wii U Gamepad* as the controller and enable "Also use for buttons/axes" under *GamePad motion source*. **This is no longer required as of version 3**~~
     2. Turn rumble up to 70-80% if you want rumble.
 
 # More Info
@@ -274,15 +299,15 @@ changelog, app-setting descriptions, FAQ, and troubleshooting information.
 
 # Connecting and Disconnecting the Controller
 ## Bluetooth Mode
- * Hold down the small button (sync) on the top of the controller for 5 seconds - this puts the controller into broadcasting mode.
- * Search for it in your bluetooth settings and pair normally.
+ * Switch controllers - hold the small button (sync) on the top or sides of the controller(s) for 5 seconds to place into pairing mode
+ * DualSense controllers - ensure bluetooth is enabled, plug in the controller and wait for the pairing process to complete or pair manually
  * To disconnect the controller - hold the home button (or capture button) down for 2 seconds by default (or press the sync button). To reconnect - press any button on your controller. This hold duration is configurable per profile, up to 10 seconds - useful if you're also using that button as a chord modifier for other bindings.
- * **Joy-Con lag/stutter over Bluetooth:** this is a Windows Bluetooth stack quirk specific to Joy-Cons (Pro Controller is unaffected), not something BetterJoy's code can fix directly. The workaround: rename your PC's Bluetooth *adapter* (not the controller) to `Nintendo` in Windows' Bluetooth settings. This has been confirmed to eliminate the lag/stutter entirely.
+ * **Joy-Con lag/stutter over Bluetooth:** this is a Windows Bluetooth stack quirk specific to Joy-Cons (Pro Controller is unaffected), not something BetterJoy's code can fix directly. The workaround: rename your PC's Bluetooth *adapter* (not the controller) to `Nintendo` in Windows' Bluetooth settings. This has been confirmed to eliminate the lag/stutter entirely. 
 
 ## USB Mode
- * Plug the controller into your computer.
+ * Plug the controller into your computer (duh).
  
-## Disconnecting \[Windows 10]
+## Removing Bluetooth \[Windows 10]
 1. Go into "Bluetooth and other devices settings"
 1. Under the first category "Mouse, keyboard, & pen", there should be the pro controller.
 1. Click on it and a "Remove" button will be revealed.
