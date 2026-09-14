@@ -1188,7 +1188,11 @@ namespace BetterJoyForCemu {
         // report, then folded into vigemButtons (virtual-controller-output only) by
         // GetButtonsForVigem - buttons[] itself is never touched.
         protected readonly bool[] continuousRemapButtons = new bool[ButtonCount];
-        protected readonly bool[] customRemapButtons = new bool[ButtonCount];
+        // Custom-bind joy_* outputs use the same stable numeric button positions as Button, but
+        // they are virtual targets: 13 is Xbox A / PlayStation Cross, 15 is Xbox X / PlayStation
+        // Square, and so on. Keep them separate from continuousRemapButtons so they are applied
+        // after physical mapping and cannot be translated a second time by swap/layout rules.
+        protected readonly bool[] customVirtualButtons = new bool[ButtonCount];
         protected readonly bool[] customRebindConsumedButtons = new bool[ButtonCount];
         private string lastCustomBindingsValue;
         private ControllerMappings.CustomBinding[] customBindings =
@@ -1202,6 +1206,7 @@ namespace BetterJoyForCemu {
         private readonly HashSet<string> seenCustomActions =
             new HashSet<string>(StringComparer.Ordinal);
         private readonly object customBindingsLock = new object();
+        private static readonly bool[] NeutralCustomButtons = new bool[ButtonCount];
         private static readonly float[] NeutralCustomStick = new float[2];
         private static readonly byte[] NeutralCustomSliders = new byte[2];
 
@@ -2052,9 +2057,8 @@ namespace BetterJoyForCemu {
                         } else if (part.StartsWith("joy_", StringComparison.Ordinal)) {
                             int buttonIndex;
                             if (Int32.TryParse(part.Substring(4), out buttonIndex) &&
-                                    buttonIndex >= 0 && buttonIndex < continuousRemapButtons.Length)
-                                continuousRemapButtons[buttonIndex] =
-                                    customRemapButtons[buttonIndex] = true;
+                                    buttonIndex >= 0 && buttonIndex < customVirtualButtons.Length)
+                                customVirtualButtons[buttonIndex] = true;
                         } else if (seenCustomDesktopOutputs.Add(part)) {
                             // Captured shortcut order is meaningful: modifier down precedes its
                             // key, and the release path below unwinds that order.
@@ -2770,8 +2774,8 @@ namespace BetterJoyForCemu {
             return vigemButtons;
         }
 
-        // Consumption runs before generated output so a deliberate B -> B rebind still emits B,
-        // while B -> Y removes only the normalized physical B and emits Y.
+        // Consumption runs before legacy physical remaps. Custom-bind virtual output is applied
+        // later, directly to the selected virtual controller's report.
         internal static void ApplyCustomButtonOverrides(bool[] outputButtons,
                 bool[] consumedButtons, bool[] remappedButtons) {
             for (int i = 0; i < outputButtons.Length; i++) {
@@ -2782,18 +2786,6 @@ namespace BetterJoyForCemu {
                 if (remappedButtons[i])
                     outputButtons[i] = true;
             }
-        }
-
-        // Modifier suppresses raw passthrough and the fixed remaps, but a custom row explicitly
-        // targeting a virtual-controller button must still be able to produce that button.
-        protected bool[] GetCustomButtonsForVigem() {
-            Array.Clear(vigemButtons, 0, vigemButtons.Length);
-            for (int canonicalIndex = 0; canonicalIndex < customRemapButtons.Length;
-                    canonicalIndex++) {
-                if (customRemapButtons[canonicalIndex])
-                    vigemButtons[CanonicalButtonToLocalVigemIndex(canonicalIndex)] = true;
-            }
-            return vigemButtons;
         }
 
         protected readonly Stopwatch shakeTimer = Stopwatch.StartNew(); //Setup a timer for measuring shake in milliseconds
@@ -3057,7 +3049,7 @@ namespace BetterJoyForCemu {
             // Fresh per report - every SimulateContinous call below accumulates into this same
             // array for this one report, then GetButtonsForVigem folds it into vigemButtons.
             Array.Clear(continuousRemapButtons, 0, continuousRemapButtons.Length);
-            Array.Clear(customRemapButtons, 0, customRemapButtons.Length);
+            Array.Clear(customVirtualButtons, 0, customVirtualButtons.Length);
             Array.Clear(customRebindConsumedButtons, 0, customRebindConsumedButtons.Length);
 
             // Checked first and returns early like the other button-driven side effects below -
@@ -3432,7 +3424,7 @@ namespace BetterJoyForCemu {
             var GyroAnalogSliders = input.GyroAnalogSliders;
 
             var buttons = modifierHeld
-                ? input.GetCustomButtonsForVigem()
+                ? NeutralCustomButtons
                 : input.GetButtonsForVigem();
             var stick = modifierHeld ? NeutralCustomStick : input.stick;
             var stick2 = modifierHeld ? NeutralCustomStick : input.stick2;
@@ -3565,6 +3557,33 @@ namespace BetterJoyForCemu {
                 }
             }
 
+            return ApplyCustomXboxVirtualButtons(output, input.customVirtualButtons);
+        }
+
+        // joy_* values in a Custom bind output are virtual button positions, not another
+        // physical controller input. Apply them after the normal physical-to-Xbox mapping so a
+        // selected X target remains X even when the source model or Swap X/Y setting changes.
+        internal static OutputControllerXbox360InputState ApplyCustomXboxVirtualButtons(
+                OutputControllerXbox360InputState output, bool[] virtualButtons) {
+            output.dpad_down |= virtualButtons[(int)Button.DPAD_DOWN];
+            output.dpad_right |= virtualButtons[(int)Button.DPAD_RIGHT];
+            output.dpad_left |= virtualButtons[(int)Button.DPAD_LEFT];
+            output.dpad_up |= virtualButtons[(int)Button.DPAD_UP];
+            output.back |= virtualButtons[(int)Button.MINUS];
+            output.guide |= virtualButtons[(int)Button.HOME];
+            output.start |= virtualButtons[(int)Button.PLUS];
+            output.thumb_stick_left |= virtualButtons[(int)Button.STICK];
+            output.shoulder_left |= virtualButtons[(int)Button.SHOULDER_1];
+            if (virtualButtons[(int)Button.SHOULDER_2])
+                output.trigger_left = Byte.MaxValue;
+            output.a |= virtualButtons[(int)Button.B];
+            output.b |= virtualButtons[(int)Button.A];
+            output.x |= virtualButtons[(int)Button.Y];
+            output.y |= virtualButtons[(int)Button.X];
+            output.thumb_stick_right |= virtualButtons[(int)Button.STICK2];
+            output.shoulder_right |= virtualButtons[(int)Button.SHOULDER2_1];
+            if (virtualButtons[(int)Button.SHOULDER2_2])
+                output.trigger_right = Byte.MaxValue;
             return output;
         }
 
@@ -3596,7 +3615,7 @@ namespace BetterJoyForCemu {
             var GyroAnalogSliders = input.GyroAnalogSliders;
 
             var buttons = modifierHeld
-                ? input.GetCustomButtonsForVigem()
+                ? NeutralCustomButtons
                 : input.GetButtonsForVigem();
             var stick = modifierHeld ? NeutralCustomStick : input.stick;
             var stick2 = modifierHeld ? NeutralCustomStick : input.stick2;
@@ -3760,6 +3779,60 @@ namespace BetterJoyForCemu {
             output.trigger_right = output.trigger_right_value > 0 ? output.trigger_right = true : output.trigger_right = false;
             }
 
+            return ApplyCustomPlayStationVirtualButtons(output, input.customVirtualButtons);
+        }
+
+        // Same stable position codes as the Xbox helper above, expressed directly in the
+        // DualShock4/DualSense report shape. Code 6 is Share/Create for PlayStation outputs.
+        internal static OutputControllerDualShock4InputState ApplyCustomPlayStationVirtualButtons(
+                OutputControllerDualShock4InputState output, bool[] virtualButtons) {
+            bool up = virtualButtons[(int)Button.DPAD_UP] ||
+                output.dPad == DpadDirection.North ||
+                output.dPad == DpadDirection.Northeast ||
+                output.dPad == DpadDirection.Northwest;
+            bool down = virtualButtons[(int)Button.DPAD_DOWN] ||
+                output.dPad == DpadDirection.South ||
+                output.dPad == DpadDirection.Southeast ||
+                output.dPad == DpadDirection.Southwest;
+            bool left = virtualButtons[(int)Button.DPAD_LEFT] ||
+                output.dPad == DpadDirection.West ||
+                output.dPad == DpadDirection.Northwest ||
+                output.dPad == DpadDirection.Southwest;
+            bool right = virtualButtons[(int)Button.DPAD_RIGHT] ||
+                output.dPad == DpadDirection.East ||
+                output.dPad == DpadDirection.Northeast ||
+                output.dPad == DpadDirection.Southeast;
+            if (up)
+                output.dPad = left ? DpadDirection.Northwest
+                    : right ? DpadDirection.Northeast : DpadDirection.North;
+            else if (down)
+                output.dPad = left ? DpadDirection.Southwest
+                    : right ? DpadDirection.Southeast : DpadDirection.South;
+            else if (left)
+                output.dPad = DpadDirection.West;
+            else if (right)
+                output.dPad = DpadDirection.East;
+
+            output.share |= virtualButtons[(int)Button.MINUS];
+            output.ps |= virtualButtons[(int)Button.HOME];
+            output.options |= virtualButtons[(int)Button.PLUS];
+            output.thumb_left |= virtualButtons[(int)Button.STICK];
+            output.shoulder_left |= virtualButtons[(int)Button.SHOULDER_1];
+            if (virtualButtons[(int)Button.SHOULDER_2]) {
+                output.trigger_left = true;
+                output.trigger_left_value = Byte.MaxValue;
+            }
+            output.cross |= virtualButtons[(int)Button.B];
+            output.circle |= virtualButtons[(int)Button.A];
+            output.square |= virtualButtons[(int)Button.Y];
+            output.triangle |= virtualButtons[(int)Button.X];
+            output.thumb_right |= virtualButtons[(int)Button.STICK2];
+            output.shoulder_right |= virtualButtons[(int)Button.SHOULDER2_1];
+            if (virtualButtons[(int)Button.SHOULDER2_2]) {
+                output.trigger_right = true;
+                output.trigger_right_value = Byte.MaxValue;
+            }
+            output.touchpad |= virtualButtons[(int)Button.TOUCHPAD];
             return output;
         }
 

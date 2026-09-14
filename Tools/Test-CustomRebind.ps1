@@ -79,37 +79,62 @@ try {
     Assert-True (-not $isRebindHeld.Invoke($null, $heldArguments)) `
         'A multi-button rebind activated before every source button was held.'
 
-    # User contract: B -> Y is replacement output. Physical B is consumed and only Y is emitted.
+    # User contract: Rebind consumption removes the original normalized physical input before
+    # normal physical-to-virtual mapping. Legacy continuous remaps remain additive here; Custom
+    # bind controller outputs are tested separately as direct virtual-report buttons below.
     [bool[]]$output = New-Object bool[] $buttonCount
     [bool[]]$consumed = New-Object bool[] $buttonCount
     [bool[]]$remapped = New-Object bool[] $buttonCount
     $output[13] = $true
     $consumed[13] = $true
-    $remapped[15] = $true
     $applyOverrides.Invoke($null, @($output, $consumed, $remapped))
-    Assert-True (-not $output[13] -and $output[15]) `
-        'B -> Y must consume B and emit only Y.'
+    Assert-True (-not $output[13]) `
+        'Rebind consumption did not remove the original physical B input.'
 
-    # Rebinding a button to itself must still emit the explicitly selected output.
+    # Regression: the pre-existing continuous physical remap path is unchanged.
     [bool[]]$output = New-Object bool[] $buttonCount
     [bool[]]$consumed = New-Object bool[] $buttonCount
     [bool[]]$remapped = New-Object bool[] $buttonCount
-    $output[13] = $true
-    $consumed[13] = $true
-    $remapped[13] = $true
-    $applyOverrides.Invoke($null, @($output, $consumed, $remapped))
-    Assert-True ($output[13]) 'B -> B must continue to emit B.'
-
-    # Regression: Rebind Disabled preserves the original additive custom-chord behavior.
-    [bool[]]$output = New-Object bool[] $buttonCount
-    [bool[]]$consumed = New-Object bool[] $buttonCount
-    [bool[]]$remapped = New-Object bool[] $buttonCount
-    $output[13] = $true
-    $output[14] = $true
     $remapped[15] = $true
     $applyOverrides.Invoke($null, @($output, $consumed, $remapped))
-    Assert-True ($output[13] -and $output[14] -and $output[15]) `
-        'Rebind Disabled must preserve both chord inputs while adding its output.'
+    Assert-True ($output[15]) 'Legacy continuous remap output was no longer additive.'
+
+    # User contract: joy_* in a Custom bind output is a direct virtual target. Position 15 is
+    # Xbox X / PlayStation Square; it must never pass through the physical Y -> virtual X mapping
+    # a second time, and the original virtual state remains additive when Rebind is Disabled.
+    $xboxStateType = $assembly.GetType(
+        'BetterJoyForCemu.VirtualOutput.OutputControllerXbox360InputState', $true)
+    $psStateType = $assembly.GetType(
+        'BetterJoyForCemu.VirtualOutput.OutputControllerDualShock4InputState', $true)
+    $applyXboxVirtual = $controllerType.GetMethod(
+        'ApplyCustomXboxVirtualButtons', [Reflection.BindingFlags]'NonPublic,Static')
+    $applyPsVirtual = $controllerType.GetMethod(
+        'ApplyCustomPlayStationVirtualButtons', [Reflection.BindingFlags]'NonPublic,Static')
+    [bool[]]$virtualButtons = New-Object bool[] $buttonCount
+    $virtualButtons[15] = $true
+    $xboxState = [Activator]::CreateInstance($xboxStateType)
+    $xboxState.a = $true
+    $xboxResult = $applyXboxVirtual.Invoke($null, @($xboxState, $virtualButtons))
+    Assert-True ($xboxResult.a -and $xboxResult.x -and -not $xboxResult.y) `
+        'Virtual position 15 did not directly emit Xbox X while preserving existing Xbox A.'
+    $psState = [Activator]::CreateInstance($psStateType)
+    $psState.cross = $true
+    $psResult = $applyPsVirtual.Invoke($null, @($psState, $virtualButtons))
+    Assert-True ($psResult.cross -and $psResult.square -and -not $psResult.triangle) `
+        'Virtual position 15 did not directly emit PlayStation Square while preserving Cross.'
+
+    [bool[]]$virtualButtons = New-Object bool[] $buttonCount
+    $virtualButtons[12] = $true
+    $virtualButtons[19] = $true
+    $xboxResult = $applyXboxVirtual.Invoke(
+        $null, @([Activator]::CreateInstance($xboxStateType), $virtualButtons))
+    Assert-True ($xboxResult.trigger_left -eq 255 -and $xboxResult.trigger_right -eq 255) `
+        'Virtual LT/RT did not produce full Xbox trigger values.'
+    $psResult = $applyPsVirtual.Invoke(
+        $null, @([Activator]::CreateInstance($psStateType), $virtualButtons))
+    Assert-True ($psResult.trigger_left -and $psResult.trigger_right -and
+        $psResult.trigger_left_value -eq 255 -and $psResult.trigger_right_value -eq 255) `
+        'Virtual L2/R2 did not produce digital and analog PlayStation trigger output.'
 
     # User contract: output assignment reads normalized physical state. Generated Y output must
     # never feed back through Controller.GetButton and make capture report Y instead of B.
@@ -143,6 +168,44 @@ try {
     $n64Controller = [Enum]::ToObject($kindType, 4)
     $dualSense = [Enum]::ToObject($kindType, 5)
     $dualShock4 = [Enum]::ToObject($kindType, 6)
+
+    # User contract: output recording starts from the normalized physical code and stores the
+    # button produced by that controller's default layout. Dual-stick PlayStation Square remains
+    # position 15 (Xbox X / PlayStation Square); sideways Joy-Con rotation is resolved once at
+    # capture time rather than being deferred to output emission.
+    $defaultVirtualButton = $reassignType.GetMethod(
+        'DefaultVirtualButtonCode', [Reflection.BindingFlags]'NonPublic,Static')
+    Assert-True ($defaultVirtualButton.Invoke($null, @(15, $dualSense, 'dualsense:test')) -eq 15) `
+        'DualSense Square did not record its default virtual west-face position.'
+    Assert-True ($defaultVirtualButton.Invoke($null, @(0, $rightJoyCon, 'solo-right:test')) -eq 15) `
+        'A sideways right Joy-Con B press did not record the default rotated virtual X position.'
+    Assert-True ($defaultVirtualButton.Invoke($null, @(15, $null, 'pair:left+right')) -eq 15) `
+        'A joined Joy-Con pair changed an already-normalized virtual button position.'
+
+    # User contract: the same stored virtual position is presented for the selected Use-as
+    # controller, never as another physical controller button. Position 15 is Xbox X,
+    # DualShock/DualSense Square; position 13 is Xbox A, PlayStation Cross.
+    $virtualDisplayName = $reassignType.GetMethod(
+        'VirtualControllerButtonDisplayName', [Reflection.BindingFlags]'NonPublic,Static')
+    Assert-True ($virtualDisplayName.Invoke($null, @(15, 'xbox360')) -eq 'X') `
+        'Virtual position 15 was not labeled Xbox X.'
+    Assert-True ($virtualDisplayName.Invoke($null, @(13, 'xbox360')) -eq 'A') `
+        'Virtual position 13 was not labeled Xbox A.'
+    Assert-True ($virtualDisplayName.Invoke($null, @(15, 'dualshock4')) -eq 'SQUARE') `
+        'Virtual position 15 was not labeled DualShock Square.'
+    Assert-True ($virtualDisplayName.Invoke($null, @(6, 'dualsense_viiper')) -eq 'CREATE') `
+        'Virtual position 6 was not labeled DualSense Create.'
+    $virtualCodes = $reassignType.GetMethod(
+        'VirtualControllerButtonCodes', [Reflection.BindingFlags]'NonPublic,Static')
+    $xboxCodes = @($virtualCodes.Invoke($null, @('xbox360')))
+    $playStationCodes = @($virtualCodes.Invoke($null, @('dualsense_viiper')))
+    Assert-True ($xboxCodes -contains 15 -and $xboxCodes -notcontains 20 -and
+        $xboxCodes -notcontains 25) `
+        'Xbox output choices included physical-only buttons or omitted Xbox X.'
+    Assert-True ($playStationCodes -contains 15 -and $playStationCodes -contains 20 -and
+        $playStationCodes -notcontains 25) `
+        'PlayStation output choices did not match the virtual controller surface.'
+
     $displayName = $reassignType.GetMethods([Reflection.BindingFlags]'NonPublic,Static') |
         Where-Object {
             $_.Name -eq 'ControllerButtonDisplayName' -and $_.GetParameters().Count -eq 2
@@ -197,6 +260,21 @@ try {
     }
     Assert-True ($null -eq $glyph.Invoke($null, @(13, $null))) `
         'An unknown controller model must keep text labels.'
+
+    # Output glyphs follow Use as, independently of the physical controller selected on the left.
+    # These are the attributed, unmodified Mr. Breakfast Xbox prompts and existing Kenney PS art.
+    $virtualGlyph = $reassignType.GetMethod(
+        'VirtualControllerButtonGlyph', [Reflection.BindingFlags]'NonPublic,Static')
+    foreach ($code in @(0, 1, 2, 3, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)) {
+        Assert-True ($null -ne $virtualGlyph.Invoke($null, @([int]$code, 'xbox360'))) `
+            "Xbox virtual button position $code has no embedded glyph."
+    }
+    Assert-True ($null -eq $virtualGlyph.Invoke($null, @(7, 'xbox360'))) `
+        'Xbox Guide must keep its text label because the imported set has no Guide glyph.'
+    foreach ($code in @(6, 8, 13, 14, 15, 16, 20)) {
+        Assert-True ($null -ne $virtualGlyph.Invoke($null, @([int]$code, 'dualsense_viiper'))) `
+            "DualSense virtual button position $code has no embedded glyph."
+    }
 
     # User contract: Switch models use the unmodified Kenney glyph for the physical button
     # represented by each canonical code. Right Joy-Con face/D-pad slots therefore deliberately

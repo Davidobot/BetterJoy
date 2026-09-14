@@ -10,9 +10,9 @@
 - License: Creative Commons Zero 1.0 Universal (CC0-1.0); see `LICENSE.txt`
 - Required project credit: “Keyboard and media prompts from Mr. Breakfast's Free Prompts — https://github.com/mr-breakfast/mrbreakfasts_free_prompts”
 
-The imported files are 115 unmodified PNGs from the repository's `png` directory: every light
-prompt exported by the source `keys_light` layer except its five non-key generic exports (`tap`,
-`swipe`, `controller`, `rotation_arrow`, and `vibration`). BetterJoy uses these for standard
-Windows keyboard keys, shifted-symbol/preset artwork, and available media actions. Original
-filenames are preserved. See `IMPORTED_SHA256.txt` for the complete imported-file checksum
-manifest.
+The imported files are 130 unmodified PNGs from the repository's `png` directory: 115 light
+prompts exported by the source `keys_light` layer (excluding its five non-key generic exports),
+plus 15 Xbox face, shoulder, trigger, menu, D-pad, and stick-press prompts. BetterJoy uses these
+for standard Windows keyboard keys, shifted-symbol/preset artwork, media actions, and virtual
+Xbox output buttons. Original filenames are preserved. See `IMPORTED_SHA256.txt` for the complete
+imported-file checksum manifest.
