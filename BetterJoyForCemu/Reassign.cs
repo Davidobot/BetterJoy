@@ -165,6 +165,7 @@ namespace BetterJoyForCemu {
             public Panel Panel;
             public SplitButton Input;
             public SplitButton Output;
+            public ComboBox Rebind;
             public Button Remove;
             public ContextMenuStrip InputMenu;
             public ContextMenuStrip OutputMenu;
@@ -242,9 +243,15 @@ namespace BetterJoyForCemu {
                 return;
             ControllerMappings.CustomBinding binding = bindings[index];
             bindings[index] = target.IsInput
-                ? new ControllerMappings.CustomBinding(value, binding.Output)
-                : new ControllerMappings.CustomBinding(binding.Input, value);
+                ? new ControllerMappings.CustomBinding(value, binding.Output, binding.Rebind)
+                : new ControllerMappings.CustomBinding(binding.Input, value, binding.Rebind);
             ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
+            if (DebugLog.Enabled) {
+                DebugLog.Write("Custom binds UI: profile=" + SelectedProfileId +
+                    " row=" + index +
+                    " field=" + (target.IsInput ? "input" : "output") +
+                    " value=" + (value ?? String.Empty));
+            }
         }
 
         public Reassign(ServiceControlClient serviceClient,
@@ -1044,16 +1051,18 @@ namespace BetterJoyForCemu {
 
         private Panel BuildCustomBindingsPage() {
             Panel page = CreateProfilePage("Custom binds",
-                "Map controller chords to virtual controller, mouse, or keyboard output.");
+                "Map controller inputs to virtual controller, mouse, or keyboard output.");
 
-            page.Controls.Add(CreateLabel("CONTROLLER CHORD", 24, 101,
+            page.Controls.Add(CreateLabel("CONTROLLER INPUT", 24, 101,
                 ProfileMuted, false, 8.25F));
-            page.Controls.Add(CreateLabel("OUTPUT BIND", 294, 101,
+            page.Controls.Add(CreateLabel("OUTPUT BIND", 228, 101,
+                ProfileMuted, false, 8.25F));
+            page.Controls.Add(CreateLabel("REBIND", 432, 101,
                 ProfileMuted, false, 8.25F));
 
             addCustomBindingButton = new Button {
                 Text = "+ Add bind",
-                Location = new Point(494, 91),
+                Location = new Point(494, 17),
                 Size = new Size(100, 30),
             };
             StyleStandardButton(addCustomBindingButton, true);
@@ -1079,9 +1088,9 @@ namespace BetterJoyForCemu {
             page.Controls.Add(noCustomBindingsLabel);
 
             customBindingsNote = CreateLabel(
-                "Sources need at least two controller buttons. Set one under Bindings > Modifier " +
-                "if the source chord should not also pass through normally. Preset actions fire " +
-                "once each time the chord is pressed.",
+                "Sources need at least two controller buttons unless Rebind is enabled. Rebind " +
+                "consumes the original controller input and sends only the assigned output. " +
+                "Preset actions fire once each time the source is pressed.",
                 24, 185, ProfileMuted, false, 8.5F);
             customBindingsNote.AutoSize = false;
             customBindingsNote.Size = new Size(570, 54);
@@ -1095,6 +1104,9 @@ namespace BetterJoyForCemu {
             var bindings = ControllerMappings.CustomBindings(SelectedProfileId).ToList();
             bindings.Add(new ControllerMappings.CustomBinding(String.Empty, String.Empty));
             ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
+            if (DebugLog.Enabled)
+                DebugLog.Write("Custom binds UI: profile=" + SelectedProfileId + " added row=" +
+                    (bindings.Count - 1));
             LoadCustomBindings();
         }
 
@@ -1144,25 +1156,42 @@ namespace BetterJoyForCemu {
             };
             row.Input = new SplitButton();
             row.Output = new SplitButton();
+            row.Rebind = new ComboBox {
+                AccessibleName = "Rebind",
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = ProfileSurface,
+                ForeColor = ProfileText,
+                Font = new Font("Segoe UI", 8.25F * ProfileUiScale),
+                Location = new Point(Scale(408), Scale(3)),
+                Size = new Size(Scale(108), Scale(25)),
+            };
+            row.Rebind.Items.AddRange(new object[] { "Disabled", "Enabled" });
+            row.Rebind.SelectedIndex = binding.Rebind ? 1 : 0;
+            row.Rebind.SelectedIndexChanged += (sender, e) =>
+                SetCustomBindingRebind(row, row.Rebind.SelectedIndex == 1);
             row.Remove = new Button { Text = "×" };
 
             ConfigureCustomBindingButton(row.Input, row, true,
-                0, Scale(246), binding.Input);
+                0, Scale(194), binding.Input);
             ConfigureCustomBindingButton(row.Output, row, false,
-                Scale(258), Scale(246), binding.Output);
+                Scale(204), Scale(194), binding.Output);
             row.InputMenu = BuildCustomBindingInputMenu(row);
             row.OutputMenu = BuildCustomBindingOutputMenu(row);
             row.Input.Menu = row.InputMenu;
             row.Output.Menu = row.OutputMenu;
             StyleStandardButton(row.Remove, false);
-            row.Remove.Location = new Point(Scale(516), 0);
-            row.Remove.Size = new Size(Scale(50), Scale(31));
+            row.Remove.Location = new Point(Scale(524), 0);
+            row.Remove.Size = new Size(Scale(42), Scale(31));
             row.Remove.Font = new Font("Segoe UI", 10F * ProfileUiScale, FontStyle.Bold);
             row.Remove.Click += (sender, e) => RemoveCustomBindingRow(row);
             tip_reassign.SetToolTip(row.Remove, "Remove this custom bind.");
+            tip_reassign.SetToolTip(row.Rebind,
+                "Enabled allows one or more controller buttons and replaces their normal output.");
 
             row.Panel.Controls.Add(row.Input);
             row.Panel.Controls.Add(row.Output);
+            row.Panel.Controls.Add(row.Rebind);
             row.Panel.Controls.Add(row.Remove);
             customBindingRows.Add(row);
             customBindingsRowsPanel.Controls.Add(row.Panel);
@@ -1177,6 +1206,24 @@ namespace BetterJoyForCemu {
             button.Tag = new CustomCaptureTarget { Row = row, IsInput = isInput };
             button.MouseDown += CustomBindingButton_MouseDown;
             SetCustomBindingPrettyName(button, value);
+        }
+
+        private void SetCustomBindingRebind(CustomBindingRow row, bool rebind) {
+            int index = customBindingRows.IndexOf(row);
+            if (index < 0 || String.IsNullOrEmpty(SelectedProfileId))
+                return;
+            var bindings = ControllerMappings.CustomBindings(SelectedProfileId).ToList();
+            if (index >= bindings.Count || bindings[index].Rebind == rebind)
+                return;
+            ControllerMappings.CustomBinding binding = bindings[index];
+            bindings[index] = new ControllerMappings.CustomBinding(
+                binding.Input, binding.Output, rebind);
+            ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
+            SetCustomBindingPrettyName(row.Input, binding.Input);
+            if (DebugLog.Enabled) {
+                DebugLog.Write("Custom binds UI: profile=" + SelectedProfileId +
+                    " row=" + index + " rebind=" + rebind);
+            }
         }
 
         private ContextMenuStrip BuildCustomBindingInputMenu(CustomBindingRow row) {
@@ -1306,6 +1353,8 @@ namespace BetterJoyForCemu {
             if (index < bindings.Count)
                 bindings.RemoveAt(index);
             ControllerMappings.SetCustomBindings(SelectedProfileId, bindings);
+            if (DebugLog.Enabled)
+                DebugLog.Write("Custom binds UI: profile=" + SelectedProfileId + " removed row=" + index);
             LoadCustomBindings();
         }
 
@@ -1317,15 +1366,19 @@ namespace BetterJoyForCemu {
                 description = ControllerMappings.CustomActionLabel(value);
             else
                 description = String.Join("+", value.Split('+').Select(DescribeBindPart));
-            bool isInput = control.Tag is CustomCaptureTarget target && target.IsInput;
+            CustomCaptureTarget target = control.Tag as CustomCaptureTarget;
+            bool isInput = target != null && target.IsInput;
+            bool rebind = isInput && target.Row.Rebind.SelectedIndex == 1;
             bool incompleteInput = isInput && !String.IsNullOrEmpty(value) &&
-                !ControllerMappings.IsValidCustomBindingInput(value);
+                !ControllerMappings.IsValidCustomBindingInput(value, rebind);
             control.Text = String.IsNullOrEmpty(value)
                 ? "Click to assign"
                 : description + (incompleteInput ? "  ·  add another button" : String.Empty);
             tip_reassign.SetToolTip(control, description + "\r\n\r\nLeft-click to detect " +
-                (isInput ? "a controller chord (two or more buttons)." : "an output bind or shortcut.") +
-                (incompleteInput ? "\r\nThis chord needs at least one more controller button." : String.Empty) +
+                (isInput ? (rebind ? "one or more controller buttons."
+                                   : "a controller chord (two or more buttons).")
+                         : "an output bind or shortcut.") +
+                (incompleteInput ? "\r\nThis source needs at least one more controller button." : String.Empty) +
                 "\r\nClick the ▼ " + (isInput
                     ? "to add or remove controller buttons."
                     : "for presets and controller outputs.") +
@@ -3959,8 +4012,10 @@ namespace BetterJoyForCemu {
             // comment for why that distinction actually matters at match time.
             string combo = String.Join("+", comboMembers);
             if (curAssignment.Tag is CustomCaptureTarget customTarget && customTarget.IsInput &&
-                    !ControllerMappings.IsValidCustomBindingInput(combo)) {
+                    !ControllerMappings.IsValidCustomBindingInput(
+                        combo, customTarget.Row.Rebind.SelectedIndex == 1)) {
                 Control invalidTarget = curAssignment;
+                bool rebind = customTarget.Row.Rebind.SelectedIndex == 1;
                 curAssignment = null;
                 comboMembers = null;
                 comboHeldNow = null;
@@ -3968,7 +4023,9 @@ namespace BetterJoyForCemu {
                 EndBindingCaptureSuppression();
                 SetCustomBindingPrettyName(invalidTarget, GetAssignmentValue(invalidTarget));
                 MessageBox.Show(this,
-                    "A custom source must contain at least two different controller buttons.",
+                    rebind
+                        ? "A rebind source must contain at least one controller button."
+                        : "A custom source must contain at least two different controller buttons.",
                     "Custom binds", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }

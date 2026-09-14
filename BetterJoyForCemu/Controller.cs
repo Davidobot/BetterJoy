@@ -1189,6 +1189,7 @@ namespace BetterJoyForCemu {
         // GetButtonsForVigem - buttons[] itself is never touched.
         protected readonly bool[] continuousRemapButtons = new bool[ButtonCount];
         protected readonly bool[] customRemapButtons = new bool[ButtonCount];
+        protected readonly bool[] customRebindConsumedButtons = new bool[ButtonCount];
         private string lastCustomBindingsValue;
         private ControllerMappings.CustomBinding[] customBindings =
             new ControllerMappings.CustomBinding[0];
@@ -2014,18 +2015,30 @@ namespace BetterJoyForCemu {
                     ReleaseCustomDesktopOutputsLocked();
                     customBindings = ControllerMappings.CustomBindings(mappingProfileId)
                         .Where(binding =>
-                            ControllerMappings.IsValidCustomBindingInput(binding.Input) &&
+                            ControllerMappings.IsValidCustomBindingInput(
+                                binding.Input, binding.Rebind) &&
                             ControllerMappings.IsValidCustomBindingOutput(binding.Output))
                         .ToArray();
                     lastCustomBindingsValue = currentValue;
+                    if (DebugLog.Enabled) {
+                        DebugLog.Write("Custom binds: pad=" + PadId +
+                            " profile=" + mappingProfileId +
+                            " activeRows=" + customBindings.Length +
+                            " rebindRows=" + customBindings.Count(binding => binding.Rebind));
+                    }
                 }
 
                 desiredCustomDesktopOutputs.Clear();
                 seenCustomDesktopOutputs.Clear();
                 seenCustomActions.Clear();
                 foreach (ControllerMappings.CustomBinding binding in customBindings) {
-                    if (!IsComboHeld(binding.Input))
+                    if (!(binding.Rebind
+                            ? AreCustomRebindButtonsHeld(binding.Input)
+                            : IsComboHeld(binding.Input)))
                         continue;
+
+                    if (binding.Rebind)
+                        ConsumeCustomRebindInput(binding.Input);
 
                     foreach (string part in binding.Output.Split('+')) {
                         DesktopInputAction action;
@@ -2064,6 +2077,39 @@ namespace BetterJoyForCemu {
                 activeCustomActions.Clear();
                 foreach (string action in seenCustomActions)
                     activeCustomActions.Add(action);
+            }
+        }
+
+        // Rebind inputs are physical-button subsets rather than exact-match chords: B remains
+        // rebound while another physical button is also held. The source is read only from the
+        // normalized buttons arrays; generated output never feeds back into this check.
+        private bool AreCustomRebindButtonsHeld(string input) {
+            return AreCustomRebindButtonsHeld(input, buttons,
+                other != null && other != this ? other.buttons : null);
+        }
+
+        internal static bool AreCustomRebindButtonsHeld(string input,
+                bool[] physicalButtons, bool[] partnerButtons) {
+            foreach (string part in input.Split('+')) {
+                int buttonIndex;
+                if (!part.StartsWith("joy_", StringComparison.Ordinal) ||
+                        !Int32.TryParse(part.Substring(4), out buttonIndex) ||
+                        buttonIndex < 0 || buttonIndex >= ButtonCount)
+                    return false;
+                bool heldHere = physicalButtons[buttonIndex];
+                bool heldByPartner = partnerButtons != null && partnerButtons[buttonIndex];
+                if (!(heldHere || heldByPartner))
+                    return false;
+            }
+            return true;
+        }
+
+        private void ConsumeCustomRebindInput(string input) {
+            foreach (string part in input.Split('+')) {
+                int canonicalIndex;
+                if (Int32.TryParse(part.Substring(4), out canonicalIndex))
+                    customRebindConsumedButtons[
+                        CanonicalButtonToLocalVigemIndex(canonicalIndex)] = true;
             }
         }
 
@@ -2665,23 +2711,21 @@ namespace BetterJoyForCemu {
                 ProfileBoolOption("TouchpadMouseInhibitButtons");
             bool customGuideHeld = TryGetHeldCustomGuideMapping(out string guideMapping);
             bool hasContinuousRemap = false;
+            bool hasCustomRebind = false;
             for (int i = 0; i < continuousRemapButtons.Length; i++) {
-                if (continuousRemapButtons[i]) {
-                    hasContinuousRemap = true;
+                hasContinuousRemap |= continuousRemapButtons[i];
+                hasCustomRebind |= customRebindConsumedButtons[i];
+                if (hasContinuousRemap && hasCustomRebind)
                     break;
-                }
             }
             if (!gyroMouseConsumesButtons && !touchpadMouseConsumesButtons &&
-                    !TouchpadColorWheelConsumesTouchpad && !customGuideHeld && !hasContinuousRemap)
+                    !TouchpadColorWheelConsumesTouchpad && !customGuideHeld &&
+                    !hasContinuousRemap && !hasCustomRebind)
                 return buttons;
 
             Array.Copy(buttons, vigemButtons, buttons.Length);
-            if (hasContinuousRemap) {
-                for (int i = 0; i < continuousRemapButtons.Length; i++) {
-                    if (continuousRemapButtons[i])
-                        vigemButtons[i] = true;
-                }
-            }
+            ApplyCustomButtonOverrides(vigemButtons, customRebindConsumedButtons,
+                continuousRemapButtons);
             if (gyroMouseConsumesButtons) {
                 for (int canonicalIndex = 0;
                      canonicalIndex < gyroOnlyReservedButtons.Length;
@@ -2724,6 +2768,20 @@ namespace BetterJoyForCemu {
                 }
             }
             return vigemButtons;
+        }
+
+        // Consumption runs before generated output so a deliberate B -> B rebind still emits B,
+        // while B -> Y removes only the normalized physical B and emits Y.
+        internal static void ApplyCustomButtonOverrides(bool[] outputButtons,
+                bool[] consumedButtons, bool[] remappedButtons) {
+            for (int i = 0; i < outputButtons.Length; i++) {
+                if (consumedButtons[i])
+                    outputButtons[i] = false;
+            }
+            for (int i = 0; i < outputButtons.Length; i++) {
+                if (remappedButtons[i])
+                    outputButtons[i] = true;
+            }
         }
 
         // Modifier suppresses raw passthrough and the fixed remaps, but a custom row explicitly
@@ -3000,6 +3058,7 @@ namespace BetterJoyForCemu {
             // array for this one report, then GetButtonsForVigem folds it into vigemButtons.
             Array.Clear(continuousRemapButtons, 0, continuousRemapButtons.Length);
             Array.Clear(customRemapButtons, 0, customRemapButtons.Length);
+            Array.Clear(customRebindConsumedButtons, 0, customRebindConsumedButtons.Length);
 
             // Checked first and returns early like the other button-driven side effects below -
             // a face button doubling as "confirm" only ever matters while a calibration prompt
@@ -3491,8 +3550,10 @@ namespace BetterJoyForCemu {
                     // A DualSense's L2/R2 are genuinely analog, unlike Joy-Con/Pro (which have no
                     // trigger sensor at all and only ever derive a digital 0-or-max value from a
                     // button bit below) - pass the real raw value straight through.
-                    output.trigger_left = input.TriggerVal[0];
-                    output.trigger_right = input.TriggerVal[1];
+                    output.trigger_left = input.customRebindConsumedButtons[
+                        (int)Button.SHOULDER_2] ? (byte)0 : input.TriggerVal[0];
+                    output.trigger_right = input.customRebindConsumedButtons[
+                        (int)Button.SHOULDER2_2] ? (byte)0 : input.TriggerVal[1];
                 } else if (other != null || hasDualSticks) {
                     byte lval = GyroAnalogSliders ? sliderVal[0] : Byte.MaxValue;
                     byte rval = GyroAnalogSliders ? sliderVal[1] : Byte.MaxValue;

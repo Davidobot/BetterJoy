@@ -1,0 +1,135 @@
+param(
+    [string]$AssemblyPath = (Join-Path $PSScriptRoot '..\BetterJoyForCemu\bin\x64\Release\BetterJoy2.exe')
+)
+
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Configuration
+[Configuration.ConfigurationManager]::AppSettings.Set('AHRS_beta', '0.1')
+
+function Assert-True([bool]$Condition, [string]$Message) {
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
+$resolvedAssembly = (Resolve-Path -LiteralPath $AssemblyPath).Path
+Push-Location (Split-Path -Parent $resolvedAssembly)
+try {
+    $assembly = [Reflection.Assembly]::LoadFrom($resolvedAssembly)
+    $mappingsType = $assembly.GetType('BetterJoyForCemu.ControllerMappings', $true)
+    $bindingType = $assembly.GetType('BetterJoyForCemu.ControllerMappings+CustomBinding', $true)
+    $controllerType = $assembly.GetType('BetterJoyForCemu.Controller', $true)
+
+    $validateInput = $mappingsType.GetMethod(
+        'IsValidCustomBindingInput',
+        [Reflection.BindingFlags]'Public,Static',
+        $null,
+        [Type[]]@([string], [bool]),
+        $null)
+
+    # User contract: ordinary custom binds still require a chord, while Rebind accepts one or
+    # more normalized controller buttons.
+    Assert-True (-not $validateInput.Invoke($null, @('joy_13', $false))) `
+        'Rebind Disabled incorrectly accepted a one-button source.'
+    Assert-True ($validateInput.Invoke($null, @('joy_13', $true))) `
+        'Rebind Enabled did not accept a one-button source.'
+    Assert-True ($validateInput.Invoke($null, @('joy_13+joy_15', $true))) `
+        'Rebind Enabled did not accept a multi-button source.'
+
+    $bindingConstructor = $bindingType.GetConstructor([Type[]]@([string], [string], [bool]))
+    $typedBindings = [Array]::CreateInstance($bindingType, 1)
+    $typedBindings.SetValue(
+        $bindingConstructor.Invoke(@('joy_13', 'joy_15', $true)), 0)
+    $serialize = $mappingsType.GetMethod(
+        'SerializeCustomBindings', [Reflection.BindingFlags]'NonPublic,Static')
+    $parse = $mappingsType.GetMethod(
+        'ParseCustomBindings', [Reflection.BindingFlags]'NonPublic,Static')
+    $serialized = [string]$serialize.Invoke($null, [object[]]@(,$typedBindings))
+    Assert-True ($serialized -eq "joy_13`tjoy_15`t1") `
+        'A Rebind Enabled row did not retain its mode in profile serialization.'
+    $legacyBinding = $parse.Invoke($null, @("joy_13+joy_14`tjoy_15"))[0]
+    Assert-True (-not $bindingType.GetProperty('Rebind').GetValue($legacyBinding)) `
+        'A saved custom bind without a rebind field must remain Rebind Disabled.'
+
+    $applyOverrides = $controllerType.GetMethod(
+        'ApplyCustomButtonOverrides', [Reflection.BindingFlags]'NonPublic,Static')
+    $buttonCount = [Enum]::GetValues($controllerType.GetNestedType('Button')).Count
+    $isRebindHeld = $controllerType.GetMethod(
+        'AreCustomRebindButtonsHeld',
+        [Reflection.BindingFlags]'NonPublic,Static',
+        $null,
+        [Type[]]@([string], [bool[]], [bool[]]),
+        $null)
+
+    # A direct B rebind remains active when another button is also held, while every member of a
+    # multi-button source must be physically present.
+    [bool[]]$physical = New-Object bool[] $buttonCount
+    $physical[13] = $true
+    $heldArguments = New-Object object[] 3
+    $heldArguments[0] = 'joy_13'
+    $heldArguments[1] = $physical
+    Assert-True ($isRebindHeld.Invoke($null, $heldArguments)) `
+        'A physical B press did not activate its direct rebind.'
+    $physical[14] = $true
+    Assert-True ($isRebindHeld.Invoke($null, $heldArguments)) `
+        'An additional held button incorrectly cancelled the B rebind.'
+    $heldArguments[0] = 'joy_13+joy_15'
+    Assert-True (-not $isRebindHeld.Invoke($null, $heldArguments)) `
+        'A multi-button rebind activated before every source button was held.'
+
+    # User contract: B -> Y is replacement output. Physical B is consumed and only Y is emitted.
+    [bool[]]$output = New-Object bool[] $buttonCount
+    [bool[]]$consumed = New-Object bool[] $buttonCount
+    [bool[]]$remapped = New-Object bool[] $buttonCount
+    $output[13] = $true
+    $consumed[13] = $true
+    $remapped[15] = $true
+    $applyOverrides.Invoke($null, @($output, $consumed, $remapped))
+    Assert-True (-not $output[13] -and $output[15]) `
+        'B -> Y must consume B and emit only Y.'
+
+    # Rebinding a button to itself must still emit the explicitly selected output.
+    [bool[]]$output = New-Object bool[] $buttonCount
+    [bool[]]$consumed = New-Object bool[] $buttonCount
+    [bool[]]$remapped = New-Object bool[] $buttonCount
+    $output[13] = $true
+    $consumed[13] = $true
+    $remapped[13] = $true
+    $applyOverrides.Invoke($null, @($output, $consumed, $remapped))
+    Assert-True ($output[13]) 'B -> B must continue to emit B.'
+
+    # Regression: Rebind Disabled preserves the original additive custom-chord behavior.
+    [bool[]]$output = New-Object bool[] $buttonCount
+    [bool[]]$consumed = New-Object bool[] $buttonCount
+    [bool[]]$remapped = New-Object bool[] $buttonCount
+    $output[13] = $true
+    $output[14] = $true
+    $remapped[15] = $true
+    $applyOverrides.Invoke($null, @($output, $consumed, $remapped))
+    Assert-True ($output[13] -and $output[14] -and $output[15]) `
+        'Rebind Disabled must preserve both chord inputs while adding its output.'
+
+    # User contract: output assignment reads normalized physical state. Generated Y output must
+    # never feed back through Controller.GetButton and make capture report Y instead of B.
+    $proControllerType = $assembly.GetType('BetterJoyForCemu.ProController', $true)
+    $controller = [Runtime.Serialization.FormatterServices]::GetUninitializedObject(
+        $proControllerType)
+    [bool[]]$physicalButtons = New-Object bool[] $buttonCount
+    [bool[]]$generatedButtons = New-Object bool[] $buttonCount
+    $physicalButtons[13] = $true
+    $generatedButtons[15] = $true
+    $controllerType.GetField('buttons', [Reflection.BindingFlags]'Instance,NonPublic').SetValue(
+        $controller, $physicalButtons)
+    $controllerType.GetField(
+        'continuousRemapButtons',
+        [Reflection.BindingFlags]'Instance,NonPublic').SetValue($controller, $generatedButtons)
+    $buttonType = $controllerType.GetNestedType('Button')
+    Assert-True ($controller.GetButton([Enum]::ToObject($buttonType, 13))) `
+        'Normalized capture lost the physical B input.'
+    Assert-True (-not $controller.GetButton([Enum]::ToObject($buttonType, 15))) `
+        'Generated Y output leaked into normalized controller capture.'
+
+    Write-Host 'Custom Rebind regression tests passed.'
+} finally {
+    Pop-Location
+}

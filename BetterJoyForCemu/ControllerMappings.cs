@@ -43,10 +43,17 @@ namespace BetterJoyForCemu {
         public sealed class CustomBinding {
             public string Input { get; private set; }
             public string Output { get; private set; }
+            public bool Rebind { get; private set; }
 
             public CustomBinding(string input, string output) {
                 Input = input ?? String.Empty;
                 Output = output ?? String.Empty;
+            }
+
+            public CustomBinding(string input, string output, bool rebind) {
+                Input = input ?? String.Empty;
+                Output = output ?? String.Empty;
+                Rebind = rebind;
             }
         }
 
@@ -605,12 +612,17 @@ namespace BetterJoyForCemu {
             }
         }
 
-        // A custom source is controller-only and intentionally requires at least two distinct
-        // buttons. The existing profile Modifier may be one member when passthrough suppression
-        // is wanted. Outputs may contain one or more controller, keyboard, or mouse parts.
+        // A normal custom source is controller-only and requires at least two distinct buttons.
+        // Rebind rows may use one button because they consume the source's normal virtual output.
+        // Outputs may contain one or more controller, keyboard, or mouse parts.
         public static bool IsValidCustomBindingInput(string value) {
+            return IsValidCustomBindingInput(value, false);
+        }
+
+        public static bool IsValidCustomBindingInput(string value, bool rebind) {
             string[] parts = String.IsNullOrEmpty(value) ? new string[0] : value.Split('+');
-            if (parts.Length < 2 || parts.Distinct(StringComparer.Ordinal).Count() != parts.Length)
+            if (parts.Length < (rebind ? 1 : 2) ||
+                    parts.Distinct(StringComparer.Ordinal).Count() != parts.Length)
                 return false;
             return parts.All(part => IsValidBindPart(part, controllerOnly: true));
         }
@@ -674,17 +686,19 @@ namespace BetterJoyForCemu {
                 return String.Empty;
             return String.Join("\n", bindings.Select(binding =>
                 (binding?.Input ?? String.Empty) + "\t" +
-                (binding?.Output ?? String.Empty)));
+                (binding?.Output ?? String.Empty) + "\t" +
+                (binding != null && binding.Rebind ? "1" : "0")));
         }
 
         private static CustomBinding[] ParseCustomBindings(string serialized) {
             if (String.IsNullOrEmpty(serialized))
                 return new CustomBinding[0];
             return serialized.Split('\n').Select(row => {
-                int separator = row.IndexOf('\t');
-                return separator < 0
-                    ? new CustomBinding(row, String.Empty)
-                    : new CustomBinding(row.Substring(0, separator), row.Substring(separator + 1));
+                string[] values = row.Split('\t');
+                return new CustomBinding(
+                    values.Length > 0 ? values[0] : String.Empty,
+                    values.Length > 1 ? values[1] : String.Empty,
+                    values.Length > 2 && values[2] == "1");
             }).ToArray();
         }
 
@@ -1028,7 +1042,7 @@ namespace BetterJoyForCemu {
                         String.Join(", ", missing.OrderBy(id => id, StringComparer.Ordinal)));
                 }
 
-                var root = new XElement("controllerMappings", new XAttribute("version", "4"));
+                var root = new XElement("controllerMappings", new XAttribute("version", "5"));
                 foreach (KeyValuePair<string, Dictionary<string, string>> profile in profiles.OrderBy(p => p.Key, StringComparer.Ordinal)) {
                     var profileElement = new XElement("profile", new XAttribute("id", profile.Key));
                     foreach (string key in Keys) {
@@ -1047,7 +1061,8 @@ namespace BetterJoyForCemu {
                         foreach (CustomBinding binding in ParseCustomBindings(customBindingsValue)) {
                             profileElement.Add(new XElement("customBind",
                                 new XAttribute("input", binding.Input),
-                                new XAttribute("output", binding.Output)));
+                                new XAttribute("output", binding.Output),
+                                new XAttribute("rebind", binding.Rebind)));
                         }
                     }
                     root.Add(profileElement);
@@ -1134,9 +1149,14 @@ namespace BetterJoyForCemu {
                     XElement[] customBindElements = profileElement.Elements("customBind").ToArray();
                     if (customBindElements.Length > 0) {
                         values[CustomBindingsStorageKey] = SerializeCustomBindings(
-                            customBindElements.Select(element => new CustomBinding(
-                                (string)element.Attribute("input"),
-                                (string)element.Attribute("output"))));
+                            customBindElements.Select(element => {
+                                bool rebind;
+                                Boolean.TryParse((string)element.Attribute("rebind"), out rebind);
+                                return new CustomBinding(
+                                    (string)element.Attribute("input"),
+                                    (string)element.Attribute("output"),
+                                    rebind);
+                            }));
                     }
                     parsed[profileId] = values;
                 }
