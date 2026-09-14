@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -1234,14 +1235,12 @@ namespace BetterJoyForCemu {
             menu.Items.Add(new ToolStripSeparator());
 
             ToolStripMenuItem buttons = new ToolStripMenuItem("Controller buttons");
-            bool playStationLabels = SelectedProfile?.Kind == ControllerKind.DualSense ||
-                SelectedProfile?.Kind == ControllerKind.DualShock4;
+            buttons.DropDown.ImageScalingSize = ButtonGlyphMenuSize;
+            ControllerKind? labelKind = PlayStationLabelKind(false);
             foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
                 string part = "joy_" + value;
-                ToolStripMenuItem item = new ToolStripMenuItem(
-                    ControllerButtonDisplayName(value, playStationLabels)) {
-                        Tag = part,
-                    };
+                ToolStripMenuItem item = new ToolStripMenuItem { Tag = part };
+                SetButtonMenuItemLabel(item, value, labelKind);
                 item.Click += (sender, e) => ToggleCustomBindingInputPart(
                     row.Input, (string)((ToolStripItem)sender).Tag);
                 buttons.DropDownItems.Add(item);
@@ -1271,14 +1270,11 @@ namespace BetterJoyForCemu {
             menu.Items.Add(new ToolStripSeparator());
 
             ToolStripMenuItem controller = new ToolStripMenuItem("Controller bind");
-            string useAs = ControllerMappings.OptionValue(SelectedProfileId, "UseAs");
-            bool playStationLabels = useAs == ControllerMappings.UseAsDualShock4 ||
-                useAs == ControllerMappings.UseAsDualSenseViiper;
+            controller.DropDown.ImageScalingSize = ButtonGlyphMenuSize;
+            ControllerKind? labelKind = PlayStationLabelKind(true);
             foreach (int value in Enum.GetValues(typeof(Controller.Button))) {
-                ToolStripMenuItem item = new ToolStripMenuItem(
-                    ControllerButtonDisplayName(value, playStationLabels)) {
-                        Tag = "joy_" + value,
-                    };
+                ToolStripMenuItem item = new ToolStripMenuItem { Tag = "joy_" + value };
+                SetButtonMenuItemLabel(item, value, labelKind);
                 item.Click += (sender, e) => SetCustomBindingSelection(
                     row.Output, (string)((ToolStripItem)sender).Tag);
                 controller.DropDownItems.Add(item);
@@ -1370,29 +1366,26 @@ namespace BetterJoyForCemu {
         private void SetCustomBindingPrettyName(Control control, string value) {
             CustomCaptureTarget target = control.Tag as CustomCaptureTarget;
             bool isInput = target != null && target.IsInput;
-            string useAs = ControllerMappings.OptionValue(SelectedProfileId, "UseAs");
-            bool playStationLabels = isInput
-                ? SelectedProfile?.Kind == ControllerKind.DualSense ||
-                    SelectedProfile?.Kind == ControllerKind.DualShock4
-                : useAs == ControllerMappings.UseAsDualShock4 ||
-                    useAs == ControllerMappings.UseAsDualSenseViiper;
+            ControllerKind? labelKind = PlayStationLabelKind(!isInput);
+            bool isCustomAction = ControllerMappings.IsCustomAction(value);
             string description;
             if (String.IsNullOrEmpty(value))
                 description = "(not set)";
-            else if (ControllerMappings.IsCustomAction(value))
+            else if (isCustomAction)
                 description = ControllerMappings.CustomActionLabel(value);
             else
                 description = String.Join("+", value.Split('+').Select(part =>
-                    part.StartsWith("joy_", StringComparison.Ordinal)
-                        ? ControllerButtonDisplayName(
-                            Int32.Parse(part.Substring(4)), playStationLabels)
-                        : DescribeBindPart(part)));
+                    DescribeBindPart(part, labelKind != null)));
             bool rebind = isInput && target.Row.Rebind.SelectedIndex == 1;
             bool incompleteInput = isInput && !String.IsNullOrEmpty(value) &&
                 !ControllerMappings.IsValidCustomBindingInput(value, rebind);
+            string suffix = incompleteInput ? "  ·  add another button" : String.Empty;
             control.Text = String.IsNullOrEmpty(value)
                 ? "Click to assign"
-                : description + (incompleteInput ? "  ·  add another button" : String.Empty);
+                : description + suffix;
+            if (!String.IsNullOrEmpty(value) && !isCustomAction)
+                (control as SplitButton)?.SetLabelParts(control.Text,
+                    BindLabelParts(value, labelKind, suffix));
             tip_reassign.SetToolTip(control, description + "\r\n\r\nLeft-click to detect " +
                 (isInput ? (rebind ? "one or more controller buttons."
                                    : "a controller chord (two or more buttons).")
@@ -3244,7 +3237,10 @@ namespace BetterJoyForCemu {
                      menu_default_orientation }) {
                 menu.BackColor = ProfileSurface;
                 menu.ForeColor = ProfileText;
-                menu.ShowImageMargin = false;
+                // Menu images only render inside the image margin, so the controller-button
+                // menus keep it for their PlayStation glyphs.
+                menu.ShowImageMargin = menu == menu_joy_buttons || menu == menu_gyro_activation;
+                menu.ImageScalingSize = ButtonGlyphMenuSize;
                 menu.Font = new Font("Segoe UI", 9F);
                 foreach (ToolStripItem item in menu.Items) {
                     item.BackColor = ProfileSurface;
@@ -3374,12 +3370,11 @@ namespace BetterJoyForCemu {
 
             ControllerProfileInfo selected = SelectedProfile;
             bool hasController = selected != null && !String.IsNullOrEmpty(selected.ProfileId);
-            bool playStationLabels = selected?.Kind == ControllerKind.DualSense ||
-                selected?.Kind == ControllerKind.DualShock4;
+            ControllerKind? labelKind = PlayStationLabelKind(false);
             foreach (ContextMenuStrip menu in new[] { menu_joy_buttons, menu_gyro_activation }) {
                 foreach (ToolStripItem item in menu.Items) {
                     if (item.Tag is int buttonCode)
-                        item.Text = ControllerButtonDisplayName(buttonCode, playStationLabels);
+                        SetButtonMenuItemLabel(item, buttonCode, labelKind);
                 }
             }
             bool hasTouchpad = selected != null &&
@@ -4305,6 +4300,9 @@ namespace BetterJoyForCemu {
             c.Text = explicitlyDisabled
                 ? "Disabled"
                 : (unassigned ? "" : description);
+            if (!unassigned)
+                (c as SplitButton)?.SetLabelParts(description,
+                    BindLabelParts(val, PlayStationLabelKind(false), null));
 
             // Long combos can still run out of room on the button itself (see Reassign.Designer.cs
             // for the width these buttons get) - the tooltip always shows the full, untruncated
@@ -4316,13 +4314,128 @@ namespace BetterJoyForCemu {
         }
 
         private string DescribeBindPart(string part) {
+            return DescribeBindPart(part, PlayStationLabelKind(false) != null);
+        }
+
+        private static string DescribeBindPart(string part, bool playStationLabels) {
             Type t = part.StartsWith("joy_") ? typeof(Controller.Button) : (part.StartsWith("key_") ? typeof(WindowsInput.Events.KeyCode) : typeof(WindowsInput.Events.ButtonCode));
             int value = Int32.Parse(part.Substring(4));
             return t == typeof(Controller.Button)
-                ? ControllerButtonDisplayName(value,
-                    SelectedProfile?.Kind == ControllerKind.DualSense ||
-                    SelectedProfile?.Kind == ControllerKind.DualShock4)
+                ? ControllerButtonDisplayName(value, playStationLabels)
                 : Enum.GetName(t, value);
+        }
+
+        // Inputs follow the selected physical controller; Custom bind outputs follow the virtual
+        // controller the profile drives. null keeps the default (non-PlayStation) labels.
+        private ControllerKind? PlayStationLabelKind(bool output) {
+            if (output) {
+                string useAs = ControllerMappings.OptionValue(SelectedProfileId, "UseAs");
+                if (useAs == ControllerMappings.UseAsDualShock4)
+                    return ControllerKind.DualShock4;
+                return useAs == ControllerMappings.UseAsDualSenseViiper
+                    ? ControllerKind.DualSense
+                    : (ControllerKind?)null;
+            }
+            ControllerKind? kind = SelectedProfile?.Kind;
+            return kind == ControllerKind.DualSense || kind == ControllerKind.DualShock4
+                ? kind
+                : null;
+        }
+
+        private static readonly Size ButtonGlyphMenuSize = new Size(20, 20);
+        private static readonly Dictionary<string, Image> buttonGlyphs =
+            new Dictionary<string, Image>(StringComparer.Ordinal);
+
+        // Glyph-only menu entry when the layout has a glyph for the button, text name otherwise.
+        private static void SetButtonMenuItemLabel(ToolStripItem item, int value,
+                ControllerKind? kind) {
+            item.Image = ControllerButtonGlyph(value, kind);
+            item.Text = item.Image == null
+                ? ControllerButtonDisplayName(value, kind != null)
+                : String.Empty;
+        }
+
+        // Text and glyph segments for a stored bind ("+" chords, "," alternatives shown as " / ").
+        // Returns null when no part has a glyph so the button keeps its plain text label.
+        internal static object[] BindLabelParts(string value, ControllerKind? kind, string suffix) {
+            var parts = new List<object>();
+            bool hasGlyph = false;
+            string[] alternatives = value.Split(',');
+            for (int a = 0; a < alternatives.Length; a++) {
+                if (a > 0)
+                    parts.Add(" / ");
+                string[] members = alternatives[a].Split('+');
+                for (int m = 0; m < members.Length; m++) {
+                    if (m > 0)
+                        parts.Add("+");
+                    Image glyph = members[m].StartsWith("joy_", StringComparison.Ordinal)
+                        ? ControllerButtonGlyph(Int32.Parse(members[m].Substring(4)), kind)
+                        : null;
+                    hasGlyph |= glyph != null;
+                    parts.Add(glyph ?? (object)DescribeBindPart(members[m], kind != null));
+                }
+            }
+            if (!String.IsNullOrEmpty(suffix))
+                parts.Add(suffix);
+            return hasGlyph ? parts.ToArray() : null;
+        }
+
+        // Embedded Kenney glyph (see BetterJoy.csproj) for a canonical button code on a PlayStation
+        // layout, or null where the set has none so callers fall back to the text label.
+        internal static Image ControllerButtonGlyph(int value, ControllerKind? kind) {
+            if (kind != ControllerKind.DualSense && kind != ControllerKind.DualShock4)
+                return null;
+            string name = ControllerButtonGlyphName(value, kind == ControllerKind.DualShock4);
+            if (name == null)
+                return null;
+
+            Image glyph;
+            if (!buttonGlyphs.TryGetValue(name, out glyph)) {
+                using (Stream stream = typeof(Reassign).Assembly.GetManifestResourceStream(
+                        "InputPrompts." + name + ".png")) {
+                    if (stream != null) {
+                        using (Image source = Image.FromStream(stream))
+                            glyph = new Bitmap(source);
+                    }
+                }
+                if (glyph == null && DebugLog.Enabled)
+                    DebugLog.Write("Button glyphs: missing embedded resource " + name);
+                buttonGlyphs[name] = glyph;
+            }
+            return glyph;
+        }
+
+        private static string ControllerButtonGlyphName(int value, bool dualShock4) {
+            switch ((Controller.Button)value) {
+                case Controller.Button.B: return "playstation_button_cross";
+                case Controller.Button.A: return "playstation_button_circle";
+                case Controller.Button.Y: return "playstation_button_square";
+                case Controller.Button.X: return "playstation_button_triangle";
+                case Controller.Button.SHOULDER_1: return "playstation_trigger_l1";
+                case Controller.Button.SHOULDER2_1: return "playstation_trigger_r1";
+                case Controller.Button.SHOULDER_2: return "playstation_trigger_l2";
+                case Controller.Button.SHOULDER2_2: return "playstation_trigger_r2";
+                case Controller.Button.STICK: return "playstation_button_l3";
+                case Controller.Button.STICK2: return "playstation_button_r3";
+                // Generated by Tools\New-PsButtonGlyph.ps1; the Kenney set has no PS button.
+                case Controller.Button.HOME: return "playstation_button_ps";
+                case Controller.Button.DPAD_UP: return "playstation_dpad_up";
+                case Controller.Button.DPAD_DOWN: return "playstation_dpad_down";
+                case Controller.Button.DPAD_LEFT: return "playstation_dpad_left";
+                case Controller.Button.DPAD_RIGHT: return "playstation_dpad_right";
+                case Controller.Button.PLUS:
+                    return dualShock4 ? "playstation4_button_options" : "playstation5_button_options";
+                case Controller.Button.MINUS:
+                    return dualShock4 ? "playstation4_button_share" : "playstation5_button_create";
+                case Controller.Button.TOUCHPAD:
+                    return dualShock4 ? "playstation4_touchpad_press" : "playstation5_touchpad_press";
+                case Controller.Button.TOUCHPAD_TAP:
+                    return dualShock4 ? "playstation4_touchpad_touch" : "playstation5_touchpad_touch";
+                case Controller.Button.MIC_MUTE: return dualShock4 ? null : "playstation5_button_mute";
+                case Controller.Button.FN1: return dualShock4 ? null : "playstation5_elite_fn_l";
+                case Controller.Button.FN2: return dualShock4 ? null : "playstation5_elite_fn_r";
+                default: return null;
+            }
         }
 
         private static string ControllerButtonDisplayName(int value) {

@@ -153,6 +153,40 @@ try {
     Assert-True ($displayName.Invoke($null, @(15, $false)) -eq 'Y') `
         'Non-PlayStation bindings must retain their existing label until mapped explicitly.'
 
+    # User contract: on PlayStation layouts the Kenney glyph replaces the text label wherever the
+    # imported set has one, including touchpad press and tap, and BetterJoy's own PS glyph;
+    # buttons without a glyph (Capture, SL/SR, two-finger touchpad gestures) keep their text
+    # label, and non-PlayStation layouts keep text entirely.
+    $kindType = $assembly.GetType('BetterJoyForCemu.ControllerKind', $true)
+    $dualSense = [Enum]::ToObject($kindType, 5)
+    $dualShock4 = [Enum]::ToObject($kindType, 6)
+    $glyph = $reassignType.GetMethod('ControllerButtonGlyph', [Reflection.BindingFlags]'NonPublic,Static')
+    $sharedGlyphCodes = 0, 1, 2, 3, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21
+    foreach ($code in $sharedGlyphCodes + 25, 26, 27) {
+        Assert-True ($null -ne $glyph.Invoke($null, @([int]$code, $dualSense))) `
+            "DualSense button code $code has no embedded glyph."
+    }
+    foreach ($code in $sharedGlyphCodes) {
+        Assert-True ($null -ne $glyph.Invoke($null, @([int]$code, $dualShock4))) `
+            "DualShock 4 button code $code has no embedded glyph."
+    }
+    foreach ($code in 4, 5, 9, 22, 23, 24) {
+        Assert-True ($null -eq $glyph.Invoke($null, @([int]$code, $dualSense))) `
+            "Button code $code must fall back to its text label."
+    }
+    Assert-True ($null -eq $glyph.Invoke($null, @(13, $null))) `
+        'Non-PlayStation layouts must keep text labels.'
+
+    $labelParts = $reassignType.GetMethod('BindLabelParts', [Reflection.BindingFlags]'NonPublic,Static')
+    $parts = $labelParts.Invoke($null, @('joy_7+joy_12', $dualSense, $null))
+    Assert-True ($parts.Count -eq 3 -and $parts[0] -is [Drawing.Image] -and $parts[1] -eq '+' -and
+        $parts[2] -is [Drawing.Image]) 'PS + L2 must display as the PS glyph, +, and the L2 glyph.'
+    $parts = $labelParts.Invoke($null, @('joy_9+joy_12', $dualSense, $null))
+    Assert-True ($parts.Count -eq 3 -and $parts[0] -eq 'CAPTURE' -and $parts[1] -eq '+' -and
+        $parts[2] -is [Drawing.Image]) 'A button without a glyph must keep its text beside glyphs.'
+    Assert-True ($null -eq $labelParts.Invoke($null, @('key_65', $dualSense, $null))) `
+        'Keyboard-only binds must keep their plain text label.'
+
     Write-Host 'Custom Rebind regression tests passed.'
 } finally {
     Pop-Location

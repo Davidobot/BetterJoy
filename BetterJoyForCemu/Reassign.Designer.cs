@@ -1,6 +1,8 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 
 namespace BetterJoyForCemu {
@@ -19,8 +21,60 @@ namespace BetterJoyForCemu {
 		[Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public MouseEventHandler RightClickHandler { get; set; }
 
+		// Optional label made of text and glyph images, drawn in place of Text. Any plain Text
+		// assignment (e.g. "Press combo...") drops the parts again, so existing callers that only
+		// set Text keep working unchanged.
+		private object[] labelParts;
+
 		public SplitButton() {
 			SplitWidth = 20;
+		}
+
+		public override string Text {
+			get { return base.Text; }
+			set {
+				labelParts = null;
+				base.Text = value;
+			}
+		}
+
+		// parts holds strings and Images; null keeps the plain text label.
+		public void SetLabelParts(string text, object[] parts) {
+			labelParts = parts;
+			base.Text = parts == null ? text : String.Empty;
+			Invalidate();
+		}
+
+		private void PaintLabelParts(Graphics g) {
+			const TextFormatFlags flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine |
+				TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis;
+			Color textColor = Enabled ? ForeColor : SystemColors.GrayText;
+			int right = ClientRectangle.Width - (Menu != null ? SplitWidth : 0) - 2;
+			int glyphSize = Math.Min(ClientRectangle.Height - 8, Font.Height + 6);
+			int x = Padding.Left + 2;
+			using (var attributes = new ImageAttributes()) {
+				attributes.SetColorMatrix(new ColorMatrix { Matrix33 = Enabled ? 1F : 0.45F });
+				foreach (object part in labelParts) {
+					Image glyph = part as Image;
+					if (glyph == null) {
+						string text = (string)part;
+						var bounds = new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height);
+						TextRenderer.DrawText(g, text, Font, bounds, textColor, flags);
+						x += TextRenderer.MeasureText(g, text, Font, bounds.Size, flags).Width;
+					} else if (x + glyphSize + 2 <= right) {
+						g.DrawImage(glyph,
+							new Rectangle(x + 1, (ClientRectangle.Height - glyphSize) / 2, glyphSize, glyphSize),
+							0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel, attributes);
+						x += glyphSize + 2;
+					} else {
+						TextRenderer.DrawText(g, "…", Font,
+							new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height), textColor, flags);
+						break;
+					}
+					if (x >= right)
+						break;
+				}
+			}
 		}
 
 		protected override void OnMouseDown(MouseEventArgs mevent) {
@@ -44,6 +98,8 @@ namespace BetterJoyForCemu {
 
 		protected override void OnPaint(PaintEventArgs pevent) {
 			base.OnPaint(pevent);
+			if (labelParts != null)
+				PaintLabelParts(pevent.Graphics);
 
 			if (this.Menu != null && this.SplitWidth > 0) {
 				// Draw the arrow glyph on the right side of the button
