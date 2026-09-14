@@ -166,7 +166,7 @@ namespace BetterJoyForCemu {
             public Panel Panel;
             public SplitButton Input;
             public SplitButton Output;
-            public ComboBox Rebind;
+            public ProfileChoiceSelector Rebind;
             public Button Remove;
             public ContextMenuStrip InputMenu;
             public ContextMenuStrip OutputMenu;
@@ -1157,16 +1157,12 @@ namespace BetterJoyForCemu {
             };
             row.Input = new SplitButton();
             row.Output = new SplitButton();
-            row.Rebind = new ComboBox {
-                AccessibleName = "Rebind",
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = ProfileSurface,
-                ForeColor = ProfileText,
-                Font = new Font("Segoe UI", 8.25F * ProfileUiScale),
-                Location = new Point(Scale(408), Scale(3)),
-                Size = new Size(Scale(108), Scale(25)),
-            };
+            // Same selector style as the rest of the profile pages, sized to match the row's
+            // Input/Output buttons.
+            row.Rebind = CreateProfileChoiceSelector(Scale(408), 0, Scale(108));
+            row.Rebind.AccessibleName = "Rebind";
+            row.Rebind.Size = new Size(Scale(108), Scale(31));
+            row.Rebind.Font = new Font("Segoe UI", 9F * ProfileUiScale);
             row.Rebind.Items.AddRange(new object[] { "Disabled", "Enabled" });
             row.Rebind.SelectedIndex = binding.Rebind ? 1 : 0;
             row.Rebind.SelectedIndexChanged += (sender, e) =>
