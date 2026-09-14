@@ -241,7 +241,8 @@ try {
         'Two-finger scroll down must select the official Kenney downward swipe glyph.'
 
     # User contract: standard keyboard keys use Mr. Breakfast's light keycaps directly from the
-    # Windows virtual-key value. Unsupported or ambiguous keys retain their text label.
+    # Windows virtual-key value. The full numpad reuses the corresponding digit/operator art
+    # because this source does not provide separate numpad variants.
     $keyboardGlyphName = $reassignType.GetMethod(
         'KeyboardKeyGlyphName', [Reflection.BindingFlags]'NonPublic,Static')
     $keyboardGlyphs = @{
@@ -259,14 +260,41 @@ try {
     }
     Assert-True ($null -eq $keyboardGlyphName.Invoke($null, @(135))) `
         'F24 must retain its text label because the selected set only includes F1-F12.'
-    Assert-True ($null -eq $keyboardGlyphName.Invoke($null, @(96))) `
-        'Numpad 0 must retain its text label because the set has no numpad-specific zero glyph.'
+    $numpadGlyphs = @{
+        96 = '0_light'; 97 = '1_light'; 98 = '2_light'; 99 = '3_light'
+        100 = '4_light'; 101 = '5_light'; 102 = '6_light'; 103 = '7_light'
+        104 = '8_light'; 105 = '9_light'; 106 = 'asterisk_light'; 107 = '+_light'
+        108 = ',_light'; 109 = '-_light'; 110 = '._light'; 111 = 'forward_slash_light'
+    }
+    foreach ($entry in $numpadGlyphs.GetEnumerator()) {
+        $actual = [string]$keyboardGlyphName.Invoke($null, @([int]$entry.Key))
+        Assert-True ($actual -eq $entry.Value) `
+            "Numpad key code $($entry.Key) selected '$actual' instead of '$($entry.Value)'."
+    }
     $keyboardGlyph = $reassignType.GetMethod(
         'KeyboardKeyGlyph', [Reflection.BindingFlags]'NonPublic,Static')
     Assert-True ($null -ne $keyboardGlyph.Invoke($null, @(17))) `
         'The embedded Ctrl key glyph could not be loaded.'
     Assert-True ($null -eq $keyboardGlyph.Invoke($null, @(135))) `
         'Unsupported keyboard keys must not load an unrelated glyph.'
+
+    # Every supported standard Windows key code must resolve to an embedded image. The Apps /
+    # context-menu key remains textual because the selected source has no identifiable glyph.
+    $standardKeyboardCodes = @(
+        8, 9, 13, 16, 17, 18, 19, 20, 27, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        44, 45, 46
+    ) + @(48..57) + @(65..90) + @(91, 92) + @(96..111) + @(112..123) + @(
+        144, 145, 160, 161, 162, 163, 164, 165, 186, 187, 188, 189, 190, 191,
+        192, 219, 220, 221, 222, 226
+    )
+    Assert-True (($standardKeyboardCodes | Sort-Object -Unique).Count -eq 107) `
+        'The standard keyboard regression inventory unexpectedly changed.'
+    foreach ($keyCode in $standardKeyboardCodes) {
+        Assert-True ($null -ne $keyboardGlyph.Invoke($null, @([int]$keyCode))) `
+            "Supported standard key code $keyCode did not load its embedded glyph."
+    }
+    Assert-True ($null -eq $keyboardGlyphName.Invoke($null, @(93))) `
+        'The Apps key must stay textual until an identifiable source glyph is available.'
 
     $labelParts = $reassignType.GetMethod('BindLabelParts', [Reflection.BindingFlags]'NonPublic,Static')
     $parts = $labelParts.Invoke($null, @('joy_7+joy_12', $dualSense, $null))
@@ -302,6 +330,53 @@ try {
     Assert-True ($null -eq $presetDisplayBinding.Invoke($null, @('act_media_play'))) `
         'Media presets must retain their text labels when no keyboard glyph sequence applies.'
 
+    # User contract: use the available Mr. Breakfast media art on Custom bind outputs while
+    # actions without matching art retain their text labels.
+    $customActionParts = $reassignType.GetMethod(
+        'CustomActionLabelParts', [Reflection.BindingFlags]'NonPublic,Static')
+    $findCustomAction = $mappingsType.GetMethod('FindCustomAction')
+    $pauseChoice = $findCustomAction.Invoke($null, @('act_media_pause'))
+    Assert-True ($pauseChoice.DisplayGlyphNames.Count -eq 1 -and
+        $pauseChoice.DisplayGlyphNames[0] -eq 'pause_symbolic_light') `
+        'The Pause preset descriptor must select pause_symbolic_light.png.'
+
+    # Every future preset that declares glyph metadata must automatically resolve to embedded art.
+    foreach ($choice in $mappingsType.GetField('CustomActionChoices').GetValue($null)) {
+        foreach ($glyphName in @($choice.DisplayGlyphNames)) {
+            if ([String]::IsNullOrEmpty($glyphName)) { continue }
+            $stream = $assembly.GetManifestResourceStream("InputPrompts.$glyphName.png")
+            Assert-True ($null -ne $stream) `
+                "$($choice.Value) declares missing glyph resource $glyphName.png."
+            $stream.Dispose()
+        }
+    }
+    foreach ($value in @('act_media_play', 'act_media_stop',
+            'act_media_next', 'act_media_previous')) {
+        $parts = $customActionParts.Invoke($null, @($value, $dualSense, $null))
+        Assert-True ($parts.Count -eq 1 -and $parts[0] -is [Drawing.Image]) `
+            "$value must display its available media glyph."
+    }
+    $pauseParts = $customActionParts.Invoke($null, @('act_media_pause', $dualSense, $null))
+    $symbolicPauseStream = $assembly.GetManifestResourceStream(
+        'InputPrompts.pause_symbolic_light.png')
+    Assert-True ($null -ne $symbolicPauseStream) `
+        'The attributed symbolic Pause resource was not embedded.'
+    $symbolicPauseImage = [Drawing.Image]::FromStream($symbolicPauseStream)
+    Assert-True ($pauseParts.Count -eq 1 -and $pauseParts[0] -is [Drawing.Image] -and
+        $pauseParts[0].Width -eq $symbolicPauseImage.Width -and
+        $pauseParts[0].Height -eq $symbolicPauseImage.Height) `
+        'Media Pause must display pause_symbolic_light.png.'
+    $symbolicPauseImage.Dispose()
+    $symbolicPauseStream.Dispose()
+    $parts = $customActionParts.Invoke($null, @('act_media_play_pause', $dualSense, $null))
+    Assert-True ($parts.Count -eq 3 -and $parts[0] -is [Drawing.Image] -and
+        $parts[1] -eq ' / ' -and $parts[2] -is [Drawing.Image]) `
+        'Play / Pause must compose the separate Play and Pause glyphs.'
+    foreach ($value in @('act_volume_up', 'act_volume_down', 'act_volume_mute')) {
+        Assert-True ($null -eq $customActionParts.Invoke($null, @($value, $dualSense, $null))) `
+            "$value must retain text because the selected source has no matching glyph."
+    }
+
     # Exercise the actual Custom binds output-label path, not only its two helpers.
     # The application normally initializes AppPaths before this UI method runs. Keep this
     # isolated regression process on ControllerMappings' empty in-memory store so it never reads
@@ -324,8 +399,12 @@ try {
         ($outputParts | Where-Object { $_ -is [Drawing.Image] }).Count -eq 3) `
         'The Custom binds output button did not render Ctrl + Alt + Delete as three glyphs.'
     $setPrettyName.Invoke($reassign, @($outputButton, 'act_media_play'))
-    Assert-True ($null -eq $labelPartsField.GetValue($outputButton) -and $outputButton.Text -eq 'Play') `
-        'A text-only media output retained stale keyboard glyphs.'
+    Assert-True ($labelPartsField.GetValue($outputButton).Count -eq 1) `
+        'The Custom binds output button did not render the Play glyph.'
+    $setPrettyName.Invoke($reassign, @($outputButton, 'act_volume_up'))
+    Assert-True ($null -eq $labelPartsField.GetValue($outputButton) -and
+        $outputButton.Text -eq 'Volume up') `
+        'A text-only volume output retained stale media glyphs.'
     $outputButton.Dispose()
     $toolTip.Dispose()
     Assert-True ($null -eq $labelParts.Invoke($null, @('key_135', $dualSense, $null))) `

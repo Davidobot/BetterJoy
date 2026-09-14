@@ -63,26 +63,38 @@ namespace BetterJoyForCemu {
             public string Category { get; private set; }
             public DesktopInputAction Action { get; private set; }
             public string DisplayBinding { get; private set; }
+            public string[] DisplayGlyphNames { get; private set; }
+            public string DisplayGlyphSeparator { get; private set; }
 
             public CustomActionChoice(string value, string label, string category,
-                    DesktopInputAction action, string displayBinding = null) {
+                    DesktopInputAction action, string displayBinding = null,
+                    string[] displayGlyphNames = null, string displayGlyphSeparator = " / ") {
                 Value = value;
                 Label = label;
                 Category = category;
                 Action = action;
                 DisplayBinding = displayBinding;
+                DisplayGlyphNames = displayGlyphNames;
+                DisplayGlyphSeparator = displayGlyphSeparator;
             }
         }
 
-        // Stable, readable values are persisted in controller_mappings.xml. Keeping the display
-        // label separate lets the UI improve wording without invalidating saved profiles.
+        // Stable, readable values are persisted in controller_mappings.xml. Keeping label and
+        // optional display metadata on the preset lets the generic UI add wording or glyphs
+        // without invalidating saved profiles or adding another rendering branch.
         public static readonly CustomActionChoice[] CustomActionChoices = {
-            new CustomActionChoice("act_media_play", "Play", "Media", DesktopInputAction.MediaPlay),
-            new CustomActionChoice("act_media_pause", "Pause", "Media", DesktopInputAction.MediaPause),
-            new CustomActionChoice("act_media_play_pause", "Play / Pause", "Media", DesktopInputAction.MediaPlayPause),
-            new CustomActionChoice("act_media_stop", "Stop", "Media", DesktopInputAction.MediaStop),
-            new CustomActionChoice("act_media_next", "Next track", "Media", DesktopInputAction.MediaNextTrack),
-            new CustomActionChoice("act_media_previous", "Previous track", "Media", DesktopInputAction.MediaPreviousTrack),
+            new CustomActionChoice("act_media_play", "Play", "Media", DesktopInputAction.MediaPlay,
+                null, new[] { "play_light" }),
+            new CustomActionChoice("act_media_pause", "Pause", "Media", DesktopInputAction.MediaPause,
+                null, new[] { "pause_symbolic_light" }),
+            new CustomActionChoice("act_media_play_pause", "Play / Pause", "Media", DesktopInputAction.MediaPlayPause,
+                null, new[] { "play_light", "pause_symbolic_light" }),
+            new CustomActionChoice("act_media_stop", "Stop", "Media", DesktopInputAction.MediaStop,
+                null, new[] { "stop_light" }),
+            new CustomActionChoice("act_media_next", "Next track", "Media", DesktopInputAction.MediaNextTrack,
+                null, new[] { "skip_forward_light" }),
+            new CustomActionChoice("act_media_previous", "Previous track", "Media", DesktopInputAction.MediaPreviousTrack,
+                null, new[] { "skip_backward_light" }),
             new CustomActionChoice("act_volume_up", "Volume up", "Media", DesktopInputAction.VolumeUp),
             new CustomActionChoice("act_volume_down", "Volume down", "Media", DesktopInputAction.VolumeDown),
             new CustomActionChoice("act_volume_mute", "Mute", "Media", DesktopInputAction.VolumeMute),
@@ -637,13 +649,16 @@ namespace BetterJoyForCemu {
         }
 
         public static bool IsCustomAction(string value) {
-            return CustomActionChoices.Any(choice =>
+            return FindCustomAction(value) != null;
+        }
+
+        public static CustomActionChoice FindCustomAction(string value) {
+            return CustomActionChoices.FirstOrDefault(choice =>
                 String.Equals(choice.Value, value, StringComparison.Ordinal));
         }
 
         public static bool TryGetCustomAction(string value, out DesktopInputAction action) {
-            CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
-                String.Equals(candidate.Value, value, StringComparison.Ordinal));
+            CustomActionChoice choice = FindCustomAction(value);
             if (choice == null) {
                 action = default(DesktopInputAction);
                 return false;
@@ -653,14 +668,12 @@ namespace BetterJoyForCemu {
         }
 
         public static string CustomActionLabel(string value) {
-            CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
-                String.Equals(candidate.Value, value, StringComparison.Ordinal));
+            CustomActionChoice choice = FindCustomAction(value);
             return choice == null ? value : choice.Label;
         }
 
         public static string CustomActionDisplayBinding(string value) {
-            CustomActionChoice choice = CustomActionChoices.FirstOrDefault(candidate =>
-                String.Equals(candidate.Value, value, StringComparison.Ordinal));
+            CustomActionChoice choice = FindCustomAction(value);
             return choice == null ? null : choice.DisplayBinding;
         }
 

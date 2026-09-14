@@ -1379,12 +1379,10 @@ namespace BetterJoyForCemu {
             control.Text = String.IsNullOrEmpty(value)
                 ? "Click to assign"
                 : description + suffix;
-            string displayBinding = isCustomAction
-                ? ControllerMappings.CustomActionDisplayBinding(value)
-                : value;
-            if (!String.IsNullOrEmpty(displayBinding))
-                (control as SplitButton)?.SetLabelParts(control.Text,
-                    BindLabelParts(displayBinding, labelKind, suffix));
+            if (!String.IsNullOrEmpty(value))
+                (control as SplitButton)?.SetLabelParts(control.Text, isCustomAction
+                    ? CustomActionLabelParts(value, labelKind, suffix)
+                    : BindLabelParts(value, labelKind, suffix));
             tip_reassign.SetToolTip(control, description + "\r\n\r\nLeft-click to detect " +
                 (isInput ? (rebind ? "one or more controller buttons."
                                    : "a controller chord (two or more buttons).")
@@ -4374,6 +4372,33 @@ namespace BetterJoyForCemu {
             return hasGlyph ? parts.ToArray() : null;
         }
 
+        // Named Custom bind outputs keep their stable act_* storage value while using the
+        // corresponding prompt art when this asset set has it. Missing media art stays text.
+        internal static object[] CustomActionLabelParts(string value, ControllerKind? kind,
+                string suffix) {
+            ControllerMappings.CustomActionChoice choice =
+                ControllerMappings.FindCustomAction(value);
+            if (choice == null)
+                return null;
+            if (!String.IsNullOrEmpty(choice.DisplayBinding))
+                return BindLabelParts(choice.DisplayBinding, kind, suffix);
+            if (choice.DisplayGlyphNames == null || choice.DisplayGlyphNames.Length == 0)
+                return null;
+
+            var parts = new List<object>();
+            for (int i = 0; i < choice.DisplayGlyphNames.Length; i++) {
+                Image glyph = GlyphImage(choice.DisplayGlyphNames[i]);
+                if (glyph == null)
+                    return null;
+                if (i > 0)
+                    parts.Add(choice.DisplayGlyphSeparator);
+                parts.Add(glyph);
+            }
+            if (!String.IsNullOrEmpty(suffix))
+                parts.Add(suffix);
+            return parts.ToArray();
+        }
+
         // Embedded glyph (see BetterJoy.csproj) for a canonical button code on the selected
         // controller model, or null where the set has none so callers fall back to text.
         internal static Image ControllerButtonGlyph(int value, ControllerKind? kind) {
@@ -4415,8 +4440,9 @@ namespace BetterJoyForCemu {
             return glyph;
         }
 
-        // Mr. Breakfast light keycaps for standard Windows virtual keys. Unsupported and
-        // ambiguous keys (for example numpad digits without numpad-specific art) stay as text.
+        // Mr. Breakfast light keycaps keyed directly by Windows virtual-key value. The source
+        // has no numpad-specific art, so the numpad reuses its matching digit/operator keycaps.
+        // Non-standard keys without an identifiable prompt stay as text.
         private static string KeyboardKeyGlyphName(int value) {
             if (value >= 48 && value <= 57)
                 return ((char)value) + "_light";
@@ -4425,6 +4451,8 @@ namespace BetterJoyForCemu {
                 return letter + ((letter == 'a' || letter == 'b' ||
                     letter == 'x' || letter == 'y') ? "_key_light" : "_light");
             }
+            if (value >= 96 && value <= 105)
+                return (value - 96) + "_light";
             if (value >= 112 && value <= 123)
                 return "f" + (value - 111) + "_light";
 
@@ -4458,6 +4486,12 @@ namespace BetterJoyForCemu {
                 case 46: return "delete_light";
                 case 91:
                 case 92: return "super_light";
+                case 106: return "asterisk_light";
+                case 107: return "+_light";
+                case 108: return ",_light";
+                case 109: return "-_light";
+                case 110: return "._light";
+                case 111: return "forward_slash_light";
                 case 144: return "num_light";
                 case 145: return "scroll_light";
                 case 186: return ";_light";

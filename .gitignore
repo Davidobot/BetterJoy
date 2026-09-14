@@ -271,3 +271,8 @@ __pycache__/
 
 # Compiled installer output
 /Installer/Output/
+
+# Retained upstream input-prompt source downloads
+*.zip
+/mrbreakfasts_free_prompts-main/
+/kenney_input-prompts_1.5/
