@@ -6,7 +6,8 @@ using System.Drawing.Imaging;
 using System.Windows.Forms;
 
 namespace BetterJoyForCemu {
-	// from https://stackoverflow.com/a/27173509
+	// Adapted from Sverrir Sigmundarson's answer: https://stackoverflow.com/a/27173509
+	// (https://stackoverflow.com/users/779521/sverrir-sigmundarson)
 	public class SplitButton : Button {
 		[DefaultValue(null), Browsable(true),
 		DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
