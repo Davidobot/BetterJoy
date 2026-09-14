@@ -70,7 +70,8 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
 * **FIRST CLASS Nintendo and PlayStation controller support** - Joy-Con pairs or individual halves, Switch Pro,
   Switch SNES/N64, DualShock 4, and DualSense share one controller pipeline with XInput or
   DualShock 4 virtual output. Sony support includes buttons, sticks, analog triggers, battery state,
-  rumble, lightbars, touchpads, audio and calibrated gyro/accelerometer motion.
+  rumble, lightbars, touchpads, audio and calibrated gyro/accelerometer motion, plus the DualSense
+  Edge FN1/FN2 buttons.
 * **Two virtual-controller backends, plus a Passthrough option** - the standard XInput/DualShock 4
   output uses ViGEmBus, or profiles can instead use an alternative backend built on
   [VIIPER](https://github.com/Alia5/VIIPER)/usbip-win2, which adds genuine DualSense virtual
@@ -112,6 +113,11 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
   output while remaining available as a prefix for any number of other actions. Touch gestures,
   mappable shake, and reassignable virtual Guide/PS output use the same input language without
   mapped outputs or button remaps contaminating subsequent bind capture.
+* **Custom binds** - map controller chords to virtual controller buttons, keyboard keys and
+  shortcuts, mouse buttons, or media/Windows presets, emitted directly on whichever virtual
+  controller the profile uses. Rebind mode instead replaces one or more buttons outright, consuming
+  their normal output. Bindings are displayed with model-aware PlayStation, Nintendo, Xbox,
+  keyboard, and media glyphs rather than raw button names.
 * **Controller-owned hardware behavior** - profile-scoped rumble, lightbar colors (a fixed color,
   an automatic Battery mode that shows charge as green/yellow/red bands, an invisible touchpad
   color wheel usable as an exclusive held action or a latched overlay alongside ordinary touchpad
@@ -122,6 +128,13 @@ This fork (BetterJoy²) builds heavily on the original BetterJoy - see
   percentage/status, Bluetooth disconnect with a configurable hold-to-power-off duration,
   headphone-jack detection and routing, gyro recentering, and controller-specific calibration
   remain attached to the physical device rather than being reduced to generic remapping concepts.
+* **Sony connection and power handling** - a per-profile preferred transport keeps either the
+  Bluetooth link (leaving the cable for charging) or the USB connection when both are present.
+  Repair mode lets a DualSense roam between a PS5 and this PC: plugging it in over USB restores
+  this PC's Bluetooth bond only if another host took it, with no trip through Windows Bluetooth
+  settings (DualShock 4 Repair is WIP). Fully automatic out-of-band (OOB) Bluetooth pairing, with the
+  pairing set up over USB, is DualSense only and experimental. DualSense can optionally sleep charge-only when plugged in, waking on a PS press,
+  with a configurable charging glow (custom color or battery gradient, adjustable pulse length).
 * **Native OpenRGB SDK server and lighting effects** - BetterJoy² can present itself as one stable
   OpenRGB gamepad on the loopback-only `127.0.0.1:6743` endpoint. Add it to OpenRGB's SDK Client
   list, or point a compatible lighting application such as Artemis directly at BetterJoy² without
