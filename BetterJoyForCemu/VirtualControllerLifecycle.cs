@@ -398,6 +398,10 @@ namespace BetterJoyForCemu {
                 ConnectVirtualTarget(jc.out_dualsense.Connect);
             }
 
+            if (jc is XboxController xbox && !xbox.ReconcileNativeInputSlot())
+                throw new InvalidOperationException(
+                    "The physical Xbox controller lost its native XInput slot.");
+
             if (!jc.RumbleEnabled) {
                 jc.StopRumble();
                 if (jc.other != null && jc.other != jc)

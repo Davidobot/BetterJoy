@@ -4459,24 +4459,8 @@ namespace BetterJoyForCemu {
             bool xbox = useAs == ControllerMappings.UseAsXbox360 ||
                 useAs == ControllerMappings.UseAsXbox360Viiper;
             bool dualSense = useAs == ControllerMappings.UseAsDualSenseViiper;
-            if (xbox) {
-                switch ((Controller.Button)value) {
-                    case Controller.Button.MINUS: return "BACK / VIEW";
-                    case Controller.Button.HOME: return "XBOX";
-                    case Controller.Button.PLUS: return "START / MENU";
-                    case Controller.Button.STICK: return "L3";
-                    case Controller.Button.SHOULDER_1: return "LB";
-                    case Controller.Button.SHOULDER_2: return "LT";
-                    case Controller.Button.B: return "A";
-                    case Controller.Button.A: return "B";
-                    case Controller.Button.Y: return "X";
-                    case Controller.Button.X: return "Y";
-                    case Controller.Button.STICK2: return "R3";
-                    case Controller.Button.SHOULDER2_1: return "RB";
-                    case Controller.Button.SHOULDER2_2: return "RT";
-                    default: return ControllerButtonDisplayName(value);
-                }
-            }
+            if (xbox)
+                return XboxButtonDisplayName(value);
             if (useAs == ControllerMappings.UseAsDualShock4 || dualSense) {
                 switch ((Controller.Button)value) {
                     case Controller.Button.MINUS: return dualSense ? "CREATE" : "SHARE";
@@ -4513,6 +4497,10 @@ namespace BetterJoyForCemu {
                     useAs != ControllerMappings.UseAsXbox360Viiper)
                 return null;
 
+            return XboxButtonGlyphName(value);
+        }
+
+        private static string XboxButtonGlyphName(int value) {
             switch ((Controller.Button)value) {
                 case Controller.Button.DPAD_DOWN: return "dpad_s_light";
                 case Controller.Button.DPAD_RIGHT: return "dpad_e_light";
@@ -4531,6 +4519,25 @@ namespace BetterJoyForCemu {
                 case Controller.Button.SHOULDER2_1: return "xbox_rb_light";
                 case Controller.Button.SHOULDER2_2: return "xbox_rt_light";
                 default: return null;
+            }
+        }
+
+        private static string XboxButtonDisplayName(int value) {
+            switch ((Controller.Button)value) {
+                case Controller.Button.MINUS: return "BACK / VIEW";
+                case Controller.Button.HOME: return "XBOX";
+                case Controller.Button.PLUS: return "START / MENU";
+                case Controller.Button.STICK: return "L3";
+                case Controller.Button.SHOULDER_1: return "LB";
+                case Controller.Button.SHOULDER_2: return "LT";
+                case Controller.Button.B: return "A";
+                case Controller.Button.A: return "B";
+                case Controller.Button.Y: return "X";
+                case Controller.Button.X: return "Y";
+                case Controller.Button.STICK2: return "R3";
+                case Controller.Button.SHOULDER2_1: return "RB";
+                case Controller.Button.SHOULDER2_2: return "RT";
+                default: return ControllerButtonDisplayName(value);
             }
         }
 
@@ -4743,8 +4750,12 @@ namespace BetterJoyForCemu {
                 kind == ControllerKind.DualShock4;
             bool switchController = kind == ControllerKind.Left ||
                 kind == ControllerKind.Right || kind == ControllerKind.Pro;
-            if (!playStation && !switchController)
+            bool xboxController = kind == ControllerKind.Xbox;
+            if (!playStation && !switchController && !xboxController)
                 return null;
+
+            if (xboxController)
+                return XboxButtonGlyphName(value);
 
             if (switchController) {
                 bool rightJoyCon = kind == ControllerKind.Right;
@@ -4835,6 +4846,9 @@ namespace BetterJoyForCemu {
         // UI labels come directly from the canonical numeric button code for the selected model.
         // Stored joy_<code> values and runtime mappings are unchanged.
         internal static string ControllerButtonDisplayName(int value, ControllerKind? kind) {
+            if (kind == ControllerKind.Xbox)
+                return XboxButtonDisplayName(value);
+
             if (kind == ControllerKind.DualSense || kind == ControllerKind.DualShock4) {
                 switch ((Controller.Button)value) {
                     case Controller.Button.Y: return "SQUARE";

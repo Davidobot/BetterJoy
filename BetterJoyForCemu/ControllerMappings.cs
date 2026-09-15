@@ -1261,6 +1261,7 @@ namespace BetterJoyForCemu {
                 case ControllerKind.N64: return "n64:" + ownId;
                 case ControllerKind.DualSense: return "dualsense:" + ownId;
                 case ControllerKind.DualShock4: return "dualshock4:" + ownId;
+                case ControllerKind.Xbox: return "xbox:" + ownId;
                 case ControllerKind.Pro: return "pro:" + ownId;
             }
 
@@ -1306,6 +1307,7 @@ namespace BetterJoyForCemu {
                 case ControllerKind.N64: type = "N64 Controller"; break;
                 case ControllerKind.DualSense: type = "DualSense Controller"; break;
                 case ControllerKind.DualShock4: type = "DualShock 4 Controller"; break;
+                case ControllerKind.Xbox: type = "Xbox Controller"; break;
                 case ControllerKind.Pro: type = "Pro Controller"; break;
                 default:
                     // Unreachable for any Kind except Left/Right today (see ProfileIdFor's same
@@ -1621,6 +1623,9 @@ namespace BetterJoyForCemu {
                 case "dualshock4":
                     name = "DualShock 4 (" + IdentitySuffix(identity) + ")";
                     break;
+                case "xbox":
+                    name = "Xbox Controller (" + IdentitySuffix(identity) + ")";
+                    break;
                 case "snes":
                     name = "SNES Controller (" + IdentitySuffix(identity) + ")";
                     break;
@@ -1784,6 +1789,8 @@ namespace BetterJoyForCemu {
                 return ControllerKind.DualSense;
             if (profileId.StartsWith("dualshock4:", StringComparison.Ordinal))
                 return ControllerKind.DualShock4;
+            if (profileId.StartsWith("xbox:", StringComparison.Ordinal))
+                return ControllerKind.Xbox;
             if (profileId.StartsWith("pro:", StringComparison.Ordinal))
                 return ControllerKind.Pro;
             if (profileId.StartsWith("snes:", StringComparison.Ordinal))

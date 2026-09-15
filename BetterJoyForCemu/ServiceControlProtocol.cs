@@ -47,6 +47,7 @@ namespace BetterJoyForCemu {
         N64 = 4,
         DualSense = 5, // appended, not inserted - existing numeric values are part of the wire protocol
         DualShock4 = 6,
+        Xbox = 7,
     }
 
     public enum ControllerBatteryStatus : byte {

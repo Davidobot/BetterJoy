@@ -61,6 +61,25 @@ namespace BetterJoyForCemu {
         private const ushort vigemDs4VendorId = 0x054C;
         private const ushort vigemDs4ProductId = 0x05C4;
 
+        internal static bool IsVigemVirtualController(ushort vendorId, ushort productId) {
+            return (vendorId == vigemXbox360VendorId && productId == vigemXbox360ProductId) ||
+                (vendorId == vigemDs4VendorId && productId == vigemDs4ProductId);
+        }
+
+        // Any physical XInput-compatible controller - Microsoft pads and licensed third-party
+        // pads alike (e.g. SCUF Valor Pro 1B1C:3A15) - consumed by XboxController through
+        // Windows' native XInput state and matched to a slot by the VID/PID XInput reports.
+        // Windows marks XInput-compatible HID collections with an "IG_" device-path segment.
+        // BetterJoy's own virtual outputs are excluded. Bluetooth LE Xbox pads expose a plain HID
+        // gamepad without IG_ and stay unclaimed until that transport is hardware-verified.
+        internal static bool IsXboxController(ushort vendorId, ushort productId,
+                string devicePath) {
+            if (IsVigemVirtualController(vendorId, productId))
+                return false;
+            return devicePath != null &&
+                devicePath.IndexOf("&IG_", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         public ConcurrentList<Controller> j { get; private set; } // Array of all connected controllers
         static JoyconManager instance;
 
@@ -1504,8 +1523,7 @@ namespace BetterJoyForCemu {
                 // see the constants above. Unlike the blacklist case below, deliberately NOT
                 // hidden via HidHide: other programs (games, Steam) are supposed to see this as a
                 // normal Xbox360/DS4 controller, that's the entire point of it existing.
-                if ((enumerate.vendor_id == vigemXbox360VendorId && enumerate.product_id == vigemXbox360ProductId) ||
-                    (enumerate.vendor_id == vigemDs4VendorId && enumerate.product_id == vigemDs4ProductId)) {
+                if (IsVigemVirtualController(enumerate.vendor_id, enumerate.product_id)) {
                     ptr = enumerate.next;
                     continue;
                 }
@@ -1556,12 +1574,14 @@ namespace BetterJoyForCemu {
                     (enumerate.product_id == product_dualsense || enumerate.product_id == product_dualsense_edge);
                 bool isDualShock4Device = enumerate.vendor_id == vendor_sony &&
                     enumerate.product_id == product_dualshock4_v2;
-                if ((isDualSenseDevice || isDualShock4Device) &&
+                bool isXboxDevice = IsXboxController(enumerate.vendor_id,
+                    enumerate.product_id, enumerate.path);
+                if ((isDualSenseDevice || isDualShock4Device || isXboxDevice) &&
                         !IsGameController(enumerate)) {
                     ptr = enumerate.next;
                     continue;
                 }
-                bool validController = isDualSenseDevice || isDualShock4Device ||
+                bool validController = isDualSenseDevice || isDualShock4Device || isXboxDevice ||
                     ((enumerate.product_id == product_l || enumerate.product_id == product_r ||
                       enumerate.product_id == product_pro || enumerate.product_id == product_snes || enumerate.product_id == product_n64) && enumerate.vendor_id == vendor_id);
                 bool isKnownNintendoDevice = enumerate.vendor_id == vendor_id &&
@@ -1569,7 +1589,8 @@ namespace BetterJoyForCemu {
                      enumerate.product_id == product_pro || enumerate.product_id == product_snes ||
                      enumerate.product_id == product_n64);
                 // check list of custom controllers specified
-                foreach (SController v in (isDualSenseDevice || isDualShock4Device || isKnownNintendoDevice)
+                foreach (SController v in (isDualSenseDevice || isDualShock4Device ||
+                        isXboxDevice || isKnownNintendoDevice)
                         ? Enumerable.Empty<SController>() : Program.thirdPartyCons) {
                     if (enumerate.vendor_id == v.vendor_id && enumerate.product_id == v.product_id && enumerate.serial_number == v.serial_number) {
                         validController = true;
@@ -1618,9 +1639,20 @@ namespace BetterJoyForCemu {
                         enumerate.path + " validController=" + validController +
                         " alreadyAdded=" + ControllerAlreadyAdded(enumerate.path));
                 }
+                if (isXboxDevice && DebugLog.Enabled) {
+                    DebugLog.Write("[XboxInput.Discovery] vid=0x" +
+                        enumerate.vendor_id.ToString("X4", CultureInfo.InvariantCulture) +
+                        " pid=0x" + enumerate.product_id.ToString("X4", CultureInfo.InvariantCulture) +
+                        " path=" + enumerate.path +
+                        " validController=" + validController +
+                        " alreadyAdded=" + ControllerAlreadyAdded(enumerate.path));
+                }
 
                 if (validController && !ControllerAlreadyAdded(enumerate.path)) {
-                    switch (prod_id) {
+                    if (isXboxDevice) {
+                        isLeft = true;
+                        form.AppendTextBox("Xbox controller connected.\r\n");
+                    } else switch (prod_id) {
                         case product_l:
                             isLeft = true;
                             form.AppendTextBox("Left Joy-Con connected.\r\n"); break;
@@ -1682,7 +1714,7 @@ namespace BetterJoyForCemu {
                     bool isDualSense = prod_id == product_dualsense || prod_id == product_dualsense_edge;
                     bool isDualShock4 = prod_id == product_dualshock4_v2;
                     bool? nintendoIsUsb = null;
-                    if (!isDualSense && !isDualShock4) {
+                    if (!isDualSense && !isDualShock4 && !isXboxDevice) {
                         try {
                             GetControllerTransport(enumerate.path,
                                 out bool nintendoIsUsbBus, out bool nintendoIsBtBus);
@@ -1737,6 +1769,19 @@ namespace BetterJoyForCemu {
                         newController = newDualSense;
                     } else if (isDualShock4) {
                         newController = new DualShock4Controller(handle, enumerate.path, enumerate.serial_number, NextAvailablePadId());
+                    } else if (isXboxDevice) {
+                        bool xboxIsUsb;
+                        try {
+                            GetControllerTransport(enumerate.path,
+                                out bool xboxIsUsbBus, out bool xboxIsBtBus);
+                            xboxIsUsb = !xboxIsBtBus && xboxIsUsbBus;
+                        } catch {
+                            // Every identity accepted here is USB/Xbox Wireless Adapter input.
+                            xboxIsUsb = true;
+                        }
+                        newController = new XboxController(handle, enumerate.path,
+                            enumerate.serial_number, xboxIsUsb, enumerate.vendor_id,
+                            enumerate.product_id, NextAvailablePadId());
                     } else if (isSnes) {
                         newController = new SnesController(handle, EnableIMU,
                             EnableLocalize & EnableIMU, 0.05f, enumerate.path,
@@ -1764,9 +1809,9 @@ namespace BetterJoyForCemu {
                     bool macParsed = false;
                     string macSource = "serial";
                     bool isNintendoBluetooth =
-                        !isDualSense && !isDualShock4 && nintendoIsUsb == false;
+                        !isDualSense && !isDualShock4 && !isXboxDevice && nintendoIsUsb == false;
                     bool isNintendoUsbPlaceholderSerial =
-                        !isDualSense && !isDualShock4 && nintendoIsUsb == true &&
+                        !isDualSense && !isDualShock4 && !isXboxDevice && nintendoIsUsb == true &&
                         String.Equals(enumerate.serial_number, "000000000001",
                             StringComparison.Ordinal);
                     if (isNintendoBluetooth && TryGetNintendoBluetoothMac(enumerate.path, mac)) {

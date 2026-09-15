@@ -1,5 +1,6 @@
 using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using System.Globalization;
 
 namespace BetterJoyForCemu.VirtualOutput {
 	public struct OutputControllerXbox360InputState {
@@ -70,6 +71,7 @@ namespace BetterJoyForCemu.VirtualOutput {
 	public class OutputControllerXbox360 : IOutputControllerXbox360 {
 		private IXbox360Controller xbox_controller;
 		private OutputControllerXbox360InputState current_state;
+		private int debugStatesLogged;
 
 		public delegate void Xbox360FeedbackReceivedEventHandler(Xbox360FeedbackReceivedEventArgs e);
 
@@ -156,8 +158,41 @@ namespace BetterJoyForCemu.VirtualOutput {
 			xbox_controller.SetSliderValue(Xbox360Slider.RightTrigger, new_state.trigger_right);
 
 			xbox_controller.SubmitReport();
+			LogSubmittedState(new_state);
 
 			current_state = new_state;
+		}
+
+		private void LogSubmittedState(OutputControllerXbox360InputState state) {
+			if (!DebugLog.Enabled || debugStatesLogged >= 64)
+				return;
+
+			debugStatesLogged++;
+			DebugLog.Write("[XboxOutput.Submit] sample=" +
+				debugStatesLogged.ToString(CultureInfo.InvariantCulture) +
+				"/64-changes userIndex=" + UserIndex.ToString(CultureInfo.InvariantCulture) +
+				" buttons=" +
+				"A:" + (state.a ? "1" : "0") +
+				",B:" + (state.b ? "1" : "0") +
+				",X:" + (state.x ? "1" : "0") +
+				",Y:" + (state.y ? "1" : "0") +
+				",Back:" + (state.back ? "1" : "0") +
+				",Guide:" + (state.guide ? "1" : "0") +
+				",Start:" + (state.start ? "1" : "0") +
+				",LB:" + (state.shoulder_left ? "1" : "0") +
+				",RB:" + (state.shoulder_right ? "1" : "0") +
+				",L3:" + (state.thumb_stick_left ? "1" : "0") +
+				",R3:" + (state.thumb_stick_right ? "1" : "0") +
+				",Up:" + (state.dpad_up ? "1" : "0") +
+				",Right:" + (state.dpad_right ? "1" : "0") +
+				",Down:" + (state.dpad_down ? "1" : "0") +
+				",Left:" + (state.dpad_left ? "1" : "0") +
+				" axes=" + state.axis_left_x.ToString(CultureInfo.InvariantCulture) +
+				"," + state.axis_left_y.ToString(CultureInfo.InvariantCulture) +
+				"," + state.axis_right_x.ToString(CultureInfo.InvariantCulture) +
+				"," + state.axis_right_y.ToString(CultureInfo.InvariantCulture) +
+				" triggers=" + state.trigger_left.ToString(CultureInfo.InvariantCulture) +
+				"," + state.trigger_right.ToString(CultureInfo.InvariantCulture));
 		}
 	}
 }

@@ -980,6 +980,7 @@ namespace BetterJoyForCemu {
                     handle = IntPtr.Zero;
                 }
             }
+            OnDetached();
             state = state_.NOT_ATTACHED;
         }
 
@@ -998,6 +999,11 @@ namespace BetterJoyForCemu {
         // explicit user action, because cleanup also reaches this path after transient read/init
         // failures.
         protected virtual void OnDetachingWhileAttached() { }
+
+        // Runs on every Detach regardless of state - including a controller Poll already marked
+        // DROPPED, which skips OnDetachingWhileAttached. For releasing process-side resources
+        // (not device commands) that must never outlive the controller object.
+        protected virtual void OnDetached() { }
 
         // Shared by ProcessButtonsAndStick (Joy-Con/Pro) and ParseDualSenseReport - diffs the
         // freshly-populated buttons[] against down_[] (the pre-update snapshot the caller must

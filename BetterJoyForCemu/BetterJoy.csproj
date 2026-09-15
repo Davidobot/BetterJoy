@@ -165,6 +165,7 @@
     <Compile Include="DebugLog.cs" />
     <Compile Include="DualSense.cs" />
     <Compile Include="DualShock4.cs" />
+    <Compile Include="XboxController.cs" />
     <Compile Include="VirtualOutput\IOutputControllerXbox360.cs" />
     <Compile Include="VirtualOutput\LibViiper.cs" />
     <Compile Include="VirtualOutput\OutputControllerDualSenseViiper.cs" />

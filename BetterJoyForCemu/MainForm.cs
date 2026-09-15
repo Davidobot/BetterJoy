@@ -592,6 +592,7 @@ namespace BetterJoyForCemu {
                 button.Text = record.BatteryPercent >= 0 ? record.BatteryPercent + "%" : String.Empty;
                 SetConnectionTooltip(button,
                     !isPair && (record.Kind == ControllerKind.Pro ||
+                                record.Kind == ControllerKind.Xbox ||
                                 record.Kind == ControllerKind.DualSense ||
                                 record.Kind == ControllerKind.DualShock4),
                     record);
@@ -611,6 +612,7 @@ namespace BetterJoyForCemu {
         private Bitmap IconFor(ControllerRecord record) {
             switch (record.Kind) {
                 case ControllerKind.Pro: return SlotIconPro;
+                case ControllerKind.Xbox: return SlotIconPro;
                 case ControllerKind.DualSense: return SlotIconDualSense;
                 case ControllerKind.DualShock4: return SlotIconDualShock4;
                 case ControllerKind.Snes: return SlotIconSnes;
@@ -915,6 +917,7 @@ namespace BetterJoyForCemu {
             switch (kind) {
                 case ControllerKind.DualSense: return "DualSense Controller";
                 case ControllerKind.DualShock4: return "DualShock 4 Controller";
+                case ControllerKind.Xbox: return "Xbox Controller";
                 case ControllerKind.Snes: return "SNES Controller";
                 case ControllerKind.N64: return "N64 Controller";
                 case ControllerKind.Pro: return "Pro Controller";
