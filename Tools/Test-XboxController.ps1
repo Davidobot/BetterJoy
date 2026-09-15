@@ -315,6 +315,15 @@ try {
     Assert-True (-not [bool]$mapBattery.Invoke($null, $wiredArguments)) `
         'A wired XInput controller invented a battery level.'
 
+    # User contract: binding capture ignores reserved virtual-key 0x07, which arrives with a physical
+    # Xbox Guide press, so assigning Guide records only the controller button (never key_7+joy_7).
+    $ignoredCaptureKey = $reassignType.GetMethod(
+        'IsIgnoredCaptureKey', [Reflection.BindingFlags]'Static,NonPublic')
+    Assert-True ([bool]$ignoredCaptureKey.Invoke($null, @([int]0x07))) `
+        'Capture still records reserved virtual-key 0x07 from an Xbox Guide press.'
+    Assert-True (-not [bool]$ignoredCaptureKey.Invoke($null, @([int]0x41))) `
+        'Capture ignored a real keyboard key (A).'
+
     Write-Output "Passed $script:checks Xbox controller checks."
 } finally {
     Pop-Location

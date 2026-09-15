@@ -4177,8 +4177,20 @@ namespace BetterJoyForCemu {
             }
         }
 
+        // Reserved virtual-key 0x07 arrives with a physical Xbox controller's Guide press
+        // (observed 2026-09-14 on a SCUF Valor Pro). It is not a real keyboard key: capturing it
+        // saved a Guide bind as "key_7+joy_7", which displayed as "+XBOX" and fired on every Guide
+        // press. Capture ignores it and leaves it to the rest of the hook chain.
+        internal static bool IsIgnoredCaptureKey(int virtualKey) {
+            return virtualKey == 0x07;
+        }
+
         private void Keyboard_KeyEvent(object sender, WindowsInput.Events.Sources.EventSourceEventArgs<WindowsInput.Events.Sources.KeyboardEvent> e) {
             if (curAssignment == null)
+                return;
+
+            WindowsInput.Events.KeyCode? capturedKey = e.Data.KeyDown?.Key ?? e.Data.KeyUp?.Key;
+            if (capturedKey.HasValue && IsIgnoredCaptureKey((int)capturedKey.Value))
                 return;
 
             if (comboMembers != null) {
