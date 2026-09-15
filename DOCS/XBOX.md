@@ -20,6 +20,9 @@ state directly from the Windows XInput API.
 - Microsoft "Comparison of XInput and DirectInput features" (the `IG_` device-ID convention that
   identifies XInput devices, from its `IsXInputDevice` sample):
   https://learn.microsoft.com/en-us/windows/win32/xinput/xinput-and-directinput
+- Microsoft `XInputGetBatteryInformation` documentation (battery type and four-level charge used
+  for Xbox controller battery display):
+  https://learn.microsoft.com/en-us/windows/win32/api/xinput/nf-xinput-xinputgetbatteryinformation
 - Microsoft `XInputGetState` documentation:
   https://learn.microsoft.com/en-us/windows/win32/api/xinput/nf-xinput-xinputgetstate
 - Microsoft `XINPUT_GAMEPAD` layout and button constants:

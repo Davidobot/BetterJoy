@@ -294,6 +294,27 @@ try {
         Remove-Item -LiteralPath $deleteTestDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 
+    # User contract: Xbox controller battery comes from XInput's four levels, each landing in the
+    # existing battery band, and wired/unknown types never invent a charge level.
+    $mapBattery = $xboxType.GetMethod(
+        'TryMapXInputBattery', [Reflection.BindingFlags]'Static,NonPublic')
+    $bandMethod = $controllerType.GetMethod('BatteryLevelFromPercent')
+    foreach ($batteryCase in @(@{ Level = 0; Band = 0 }, @{ Level = 1; Band = 1 },
+            @{ Level = 2; Band = 2 }, @{ Level = 3; Band = 4 })) {
+        $batteryArguments = New-Object object[] 4
+        $batteryArguments[0] = [byte]0x02
+        $batteryArguments[1] = [byte]$batteryCase.Level
+        Assert-True ([bool]$mapBattery.Invoke($null, $batteryArguments)) `
+            "XInput battery level $($batteryCase.Level) was not mapped."
+        Assert-True (([int]$bandMethod.Invoke($null, @([int]$batteryArguments[2]))) -eq $batteryCase.Band) `
+            "XInput battery level $($batteryCase.Level) landed outside battery band $($batteryCase.Band)."
+    }
+    $wiredArguments = New-Object object[] 4
+    $wiredArguments[0] = [byte]0x01
+    $wiredArguments[1] = [byte]3
+    Assert-True (-not [bool]$mapBattery.Invoke($null, $wiredArguments)) `
+        'A wired XInput controller invented a battery level.'
+
     Write-Output "Passed $script:checks Xbox controller checks."
 } finally {
     Pop-Location

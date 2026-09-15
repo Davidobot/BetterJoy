@@ -22,6 +22,12 @@ namespace BetterJoyForCemu {
         private readonly ushort vendorId;
         private readonly ushort productId;
         private readonly byte[] triggerVal = new byte[2];
+        private const byte BatteryDevTypeGamepad = 0x00;
+        private const byte BatteryTypeAlkaline = 0x02;
+        private const byte BatteryTypeNimh = 0x03;
+        private const int BatteryPollIntervalMs = 10000;
+        private int lastBatteryPollTick;
+        private bool batteryPolled;
         private int xInputSlot = -1;
         private bool hasLastPacket;
         private uint lastPacketNumber;
@@ -109,6 +115,8 @@ namespace BetterJoyForCemu {
                     }
                     consecutiveInputFailures = 0;
                 }
+
+                PollBatteryIfDue();
 
                 if (hasLastPacket && nativeState.PacketNumber == lastPacketNumber) {
                     // XInput is immediate rather than a blocking HID read. Yield here so an idle
@@ -394,6 +402,63 @@ namespace BetterJoyForCemu {
             internal XInputGamepad Gamepad;
         }
 
+        // Battery is polled on its own interval rather than per input read: XInput answers from the
+        // driver's cached state, and the level changes on a scale of minutes.
+        private void PollBatteryIfDue() {
+            int now = Environment.TickCount;
+            if (batteryPolled && unchecked(now - lastBatteryPollTick) < BatteryPollIntervalMs)
+                return;
+            batteryPolled = true;
+            lastBatteryPollTick = now;
+
+            XInputBatteryInformation information;
+            try {
+                if (XInputGetBatteryInformation((uint)xInputSlot, BatteryDevTypeGamepad,
+                        out information) != ErrorSuccess)
+                    return;
+            } catch (EntryPointNotFoundException) {
+                return;
+            }
+
+            if (DebugLog.Enabled) {
+                DebugLog.Write("[XboxInput.Battery] pad=" + PadId +
+                    " xinputSlot=" + xInputSlot.ToString(CultureInfo.InvariantCulture) +
+                    " type=0x" + information.BatteryType.ToString("X2", CultureInfo.InvariantCulture) +
+                    " level=" + information.BatteryLevel.ToString(CultureInfo.InvariantCulture));
+            }
+            if (TryMapXInputBattery(information.BatteryType, information.BatteryLevel,
+                    out int percent, out ControllerBatteryStatus status))
+                SetBatteryStatus(percent, status);
+        }
+
+        // XInput reports a battery type and one of four levels, not a percentage. Each level maps to a
+        // percentage inside the matching BatteryLevelFromPercent band so tile colors, DSU clients, and
+        // low-battery notification keep their existing thresholds. XInput cannot report charging, so
+        // battery-powered pads read as Discharging. Wired, disconnected, and unknown types carry no
+        // charge information and leave the battery unknown rather than inventing a level.
+        internal static bool TryMapXInputBattery(byte type, byte level, out int percent,
+                out ControllerBatteryStatus status) {
+            percent = -1;
+            status = ControllerBatteryStatus.Unknown;
+            if (type != BatteryTypeAlkaline && type != BatteryTypeNimh)
+                return false;
+            switch (level) {
+                case 0: percent = 5; break;
+                case 1: percent = 20; break;
+                case 2: percent = 50; break;
+                case 3: percent = 100; break;
+                default: return false;
+            }
+            status = ControllerBatteryStatus.Discharging;
+            return true;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct XInputBatteryInformation {
+            internal byte BatteryType;
+            internal byte BatteryLevel;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct XInputVibration {
             internal ushort LeftMotorSpeed;
@@ -458,6 +523,10 @@ namespace BetterJoyForCemu {
         private static float NormalizeAxis(short value) {
             return value >= 0 ? value / 32767.0f : value / 32768.0f;
         }
+
+        [DllImport("xinput1_4.dll", EntryPoint = "XInputGetBatteryInformation")]
+        private static extern uint XInputGetBatteryInformation(uint userIndex, byte devType,
+            out XInputBatteryInformation information);
 
         [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")]
         private static extern uint XInputGetState(uint userIndex, out XInputState nativeState);
