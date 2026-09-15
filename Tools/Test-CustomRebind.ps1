@@ -262,15 +262,14 @@ try {
         'An unknown controller model must keep text labels.'
 
     # Output glyphs follow Use as, independently of the physical controller selected on the left.
-    # These are the attributed, unmodified Mr. Breakfast Xbox prompts and existing Kenney PS art.
+    # These are the attributed, unmodified Kenney Xbox Series glyphs (including Guide) and existing
+    # Kenney PS art.
     $virtualGlyph = $reassignType.GetMethod(
         'VirtualControllerButtonGlyph', [Reflection.BindingFlags]'NonPublic,Static')
-    foreach ($code in @(0, 1, 2, 3, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)) {
+    foreach ($code in @(0, 1, 2, 3, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)) {
         Assert-True ($null -ne $virtualGlyph.Invoke($null, @([int]$code, 'xbox360'))) `
             "Xbox virtual button position $code has no embedded glyph."
     }
-    Assert-True ($null -eq $virtualGlyph.Invoke($null, @(7, 'xbox360'))) `
-        'Xbox Guide must keep its text label because the imported set has no Guide glyph.'
     foreach ($code in @(6, 8, 13, 14, 15, 16, 20)) {
         Assert-True ($null -ne $virtualGlyph.Invoke($null, @([int]$code, 'dualsense_viiper'))) `
             "DualSense virtual button position $code has no embedded glyph."

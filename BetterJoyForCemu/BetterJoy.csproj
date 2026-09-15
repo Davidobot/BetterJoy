@@ -348,6 +348,9 @@
     <EmbeddedResource Include="Assets\InputPrompts\Kenney\Touch\*.png">
       <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\Xbox\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Assets\InputPrompts\MrBreakfast\Keyboard\*.png">
       <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>

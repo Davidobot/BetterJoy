@@ -188,8 +188,12 @@ try {
         'Physical Xbox A still displayed a Nintendo-derived label.'
     $glyphMethod = $reassignType.GetMethod(
         'ControllerButtonGlyphName', [Reflection.BindingFlags]'Static,NonPublic')
-    Assert-True (($glyphMethod.Invoke($null, @([int]13, $xboxKind))) -eq 'xbox_a_color_light') `
-        'Physical Xbox A did not reuse the Xbox output glyph.'
+    # User contract: physical and virtual Xbox controllers use Kenney's Xbox Series glyphs, with the
+    # color set preferred for face buttons, and Guide has its own glyph instead of text.
+    Assert-True (($glyphMethod.Invoke($null, @([int]13, $xboxKind))) -eq 'xbox_button_color_a') `
+        'Physical Xbox A did not use the Kenney color face-button glyph.'
+    Assert-True (($glyphMethod.Invoke($null, @([int]7, $xboxKind))) -eq 'xbox_guide') `
+        'Physical Xbox Guide did not use the Kenney Guide glyph.'
 
     $profileMethod = $mappingsType.GetMethod('ProfileIdFor')
     $controller = [Runtime.Serialization.FormatterServices]::GetUninitializedObject($xboxType)

@@ -4512,24 +4512,28 @@ namespace BetterJoyForCemu {
             return XboxButtonGlyphName(value);
         }
 
+        // Kenney Input Prompts "Xbox Series/Default" glyphs, shared by physical Xbox controllers and
+        // virtual Xbox output. Canonical positions are Nintendo-derived names: B=13 is Xbox A,
+        // A=14 is Xbox B, Y=15 is Xbox X, X=16 is Xbox Y. Face buttons use the color set.
         private static string XboxButtonGlyphName(int value) {
             switch ((Controller.Button)value) {
-                case Controller.Button.DPAD_DOWN: return "dpad_s_light";
-                case Controller.Button.DPAD_RIGHT: return "dpad_e_light";
-                case Controller.Button.DPAD_LEFT: return "dpad_w_light";
-                case Controller.Button.DPAD_UP: return "dpad_n_light";
-                case Controller.Button.MINUS: return "xbox_view_light";
-                case Controller.Button.PLUS: return "xbox_menu_light";
-                case Controller.Button.STICK:
-                case Controller.Button.STICK2: return "stick_press_light";
-                case Controller.Button.SHOULDER_1: return "xbox_lb_light";
-                case Controller.Button.SHOULDER_2: return "xbox_lt_light";
-                case Controller.Button.B: return "xbox_a_color_light";
-                case Controller.Button.A: return "xbox_b_color_light";
-                case Controller.Button.Y: return "xbox_x_color_light";
-                case Controller.Button.X: return "xbox_y_color_light";
-                case Controller.Button.SHOULDER2_1: return "xbox_rb_light";
-                case Controller.Button.SHOULDER2_2: return "xbox_rt_light";
+                case Controller.Button.DPAD_DOWN: return "xbox_dpad_down";
+                case Controller.Button.DPAD_RIGHT: return "xbox_dpad_right";
+                case Controller.Button.DPAD_LEFT: return "xbox_dpad_left";
+                case Controller.Button.DPAD_UP: return "xbox_dpad_up";
+                case Controller.Button.MINUS: return "xbox_button_view";
+                case Controller.Button.HOME: return "xbox_guide";
+                case Controller.Button.PLUS: return "xbox_button_menu";
+                case Controller.Button.STICK: return "xbox_stick_l_press";
+                case Controller.Button.STICK2: return "xbox_stick_r_press";
+                case Controller.Button.SHOULDER_1: return "xbox_lb";
+                case Controller.Button.SHOULDER_2: return "xbox_lt";
+                case Controller.Button.B: return "xbox_button_color_a";
+                case Controller.Button.A: return "xbox_button_color_b";
+                case Controller.Button.Y: return "xbox_button_color_x";
+                case Controller.Button.X: return "xbox_button_color_y";
+                case Controller.Button.SHOULDER2_1: return "xbox_rb";
+                case Controller.Button.SHOULDER2_2: return "xbox_rt";
                 default: return null;
             }
         }

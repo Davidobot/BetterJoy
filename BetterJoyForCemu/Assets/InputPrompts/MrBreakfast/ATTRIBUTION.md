@@ -13,6 +13,7 @@
 The imported files are 130 unmodified PNGs from the repository's `png` directory: 115 light
 prompts exported by the source `keys_light` layer (excluding its five non-key generic exports),
 plus 15 Xbox face, shoulder, trigger, menu, D-pad, and stick-press prompts. BetterJoy uses these
-for standard Windows keyboard keys, shifted-symbol/preset artwork, media actions, and virtual
-Xbox output buttons. Original filenames are preserved. See `IMPORTED_SHA256.txt` for the complete
+for standard Windows keyboard keys, shifted-symbol/preset artwork, and media actions. The 15 Xbox
+prompts remain bundled and credited here, but as of 2026-09-14 Xbox controllers display Kenney's
+Xbox Series glyphs instead (see `../Kenney/ATTRIBUTION.md`). Original filenames are preserved. See `IMPORTED_SHA256.txt` for the complete
 imported-file checksum manifest.
