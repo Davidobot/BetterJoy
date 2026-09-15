@@ -92,16 +92,6 @@ try {
     Assert-True (-not $virtualIdentity.Invoke($null, @([UInt16]0x045E, [UInt16]0x02FF))) `
         'The physical Xbox identity was incorrectly classified as BetterJoy''s virtual output.'
 
-    # User contract: BetterJoy must reliably recognize the virtual controllers it created itself.
-    # Slots reported by its own ViGEm targets are never eligible as physical input; VIIPER's -1
-    # and out-of-range indices mark nothing.
-    $markOwned = $xboxType.GetMethod(
-        'MarkOwnedXInputSlots', [Reflection.BindingFlags]'Static,NonPublic')
-    [bool[]]$owned = $markOwned.Invoke($null, [object[]]@(,[int[]]@(1, -1, 3, 7)))
-    Assert-True ($owned.Count -eq 4) 'Owned virtual slot map must cover all four XInput slots.'
-    Assert-True ((-not $owned[0]) -and $owned[1] -and (-not $owned[2]) -and $owned[3]) `
-        'BetterJoy''s own virtual XInput slots were not marked exactly.'
-
     $mapState = $xboxType.GetMethod(
         'MapXInputState', [Reflection.BindingFlags]'Static,NonPublic')
     $stateType = $xboxType.GetNestedType(
@@ -281,6 +271,28 @@ try {
         'USB\VID_1B1C&PID_3A16&IG_04\C&38937C2D&0&04')
     Assert-True ($null -eq $childOnly.Source) `
         'Only regenerated IG_ child nodes must never be accepted as a stable identity.'
+
+    # User contract: deleting a profile in Controller Profiles removes it for good, while profiles
+    # the service created behind the UI's back are still never erased by that Save.
+    $deleteTestDir = Join-Path ([IO.Path]::GetTempPath()) ('betterjoy-delete-' + [guid]::NewGuid())
+    New-Item -ItemType Directory -Path $deleteTestDir | Out-Null
+    try {
+        $appPathsType.GetField('dataDir',
+            [Reflection.BindingFlags]'Static,NonPublic').SetValue($null, $deleteTestDir)
+        $mappingsFile = Join-Path $deleteTestDir 'controller_mappings.xml'
+        Set-Content -LiteralPath $mappingsFile -Encoding UTF8 -Value (
+            '<controllerMappings version="5"><profile id="xbox:aaaaaaaaaaaa" />' +
+            '<profile id="pro:bbbbbbbbbbbb" /></controllerMappings>')
+        $mappingsType.GetMethod('DeleteProfile').Invoke($null, @('xbox:aaaaaaaaaaaa')) | Out-Null
+        [xml]$savedMappings = Get-Content -LiteralPath $mappingsFile -Raw
+        $savedIds = @($savedMappings.controllerMappings.profile | ForEach-Object { $_.id })
+        Assert-True (-not ($savedIds -contains 'xbox:aaaaaaaaaaaa')) `
+            'A deleted profile was written back to disk by Save.'
+        Assert-True ($savedIds -contains 'pro:bbbbbbbbbbbb') `
+            'Deleting one profile erased a profile created by another process.'
+    } finally {
+        Remove-Item -LiteralPath $deleteTestDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     Write-Output "Passed $script:checks Xbox controller checks."
 } finally {

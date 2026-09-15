@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -247,10 +246,6 @@ namespace BetterJoyForCemu {
             int currentSlot = xInputSlot;
             if (currentSlot < 0 || currentSlot >= ClaimedXInputSlots.Length)
                 return false;
-            // Never keep reading a slot BetterJoy's own virtual output occupies, even when the
-            // runtime cannot report VID/PID for it.
-            if (OwnVirtualXInputSlots()[currentSlot])
-                return false;
             ushort foundVendorId;
             ushort foundProductId;
             // If the extended identity API is unavailable, retain the already-claimed slot; the
@@ -269,47 +264,18 @@ namespace BetterJoyForCemu {
             }
         }
 
-        // XInput slots held by BetterJoy's own ViGEm Xbox 360 targets. ViGEm reports the exact user
-        // index each target was assigned, so ownership is known directly rather than inferred from
-        // VID/PID, which some XInput runtimes cannot report. VIIPER targets report -1 and remain
-        // covered only by the VID/PID check.
-        private static bool[] OwnVirtualXInputSlots() {
-            var userIndices = new List<int>();
-            JoyconManager manager = Program.mgr;
-            if (manager?.j != null) {
-                foreach (Controller controller in manager.j) {
-                    if (controller.out_xbox != null)
-                        userIndices.Add(controller.out_xbox.UserIndex);
-                }
-            }
-            return MarkOwnedXInputSlots(userIndices);
-        }
-
-        internal static bool[] MarkOwnedXInputSlots(IEnumerable<int> userIndices) {
-            bool[] owned = new bool[ClaimedXInputSlots.Length];
-            foreach (int index in userIndices) {
-                if (index >= 0 && index < owned.Length)
-                    owned[index] = true;
-            }
-            return owned;
-        }
-
+        // BetterJoy's own virtual output is recognized by the VID/PID XInput reports for each slot
+        // (JoyconManager.IsVigemVirtualController). Do not reintroduce ViGEm's UserIndex for this:
+        // it does not follow XInput slot numbering when an Xbox One (GIP) pad is connected, and
+        // excluding by it rejected a physical SCUF Valor Pro's own slot 0 so the pad could never
+        // stay attached (2026-09-14).
         private static int ClaimXInputSlot(ushort wantedVendorId, ushort wantedProductId) {
-            bool[] ownVirtualSlots = OwnVirtualXInputSlots();
             lock (XInputSlotLock) {
                 int fallback = -1;
                 int fallbackCount = 0;
                 for (int slot = 0; slot < ClaimedXInputSlots.Length; slot++) {
                     if (ClaimedXInputSlots[slot])
                         continue;
-                    if (ownVirtualSlots[slot]) {
-                        if (DebugLog.Enabled) {
-                            DebugLog.Write("[XboxInput.Slot] skipped=" +
-                                slot.ToString(CultureInfo.InvariantCulture) +
-                                " reason=betterjoy-virtual-output");
-                        }
-                        continue;
-                    }
 
                     XInputState candidateState;
                     uint stateResult = GetNativeState((uint)slot, out candidateState);

@@ -382,18 +382,29 @@ namespace BetterJoyForCemu {
         // same Joy-Con) - deleting one profile doesn't imply the physical unit itself is gone.
         // A no-op (not an error) if profileId isn't currently known, matching the delete button's
         // "gone either way" semantics.
+        // Profiles this process deleted on purpose. Save() re-adds ids that are on disk but not in
+        // memory (so a stale UI never erases profiles the service created), which also resurrected
+        // every explicit delete as an all-defaults profile. Cleared when EnsureProfileSaved
+        // recreates the profile for a controller that connects again.
+        private static readonly HashSet<string> deletedProfileIds =
+            new HashSet<string>(StringComparer.Ordinal);
+
         public static void DeleteProfile(string profileId) {
             if (String.IsNullOrEmpty(profileId))
                 return;
 
             EnsureLoaded();
             lock (writeLock) {
-                if (!profiles.ContainsKey(profileId))
-                    return;
-                var next = CloneProfiles(profiles);
-                next.Remove(profileId);
-                profiles = next;
+                // No early return when absent from memory: a profile the service created after
+                // this process loaded exists only on disk and must still be deletable.
+                deletedProfileIds.Add(profileId);
+                if (profiles.ContainsKey(profileId)) {
+                    var next = CloneProfiles(profiles);
+                    next.Remove(profileId);
+                    profiles = next;
+                }
             }
+            DebugLog.Write("DeleteProfile: id=" + profileId);
             Save();
         }
 
@@ -416,6 +427,7 @@ namespace BetterJoyForCemu {
             lock (writeLock) {
                 created = !profiles.ContainsKey(profileId);
                 if (created) {
+                    deletedProfileIds.Remove(profileId);
                     var next = CloneProfiles(profiles);
                     var profile = new Dictionary<string, string>(StringComparer.Ordinal);
                     SnapshotMissingProfileValues(profile);
@@ -1050,6 +1062,7 @@ namespace BetterJoyForCemu {
                 // service creates, and any value it wrote would have come from this file anyway.
                 var missing = ProfileIdsOnDisk();
                 missing.ExceptWith(profiles.Keys);
+                missing.ExceptWith(deletedProfileIds);
                 if (missing.Count > 0) {
                     var next = CloneProfiles(profiles);
                     foreach (string profileId in missing) {
