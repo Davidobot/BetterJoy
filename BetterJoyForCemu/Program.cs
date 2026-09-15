@@ -376,6 +376,55 @@ namespace BetterJoyForCemu {
             }
         }
 
+        // Removal mirrors arrival: a controller whose HID path the scan no longer enumerates has
+        // been unplugged, powered off, or lost its dongle - whether or not it was sending reports.
+        // Read failures alone cannot be trusted for this: a controller without a gyro may send no
+        // HID report at all while idle. Two consecutive absent scans are required so a single
+        // enumeration hiccup never drops a live controller. CleanUp detaches it on the next pass.
+        internal const int AbsentScansBeforeDrop = 2;
+        private readonly Dictionary<Controller, int> absentScanCounts =
+            new Dictionary<Controller, int>();
+
+        internal static int NextAbsentScanCount(bool pathEnumerated, int previousAbsentScans) {
+            return pathEnumerated ? 0 : previousAbsentScans + 1;
+        }
+
+        private void DropRemovedControllers(HashSet<string> enumeratedPaths) {
+            List<Controller> controllers = j.ToList();
+            foreach (Controller jc in controllers) {
+                if (jc.state <= Controller.state_.NO_JOYCONS || String.IsNullOrEmpty(jc.path)) {
+                    absentScanCounts.Remove(jc);
+                    continue;
+                }
+
+                absentScanCounts.TryGetValue(jc, out int previous);
+                int absent = NextAbsentScanCount(enumeratedPaths.Contains(jc.path), previous);
+                if (absent == 0) {
+                    absentScanCounts.Remove(jc);
+                    continue;
+                }
+
+                if (DebugLog.Enabled) {
+                    DebugLog.Write("[ScanRemoval] absent pad=" + jc.PadId + " kind=" + jc.Kind +
+                        " scans=" + absent.ToString(CultureInfo.InvariantCulture) + "/" +
+                        AbsentScansBeforeDrop.ToString(CultureInfo.InvariantCulture) +
+                        " path=" + jc.path);
+                }
+                if (absent < AbsentScansBeforeDrop) {
+                    absentScanCounts[jc] = absent;
+                    continue;
+                }
+
+                absentScanCounts.Remove(jc);
+                jc.state = Controller.state_.DROPPED;
+                form.AppendTextBox("Dropped (device removed).\r\n");
+            }
+
+            foreach (Controller gone in absentScanCounts.Keys
+                    .Where(controller => !controllers.Contains(controller)).ToList())
+                absentScanCounts.Remove(gone);
+        }
+
         private void ReleaseRemovedUsbControllerSuppressions(HashSet<string> enumeratedPaths) {
             long now = Stopwatch.GetTimestamp();
             lock (suppressedUsbControllerLock) {
@@ -1411,6 +1460,91 @@ namespace BetterJoyForCemu {
             }
         }
 
+        // FNV-1a into the identity bytes: deterministic across processes (string.GetHashCode is
+        // randomized per process in .NET Framework), so the same source always yields the same
+        // profile identity on every launch.
+        private static void StableHashIdentity(string source, byte[] mac) {
+            uint hash = 2166136261;
+            foreach (byte pb in Encoding.UTF8.GetBytes(source)) {
+                hash ^= pb;
+                hash *= 16777619;
+            }
+            byte[] hashBytes = BitConverter.GetBytes(hash);
+            Array.Copy(hashBytes, 0, mac, 0, Math.Min(hashBytes.Length, mac.Length));
+        }
+
+        // XInput-compatible controllers expose no MAC and, depending on mode, no serial string. Their
+        // HID path runs through xusb/IG_ child nodes whose instance ids Windows can regenerate, so
+        // hashing that path gave one physical controller a new profile on every reconnect. Walking
+        // the PnP chain from the HID node upward (confirmed on a SCUF Valor Pro, 2026-09-14):
+        // 1. Controller serial - in Xbox (GIP) mode Windows ends the controller node's instance id
+        //    with the controller's 64-bit ID (...&IG_00\00&00&000019036804CD63), identical wired and
+        //    through the dongle. Its low 48 bits become the identity directly.
+        // 2. Root device - otherwise (e.g. PC mode, Xbox 360 protocol, no serial at all) the first
+        //    non-HID node whose hardware id is a bare VID_xxxx&PID_yyyy is hashed. Without a USB
+        //    serial Windows makes that id port-based, so it is stable only on the same USB port.
+        // Returns the source used, or null when neither exists.
+        internal static string XboxStableIdentity(IEnumerable<string> instanceIdsUpward, byte[] mac) {
+            List<string> ids = instanceIdsUpward.Where(id => !String.IsNullOrEmpty(id)).ToList();
+
+            foreach (string instanceId in ids) {
+                string last = instanceId.Substring(instanceId.LastIndexOf('\\') + 1).Split('&').Last();
+                if (last.Length == 16 && last.All(Uri.IsHexDigit) && last.Any(c => c != '0')) {
+                    for (int n = 0; n < 6; n++)
+                        mac[n] = byte.Parse(last.Substring(4 + n * 2, 2), NumberStyles.HexNumber,
+                            CultureInfo.InvariantCulture);
+                    return "controller-serial";
+                }
+            }
+
+            foreach (string instanceId in ids) {
+                if (instanceId.StartsWith("HID\\", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                int separator = instanceId.IndexOf('\\');
+                if (separator < 0)
+                    continue;
+                int instanceStart = instanceId.IndexOf('\\', separator + 1);
+                if (instanceStart < 0)
+                    continue;
+                string hardware = instanceId.Substring(separator + 1, instanceStart - separator - 1);
+                if (hardware.StartsWith("VID_", StringComparison.OrdinalIgnoreCase) &&
+                        hardware.IndexOf("&MI_", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        hardware.IndexOf("&IG_", StringComparison.OrdinalIgnoreCase) < 0) {
+                    StableHashIdentity(instanceId.ToUpperInvariant(), mac);
+                    return "root-device";
+                }
+            }
+            return null;
+        }
+
+        private static bool TryGetXboxStableIdentity(string hidPath, byte[] mac) {
+            // Same short retry as IsUnderViiperVirtualBus: a freshly arrived device's parent chain
+            // may not be fully populated on the first scan pass.
+            for (int attempt = 0; attempt < 5; attempt++) {
+                if (attempt > 0)
+                    Thread.Sleep(50);
+                try {
+                    var instanceIds = new List<string>();
+                    IPnPDevice device = PnPDevice.GetDeviceByInterfaceId(hidPath, DeviceLocationFlags.Normal);
+                    for (int depth = 0; device != null && depth < 8; depth++) {
+                        instanceIds.Add(device.InstanceId);
+                        device = device.Parent;
+                    }
+                    string source = XboxStableIdentity(instanceIds, mac);
+                    if (source == null)
+                        return false;
+                    if (DebugLog.Enabled) {
+                        DebugLog.Write("[XboxInput.Identity] source=" + source +
+                            " chain=" + String.Join(" <- ", instanceIds));
+                    }
+                    return true;
+                } catch {
+                    // Not settled yet - retry before falling back to the path hash.
+                }
+            }
+            return false;
+        }
+
         private static bool TryGetNintendoBluetoothMac(string hidPath, byte[] mac) {
             if (mac == null || mac.Length != 6)
                 return false;
@@ -1851,6 +1985,9 @@ namespace BetterJoyForCemu {
                         } else if (isDualShock4 && TryGetDualShock4Mac(handle, mac)) {
                             macParsed = true;
                             macSource = "dualshock4-feature-report";
+                        } else if (isXboxDevice && TryGetXboxStableIdentity(enumerate.path, mac)) {
+                            macParsed = true;
+                            macSource = "xbox-root-device";
                         } else {
                             macSource = "path-hash";
                             // Fallback for anything else that reaches here (or if the feature
@@ -1866,13 +2003,8 @@ namespace BetterJoyForCemu {
                             // ControllerMappings.DeviceId/DeviceSuffix (using PadMacAddress as
                             // profile identity) turned into a new profile each launch. FNV-1a is a
                             // plain, non-cryptographic string hash with no such randomization.
-                            uint hash = 2166136261;
-                            foreach (byte pb in Encoding.UTF8.GetBytes(enumerate.path ?? enumerate.serial_number ?? String.Empty)) {
-                                hash ^= pb;
-                                hash *= 16777619;
-                            }
-                            byte[] hashBytes = BitConverter.GetBytes(hash);
-                            Array.Copy(hashBytes, 0, mac, 0, Math.Min(hashBytes.Length, mac.Length));
+                            StableHashIdentity(
+                                enumerate.path ?? enumerate.serial_number ?? String.Empty, mac);
                         }
                     }
                     if (isDualSense) {
@@ -1962,6 +2094,7 @@ namespace BetterJoyForCemu {
 
             HIDapi.hid_free_enumeration(top_ptr);
             ReleaseRemovedUsbControllerSuppressions(enumeratedPaths);
+            DropRemovedControllers(enumeratedPaths);
 
             // Connect/attach every newly-found device BEFORE auto-join runs below. Auto-join's
             // pairing (Joycon.other's setter) sends a player-LED subcommand immediately, which

@@ -83,6 +83,8 @@ namespace BetterJoyForCemu {
         }
 
         protected override int ReceiveRaw() {
+            // Removal is detected by the device scan (JoyconManager.DropRemovedControllers), not by
+            // reads: an idle controller may send nothing at all.
             if (xInputSlot < 0)
                 return -2;
 

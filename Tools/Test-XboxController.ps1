@@ -224,6 +224,64 @@ try {
     Assert-True ($slotField.GetValue($testController) -eq -1) `
         'A detached Xbox controller still reports an XInput slot.'
 
+    # User contract: removal is detected like arrival, from the device scan, never from HID
+    # report traffic - controllers without a gyro may send no report while idle. A controller is
+    # dropped only after its path is absent from consecutive scans, and reappearing resets that.
+    $nextAbsent = $managerType.GetMethod(
+        'NextAbsentScanCount', [Reflection.BindingFlags]'Static,NonPublic')
+    $dropAfter = [int]$managerType.GetField(
+        'AbsentScansBeforeDrop', [Reflection.BindingFlags]'Static,NonPublic').GetValue($null)
+    Assert-True ($dropAfter -ge 2) 'A single missed scan must never be enough to drop a controller.'
+    $absent = [int]$nextAbsent.Invoke($null, @($false, 0))
+    Assert-True ($absent -lt $dropAfter) 'One absent scan dropped a live controller.'
+    $absent = [int]$nextAbsent.Invoke($null, @($false, $absent))
+    Assert-True ($absent -ge $dropAfter) 'A controller absent from consecutive scans was not dropped.'
+    Assert-True (([int]$nextAbsent.Invoke($null, @($true, $absent))) -eq 0) `
+        'A controller whose path reappeared was not reset to present.'
+
+    # User contract: one physical Xbox controller keeps one profile across reconnects - never keyed
+    # on the regenerated HID path. In Xbox mode the controller's own 64-bit ID is used, identical
+    # wired and through the dongle; in PC mode (no serial anywhere) the port-stable root device.
+    # Chains are the real ones Windows reported for a SCUF Valor Pro, listed HID node upward.
+    $stableIdentity = $managerType.GetMethod(
+        'XboxStableIdentity', [Reflection.BindingFlags]'Static,NonPublic')
+    function Resolve-XboxIdentity([string[]]$Chain) {
+        [byte[]]$mac = [byte[]]::new(6)
+        $identityArguments = New-Object object[] 2
+        $identityArguments[0] = [string[]]$Chain
+        $identityArguments[1] = $mac
+        $source = $stableIdentity.Invoke($null, $identityArguments)
+        return @{ Source = $source; Id = (($mac | ForEach-Object { $_.ToString('X2') }) -join '') }
+    }
+    $dongleXbox = Resolve-XboxIdentity @(
+        'HID\VID_045E&PID_02FF&IG_00\C&777E48C&1&0000',
+        'USB\VID_045E&PID_02FF&IG_00\00&00&000019036804CD63',
+        'USB\VID_1B1C&PID_3A14\000001016FC692D4',
+        'USB\ROOT_HUB30\9&265260E5&0&0')
+    $wiredXbox = Resolve-XboxIdentity @(
+        'HID\VID_045E&PID_02FF&IG_00\C&777E48C&1&0000',
+        'USB\VID_045E&PID_02FF&IG_00\00&00&000019036804CD63',
+        'USB\VID_1B1C&PID_3A07\000001016FC692D4',
+        'USB\ROOT_HUB30\9&265260E5&0&0')
+    Assert-True ($dongleXbox.Source -eq 'controller-serial' -and
+        $dongleXbox.Id -eq '19036804CD63') `
+        "Xbox-mode dongle connection did not use the controller serial: $($dongleXbox.Source) $($dongleXbox.Id)"
+    Assert-True ($wiredXbox.Id -eq $dongleXbox.Id) `
+        'The same controller got different identities wired and through its dongle.'
+    $pcMode = Resolve-XboxIdentity @(
+        'HID\VID_1B1C&PID_3A15&IG_04\D&FFA48E9&0&0000',
+        'USB\VID_1B1C&PID_3A15&IG_04\C&12180EDB&0&04',
+        'USB\VID_1B1C&PID_3A15&MI_00\B&9D9BC04&1&0000',
+        'USB\VID_1B1C&PID_3A15\A&308493AA&0&10',
+        'USB\ROOT_HUB30\9&265260E5&0&0')
+    Assert-True ($pcMode.Source -eq 'root-device') `
+        "PC mode (no serial) did not fall back to the root device: $($pcMode.Source)"
+    $childOnly = Resolve-XboxIdentity @(
+        'HID\VID_1B1C&PID_3A16&IG_04\D&F9371F&0&0000',
+        'USB\VID_1B1C&PID_3A16&IG_04\C&38937C2D&0&04')
+    Assert-True ($null -eq $childOnly.Source) `
+        'Only regenerated IG_ child nodes must never be accepted as a stable identity.'
+
     Write-Output "Passed $script:checks Xbox controller checks."
 } finally {
     Pop-Location

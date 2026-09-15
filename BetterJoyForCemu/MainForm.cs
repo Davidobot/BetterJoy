@@ -29,6 +29,7 @@ namespace BetterJoyForCemu {
         private static readonly Bitmap SlotIconPro = Properties.Resources.pro;
         private static readonly Bitmap SlotIconDualSense = Properties.Resources.dualsense;
         private static readonly Bitmap SlotIconDualShock4 = Properties.Resources.ds4;
+        private static readonly Bitmap SlotIconXbox = Properties.Resources.xbox;
         private static readonly Bitmap SlotIconSnes = Properties.Resources.snes;
         private static readonly Bitmap SlotIconN64 = Properties.Resources.ultra;
         private static readonly Bitmap SlotIconJoyconLeft = Properties.Resources.jc_left;
@@ -612,7 +613,7 @@ namespace BetterJoyForCemu {
         private Bitmap IconFor(ControllerRecord record) {
             switch (record.Kind) {
                 case ControllerKind.Pro: return SlotIconPro;
-                case ControllerKind.Xbox: return SlotIconPro;
+                case ControllerKind.Xbox: return SlotIconXbox;
                 case ControllerKind.DualSense: return SlotIconDualSense;
                 case ControllerKind.DualShock4: return SlotIconDualShock4;
                 case ControllerKind.Snes: return SlotIconSnes;

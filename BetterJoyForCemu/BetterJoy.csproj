@@ -320,6 +320,7 @@
     <Resource Include="Icons\pro.png" />
     <Resource Include="Icons\dualsense.png" />
     <Resource Include="Icons\ds4.png" />
+    <Resource Include="Icons\xbox.png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="3rdPartyControllers.resx">
