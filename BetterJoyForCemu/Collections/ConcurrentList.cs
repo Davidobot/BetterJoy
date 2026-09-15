@@ -67,8 +67,14 @@ namespace BetterJoyForCemu.Collections {
             LockInternalListAndCommand(l => l.CopyTo(array, arrayIndex));
         }
 
+        // Returns an enumerator over a snapshot copy taken while holding the lock, not the live
+        // list - the lock is released as soon as this method returns, so a caller's foreach
+        // iterates entirely outside it. Enumerating the live list left every caller vulnerable
+        // to InvalidOperationException ("Collection was modified") - or worse, an inconsistent
+        // partial view - the moment another thread added/removed anything mid-iteration, which
+        // defeated the point of this class being called "concurrent" at all.
         public IEnumerator<T> GetEnumerator() {
-            return LockInternalListAndQuery(l => l.GetEnumerator());
+            return LockInternalListAndQuery(l => new List<T>(l)).GetEnumerator();
         }
 
         public int IndexOf(T item) {
@@ -88,7 +94,7 @@ namespace BetterJoyForCemu.Collections {
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return LockInternalListAndQuery(l => l.GetEnumerator());
+            return GetEnumerator();
         }
 
         #region Utilities

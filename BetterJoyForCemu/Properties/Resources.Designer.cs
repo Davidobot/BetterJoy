@@ -83,6 +83,36 @@ namespace BetterJoyForCemu.Properties {
 		/// <summary>
 		///   Looks up a localized resource of type System.Drawing.Bitmap.
 		/// </summary>
+		internal static System.Drawing.Bitmap gear {
+			get {
+				object obj = ResourceManager.GetObject("gear", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
+
+		/// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
+		internal static System.Drawing.Bitmap plus {
+			get {
+				object obj = ResourceManager.GetObject("plus", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
+
+		/// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
+		internal static System.Drawing.Bitmap calibrate {
+			get {
+				object obj = ResourceManager.GetObject("calibrate", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
+
+		/// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
 		internal static System.Drawing.Bitmap jc_left {
 			get {
 				object obj = ResourceManager.GetObject("jc_left", resourceCulture);
@@ -126,6 +156,36 @@ namespace BetterJoyForCemu.Properties {
 		internal static System.Drawing.Bitmap pro {
 			get {
 				object obj = ResourceManager.GetObject("pro", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
+
+		/// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
+		internal static System.Drawing.Bitmap dualsense {
+			get {
+				object obj = ResourceManager.GetObject("dualsense", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
+
+		/// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
+		internal static System.Drawing.Bitmap ds4 {
+			get {
+				object obj = ResourceManager.GetObject("ds4", resourceCulture);
+				return ((System.Drawing.Bitmap)(obj));
+			}
+		}
+
+		/// <summary>
+		///   Looks up a localized resource of type System.Drawing.Bitmap.
+		/// </summary>
+		internal static System.Drawing.Bitmap xbox {
+			get {
+				object obj = ResourceManager.GetObject("xbox", resourceCulture);
 				return ((System.Drawing.Bitmap)(obj));
 			}
 		}

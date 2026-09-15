@@ -7,7 +7,7 @@
     <ProjectGuid>{1BF709E9-C133-41DF-933A-C9FF3F664C7B}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>BetterJoyForCemu</RootNamespace>
-    <AssemblyName>BetterJoyForCemu</AssemblyName>
+    <AssemblyName>BetterJoy2</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -71,8 +71,7 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>
-    </StartupObject>
+    <StartupObject>BetterJoyForCemu.EntryPoint</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>Icons\betterjoyforcemu_icon.ico</ApplicationIcon>
@@ -96,27 +95,49 @@
     <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Concentus, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Concentus.2.2.2\lib\net452\Concentus.dll</HintPath>
+    </Reference>
     <Reference Include="Crc32.NET, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dc0b95cf99bf4e99, processorArchitecture=MSIL">
       <HintPath>..\packages\Crc32.NET.1.2.0\lib\net20\Crc32.NET.dll</HintPath>
     </Reference>
-    <Reference Include="JetBrains.Annotations, Version=2020.1.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
-      <HintPath>..\packages\JetBrains.Annotations.2020.1.0\lib\net20\JetBrains.Annotations.dll</HintPath>
+    <Reference Include="Nefarius.Drivers.HidHide, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nefarius.Drivers.HidHide.1.12.2\lib\netstandard2.0\Nefarius.Drivers.HidHide.dll</HintPath>
+    </Reference>
+    <Reference Include="Nefarius.Utilities.DeviceManagement, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nefarius.Utilities.DeviceManagement.4.0.0\lib\netstandard2.0\Nefarius.Utilities.DeviceManagement.dll</HintPath>
     </Reference>
     <Reference Include="Nefarius.ViGEm.Client, Version=1.17.178.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nefarius.ViGEm.Client.1.17.178\lib\net452\Nefarius.ViGEm.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="NAudio, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NAudio.1.10.0\lib\net35\NAudio.dll</HintPath>
+    </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="WindowsInput, Version=6.3.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -131,12 +152,58 @@
       <DependentUpon>3rdPartyControllers.cs</DependentUpon>
     </Compile>
     <Compile Include="Collections\ConcurrentList.cs" />
+    <Compile Include="AppPaths.cs" />
+    <Compile Include="ApplicationSettings.cs" />
+    <Compile Include="BetterJoyService.cs" />
+    <Compile Include="CalibrationDialog.cs" />
+    <Compile Include="CalibrationState.cs" />
     <Compile Include="Config.cs" />
-    <Compile Include="Controller\OutputControllerDualShock4.cs" />
-    <Compile Include="Controller\OutputControllerXbox360.cs" />
+    <Compile Include="Controller.cs" />
+    <Compile Include="ControllerMappings.cs" />
+    <Compile Include="ControllerAudio.cs" />
+    <Compile Include="DarkCheckBox.cs" />
+    <Compile Include="DebugLog.cs" />
+    <Compile Include="DualSense.cs" />
+    <Compile Include="DualShock4.cs" />
+    <Compile Include="XboxController.cs" />
+    <Compile Include="VirtualOutput\IOutputControllerXbox360.cs" />
+    <Compile Include="VirtualOutput\LibViiper.cs" />
+    <Compile Include="VirtualOutput\OutputControllerDualSenseViiper.cs" />
+    <Compile Include="VirtualOutput\OutputControllerDualShock4.cs" />
+    <Compile Include="VirtualOutput\OutputControllerXbox360.cs" />
+    <Compile Include="VirtualOutput\OutputControllerXbox360Viiper.cs" />
+    <Compile Include="DesktopInputBackend.cs" />
+    <Compile Include="EntryPoint.cs" />
+    <Compile Include="HeadlessJoyconHost.cs" />
     <Compile Include="HIDapi.cs" />
-    <Compile Include="Joycon.cs" />
+    <Compile Include="SbcEncoder.cs" />
+    <Compile Include="BluetoothAudioCapture.cs" />
+    <Compile Include="UsbAudioLoopback.cs" />
+    <Compile Include="UsbDeviceReenumerator.cs" />
+    <Compile Include="AudioDebugLog.cs" />
+    <Compile Include="SampleRateResampler.cs" />
+    <Compile Include="IJoyconHost.cs" />
+    <Compile Include="InputHelper.cs" />
+    <Compile Include="InputIpcProtocol.cs" />
+    <Compile Include="ViiperMicrophoneEndpoint.cs" />
+    <Compile Include="SteamMicrophoneEndpoint.cs" />
+    <Compile Include="SteamMicrophoneInstaller.cs" />
+    <Compile Include="IMicrophoneEndpoint.cs" />
+    <Compile Include="MicrophoneEndpointFactory.cs" />
+    <Compile Include="InputState.cs" />
+    <Compile Include="GyroMath.cs" />
+    <Compile Include="GyroMouseOrientation.cs" />
+    <Compile Include="GyroMousePlayerSpace.cs" />
+    <Compile Include="BluetoothRadio.cs" />
+    <Compile Include="GameControllerControlPanel.cs" />
+    <Compile Include="JoyconController.cs" />
+    <Compile Include="NintendoController.cs" />
+    <Compile Include="ProController.cs" />
+    <Compile Include="SnesController.cs" />
+    <Compile Include="N64Controller.cs" />
     <Compile Include="MadgwickAHRS.cs" />
+    <Compile Include="OpenRgbRescan.cs" />
+    <Compile Include="OpenRgbServer.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -156,7 +223,11 @@
     <Compile Include="Reassign.Designer.cs">
       <DependentUpon>Reassign.cs</DependentUpon>
     </Compile>
+    <Compile Include="ServiceControlClient.cs" />
+    <Compile Include="ServiceControlProtocol.cs" />
+    <Compile Include="SessionLauncher.cs" />
     <Compile Include="UpdServer.cs" />
+    <Compile Include="VirtualControllerLifecycle.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="! Install the drivers in the Drivers folder">
@@ -165,76 +236,43 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Drivers\HIDGuardian\HIDGuardian Install %28Run as Admin%29.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Drivers\HIDGuardian\HIDGuardian Uninstall %28Run as Admin%29.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\HidCerberus.Srv.exe.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Drivers\HIDGuardian\_drivers\HidGuardian\hidguardian.cat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Drivers\HIDGuardian\_drivers\HidGuardian\HidGuardian.sys">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Content Include="Drivers\ViGEmBusSetup_x64.msi">
+    <Content Include="Drivers\ViGEmBus_1.22.0_x64_x86_arm64.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Drivers\ViGEmBusSetup_x86.msi">
+    <Content Include="Drivers\HidHide_1.5.230_x64.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\FakerInput_Setup_0.1.1_x64.msi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\FakerInput-LICENSE.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\VIIPER-0.1.0-x64.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\VIIPER-LICENSE.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\USBip-0.9.7.7-x64.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\USBip-0.9.7.7-LICENSE.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\SteamStreamingMicrophone.sys">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\SteamStreamingMicrophone.inf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Drivers\SteamStreamingMicrophone.cat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".nuget\mouse-keyboard-hook-logo.png" />
-    <Content Include="Drivers\HIDGuardian\_drivers\devcon.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Lib.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\custom\api-requests.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\custom\viewmodels.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\bootstrap-theme.min.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\bootstrap.min.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\bootstrap.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\jquery-3.2.1.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\jquery.form.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\knockout-min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\Content\dep\knockout.mapping.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\HidCerberus.Srv.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidCerberus.Srv\index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidGuardian\HidGuardian.inf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Drivers\HIDGuardian\_drivers\HidGuardian\WdfCoinstaller01009.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Drivers\README.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -242,18 +280,47 @@
     <Content Include="Icons\ultra.png" />
     <None Include="Properties\app.manifest" />
     <Content Include="Icons\betterjoyforcemu_icon.ico" />
-    <Content Include="x86\hidapi.dll">
+    <!-- EntryPoint.SetupDlls only ever adds ONE of x86\/x64\ to the DLL search path at runtime -
+         whichever matches the actual running process (Environment.Is64BitProcess). The other
+         architecture's natives are dead weight in that build's output, not just at install time,
+         so these are conditioned on the platform actually being built instead of always including
+         both - matches the "if it needs to be there, leave it; if it's only relevant to a
+         component this isn't, keep it out" bundling policy. -->
+    <Content Include="x86\hidapi.dll" Condition="'$(Platform)' == 'x86'">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="x64\hidapi.dll">
+    <Content Include="x64\hidapi.dll" Condition="'$(Platform)' == 'x64'">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x86\libsbc.dll" Condition="'$(Platform)' == 'x86'">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x64\libsbc.dll" Condition="'$(Platform)' == 'x64'">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x86\samplerate.dll" Condition="'$(Platform)' == 'x86'">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x64\samplerate.dll" Condition="'$(Platform)' == 'x64'">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <!-- libVIIPER only ships amd64/arm64 Windows builds, no x86 - the VIIPER Xbox 360 output
+         backend is simply unavailable when running as an x86 process. -->
+    <Content Include="x64\libVIIPER.dll" Condition="'$(Platform)' == 'x64'">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Icons\cross.png" />
+    <Content Include="Icons\gear.png" />
+    <Content Include="Icons\plus.png" />
+    <Content Include="Icons\calibrate.png" />
     <Content Include="Icons\jc_left_s.png" />
     <Content Include="Icons\jc_right_s.png" />
     <Resource Include="Icons\jc_left.png" />
     <Resource Include="Icons\jc_right.png" />
     <Resource Include="Icons\pro.png" />
+    <Resource Include="Icons\dualsense.png" />
+    <Resource Include="Icons\ds4.png" />
+    <Resource Include="Icons\xbox.png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="3rdPartyControllers.resx">
@@ -268,6 +335,30 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Reassign.resx">
       <DependentUpon>Reassign.cs</DependentUpon>
+    </EmbeddedResource>
+    <!-- Controller button glyphs for the bindings UI (Kenney Input Prompts, CC0 - see
+         ATTRIBUTION.md, plus BetterJoy's own glyphs from Tools\New-PsButtonGlyph.ps1). Loaded by
+         file name through Reassign.ControllerButtonGlyph. -->
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\PlayStation\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\NintendoSwitch\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\Touch\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\Kenney\Xbox\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\MrBreakfast\Keyboard\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\MrBreakfast\Xbox\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\InputPrompts\BetterJoy\PlayStation\*.png">
+      <LogicalName>InputPrompts.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -284,4 +375,26 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Nefarius.Drivers.HidHide and Nefarius.Utilities.DeviceManagement have no .NET Framework
+       build at any published version, so NuGet resolves their netstandard2.0 build here instead
+       - which drags in ~35 .NET Standard compatibility facade assemblies (netstandard.dll,
+       System.Buffers.dll, System.Security.Cryptography.*.dll, ...) that exist only because of
+       those two packages, not because BetterJoy's own code needs them. Moves everything the
+       normal build/copy step puts in the output folder that ISN'T one of BetterJoy's real direct
+       dependencies into a Nefarius\ subfolder, so the install directory doesn't read as
+       "BetterJoy has 100 mystery DLLs". App.config's <probing privatePath="Nefarius"> is what
+       tells the CLR to actually look there at bind time. See DOCS/DLL-ORGANIZATION.md for the
+       full accounting.
+       Keep-list approach (move everything NOT explicitly kept) rather than an explicit list of
+       the ~35 facade names to move: the exact facade set NuGet resolves can shift slightly
+       between package version bumps, but BetterJoy's own direct references almost never do - a
+       keep-list is far less likely to silently go stale than a move-list would be. -->
+  <Target Name="OrganizeDependencyDlls" AfterTargets="Build">
+    <ItemGroup>
+      <NefariusDependencyDll Include="$(OutDir)*.dll"
+          Exclude="$(OutDir)Concentus.dll;$(OutDir)Crc32.NET.dll;$(OutDir)NAudio.dll;$(OutDir)Nefarius.Drivers.HidHide.dll;$(OutDir)Nefarius.Utilities.DeviceManagement.dll;$(OutDir)Nefarius.ViGEm.Client.dll;$(OutDir)WindowsInput.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)Nefarius" Condition="'@(NefariusDependencyDll)' != '' And !Exists('$(OutDir)Nefarius')" />
+    <Move SourceFiles="@(NefariusDependencyDll)" DestinationFolder="$(OutDir)Nefarius" Condition="'@(NefariusDependencyDll)' != ''" />
+  </Target>
 </Project>

@@ -66,9 +66,9 @@ SOFTWARE.
 
 ---------
 
-This software uses HidGuardian and HidCerberus.Srv:
+This software uses HidHide, Nefarius.Drivers.HidHide, and Nefarius.Utilities.DeviceManagement:
 
-Copyright (c) 2018 Benjamin Hoglinger-Stelzer
+Copyright (c) 2022 Benjamin Hoglinger-Stelzer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

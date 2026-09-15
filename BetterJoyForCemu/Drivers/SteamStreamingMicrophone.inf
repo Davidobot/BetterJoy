@@ -1,0 +1,111 @@
+[Version]
+Signature="$CHICAGO$"
+Class=MEDIA
+Provider=%Provider%
+ClassGUID={4d36e96c-e325-11ce-bfc1-08002be10318}
+DriverVer=07/28/2017,8.33.15.17
+CatalogFile=SteamStreamingMicrophone.cat
+
+[SourceDisksNames]
+222="SteamStreamingMicrophone Driver Disk","",222
+
+[SourceDisksFiles]
+SteamStreamingMicrophone.sys=222
+
+[Manufacturer]
+%Manufacturer%=SteamStreamingMicrophoneDevice,NTamd64
+
+[SteamStreamingMicrophoneDevice.NTamd64]
+%SteamStreamingMicrophone.DeviceDesc%=SteamStreamingMicrophone,ROOT\SteamStreamingMicrophone
+
+[DestinationDirs]
+SteamStreamingMicrophone.CopyList=10,system32\drivers
+
+;======================================================
+; SteamStreamingMicrophone
+;======================================================
+[SteamStreamingMicrophone.CopyList]
+SteamStreamingMicrophone.sys
+
+[SteamStreamingMicrophone.AddReg]
+HKR,,AssociatedFilters,,"wdmaud,redbook"
+HKR,,Driver,,SteamStreamingMicrophone.sys
+
+HKR,Drivers,SubClasses,,"wave,mixer"
+
+HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+
+HKR,Drivers\wave\wdmaud.drv,Description,,%SteamStreamingMicrophone.DeviceDesc%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%SteamStreamingMicrophone.DeviceDesc%
+
+;======================================================
+; COMMON
+;======================================================
+[SteamStreamingMicrophone.I.Wave]
+AddReg=SteamStreamingMicrophone.I.Wave.AddReg
+[SteamStreamingMicrophone.I.Wave.AddReg]
+HKR,,CLSID,,%CLSID_Proxy%
+HKR,,FriendlyName,,%SteamStreamingMicrophone.Wave.szPname%
+
+[SteamStreamingMicrophone.I.Topo]
+AddReg=SteamStreamingMicrophone.I.Topo.AddReg
+[SteamStreamingMicrophone.I.Topo.AddReg]
+HKR,,CLSID,,%CLSID_Proxy%
+HKR,,FriendlyName,,%SteamStreamingMicrophone.Topo.szPname%
+
+;======================================================
+; SteamStreamingMicrophone.NT
+;======================================================
+[SteamStreamingMicrophone.NT]
+Include=ks.inf,wdmaudio.inf
+Needs=KS.Registration, WDMAUDIO.Registration
+CopyFiles=SteamStreamingMicrophone.CopyList
+AddReg=SteamStreamingMicrophone.AddReg
+
+[SteamStreamingMicrophone.NT.Interfaces]
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_Wave%,SteamStreamingMicrophone.I.Wave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_Wave%,SteamStreamingMicrophone.I.Wave
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_Wave%,SteamStreamingMicrophone.I.Wave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_Topology%,SteamStreamingMicrophone.I.Topo
+
+[SteamStreamingMicrophone.NT.Services]
+AddService=SteamStreamingMicrophone,0x00000002,SteamStreamingMicrophone_Service_Inst
+
+[SteamStreamingMicrophone_Service_Inst]
+DisplayName=%SteamStreamingMicrophone.SvcDesc%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%10%\system32\drivers\SteamStreamingMicrophone.sys
+
+[DeviceInstall32]
+AddDevice = ROOT\SteamStreamingMicrophone\0000,,SteamStreamingMicrophone_RootDevice_Inst
+
+[SteamStreamingMicrophone_RootDevice_Inst]
+HardwareIds = ROOT\SteamStreamingMicrophone
+
+;======================================================
+; COMMON
+;======================================================
+[Strings]
+Provider="Valve Corporation"
+Manufacturer="Valve Corporation Audio DDK"
+
+SteamStreamingMicrophone.DeviceDesc="Steam Streaming Microphone"
+
+SteamStreamingMicrophone.Wave.szPname="Steam Streaming Microphone Wave"
+SteamStreamingMicrophone.Topo.szPname="Steam Streaming Microphone Topology"
+
+CLSID_Proxy="{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+KSCATEGORY_AUDIO="{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSCATEGORY_RENDER="{65E8773E-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_CAPTURE="{65E8773D-8F56-11D0-A3B9-00A0C9223196}"
+
+KSNAME_Wave="Wave"
+KSNAME_Topology="Topology"
+
+SteamStreamingMicrophone.SvcDesc="Steam Streaming Microphone"
+
+
+

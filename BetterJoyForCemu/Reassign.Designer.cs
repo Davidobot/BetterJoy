@@ -1,10 +1,13 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 
 namespace BetterJoyForCemu {
-	// from https://stackoverflow.com/a/27173509
+	// Adapted from Sverrir Sigmundarson's answer: https://stackoverflow.com/a/27173509
+	// (https://stackoverflow.com/users/779521/sverrir-sigmundarson)
 	public class SplitButton : Button {
 		[DefaultValue(null), Browsable(true),
 		DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
@@ -14,12 +17,77 @@ namespace BetterJoyForCemu {
 		DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
 		public int SplitWidth { get; set; }
 
+		// Most split buttons use right-click as another way to open Menu. A control which needs
+		// a distinct alternate action can opt in without changing every existing split button.
+		[Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+		public MouseEventHandler RightClickHandler { get; set; }
+
+		// Optional label made of text and glyph images, drawn in place of Text. Any plain Text
+		// assignment (e.g. "Press combo...") drops the parts again, so existing callers that only
+		// set Text keep working unchanged.
+		private object[] labelParts;
+
 		public SplitButton() {
 			SplitWidth = 20;
 		}
 
+		public override string Text {
+			get { return base.Text; }
+			set {
+				labelParts = null;
+				base.Text = value;
+			}
+		}
+
+		// parts holds strings and Images; null keeps the plain text label.
+		public void SetLabelParts(string text, object[] parts) {
+			labelParts = parts;
+			base.Text = parts == null ? text : String.Empty;
+			Invalidate();
+		}
+
+		private void PaintLabelParts(Graphics g) {
+			const TextFormatFlags flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine |
+				TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis;
+			Color textColor = Enabled ? ForeColor : SystemColors.GrayText;
+			int right = ClientRectangle.Width - (Menu != null ? SplitWidth : 0) - 2;
+			int glyphSize = Math.Min(ClientRectangle.Height - 8, Font.Height + 6);
+			int x = Padding.Left + 2;
+			using (var attributes = new ImageAttributes()) {
+				attributes.SetColorMatrix(new ColorMatrix { Matrix33 = Enabled ? 1F : 0.45F });
+				foreach (object part in labelParts) {
+					Image glyph = part as Image;
+					if (glyph == null) {
+						string text = (string)part;
+						var bounds = new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height);
+						TextRenderer.DrawText(g, text, Font, bounds, textColor, flags);
+						x += TextRenderer.MeasureText(g, text, Font, bounds.Size, flags).Width;
+					} else {
+						int glyphWidth = Math.Max(1, glyph.Width * glyphSize / glyph.Height);
+						if (x + glyphWidth + 2 > right) {
+							TextRenderer.DrawText(g, "…", Font,
+								new Rectangle(x, 0, Math.Max(0, right - x), ClientRectangle.Height), textColor, flags);
+							break;
+						}
+						g.DrawImage(glyph,
+							new Rectangle(x + 1, (ClientRectangle.Height - glyphSize) / 2,
+								glyphWidth, glyphSize),
+							0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel, attributes);
+						x += glyphWidth + 2;
+					}
+					if (x >= right)
+						break;
+				}
+			}
+		}
+
 		protected override void OnMouseDown(MouseEventArgs mevent) {
 			var splitRect = new Rectangle(this.Width - this.SplitWidth, 0, this.SplitWidth, this.Height);
+
+			if (mevent.Button == MouseButtons.Right && RightClickHandler != null) {
+				RightClickHandler(this, mevent);
+				return;
+			}
 
 			// Figure out if the button click was on the button itself or the menu split
 			if (Menu != null &&
@@ -34,21 +102,26 @@ namespace BetterJoyForCemu {
 
 		protected override void OnPaint(PaintEventArgs pevent) {
 			base.OnPaint(pevent);
+			if (labelParts != null)
+				PaintLabelParts(pevent.Graphics);
 
 			if (this.Menu != null && this.SplitWidth > 0) {
 				// Draw the arrow glyph on the right side of the button
 				int arrowX = ClientRectangle.Width - 14;
 				int arrowY = ClientRectangle.Height / 2 - 1;
 
-				var arrowBrush = Enabled ? SystemBrushes.ControlText : SystemBrushes.ButtonShadow;
 				var arrows = new[] { new Point(arrowX, arrowY), new Point(arrowX + 7, arrowY), new Point(arrowX + 3, arrowY + 4) };
-				pevent.Graphics.FillPolygon(arrowBrush, arrows);
+				using (var arrowBrush = new SolidBrush(Enabled ? ForeColor : Color.FromArgb(120, ForeColor))) {
+					pevent.Graphics.FillPolygon(arrowBrush, arrows);
+				}
 
 				// Draw a dashed separator on the left of the arrow
 				int lineX = ClientRectangle.Width - this.SplitWidth;
 				int lineYFrom = arrowY - 4;
 				int lineYTo = arrowY + 8;
-				using (var separatorPen = new Pen(Brushes.DarkGray) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }) {
+				using (var separatorPen = new Pen(Enabled
+					? Color.FromArgb(115, ForeColor)
+					: Color.FromArgb(70, ForeColor)) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot }) {
 					pevent.Graphics.DrawLine(separatorPen, lineX, lineYFrom, lineX, lineYTo);
 				}
 			}
@@ -108,7 +181,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_capture.Location = new System.Drawing.Point(105, 12);
             this.btn_capture.Name = "btn_capture";
-            this.btn_capture.Size = new System.Drawing.Size(75, 23);
+            this.btn_capture.Size = new System.Drawing.Size(130, 23);
             this.btn_capture.TabIndex = 0;
             this.btn_capture.UseVisualStyleBackColor = true;
             // 
@@ -136,7 +209,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_home.Location = new System.Drawing.Point(105, 41);
             this.btn_home.Name = "btn_home";
-            this.btn_home.Size = new System.Drawing.Size(75, 23);
+            this.btn_home.Size = new System.Drawing.Size(130, 23);
             this.btn_home.TabIndex = 3;
             this.btn_home.UseVisualStyleBackColor = true;
             // 
@@ -154,7 +227,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_sl_l.Location = new System.Drawing.Point(105, 70);
             this.btn_sl_l.Name = "btn_sl_l";
-            this.btn_sl_l.Size = new System.Drawing.Size(75, 23);
+            this.btn_sl_l.Size = new System.Drawing.Size(130, 23);
             this.btn_sl_l.TabIndex = 5;
             this.btn_sl_l.UseVisualStyleBackColor = true;
             // 
@@ -172,7 +245,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_sr_l.Location = new System.Drawing.Point(105, 99);
             this.btn_sr_l.Name = "btn_sr_l";
-            this.btn_sr_l.Size = new System.Drawing.Size(75, 23);
+            this.btn_sr_l.Size = new System.Drawing.Size(130, 23);
             this.btn_sr_l.TabIndex = 7;
             this.btn_sr_l.UseVisualStyleBackColor = true;
             // 
@@ -190,7 +263,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_sl_r.Location = new System.Drawing.Point(105, 128);
             this.btn_sl_r.Name = "btn_sl_r";
-            this.btn_sl_r.Size = new System.Drawing.Size(75, 23);
+            this.btn_sl_r.Size = new System.Drawing.Size(130, 23);
             this.btn_sl_r.TabIndex = 9;
             this.btn_sl_r.UseVisualStyleBackColor = true;
             // 
@@ -208,7 +281,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_sr_r.Location = new System.Drawing.Point(105, 157);
             this.btn_sr_r.Name = "btn_sr_r";
-            this.btn_sr_r.Size = new System.Drawing.Size(75, 23);
+            this.btn_sr_r.Size = new System.Drawing.Size(130, 23);
             this.btn_sr_r.TabIndex = 11;
             this.btn_sr_r.UseVisualStyleBackColor = true;
             // 
@@ -246,25 +319,25 @@ namespace BetterJoyForCemu {
             // 
             this.btn_reset_mouse.Location = new System.Drawing.Point(105, 218);
             this.btn_reset_mouse.Name = "btn_reset_mouse";
-            this.btn_reset_mouse.Size = new System.Drawing.Size(75, 23);
+            this.btn_reset_mouse.Size = new System.Drawing.Size(130, 23);
             this.btn_reset_mouse.TabIndex = 15;
             this.btn_reset_mouse.UseVisualStyleBackColor = true;
             // 
             // lbl_activate_gyro
             // 
             this.lbl_activate_gyro.AutoSize = true;
-            this.lbl_activate_gyro.Location = new System.Drawing.Point(14, 252);
+            this.lbl_activate_gyro.Location = new System.Drawing.Point(15, 252);
             this.lbl_activate_gyro.Name = "lbl_activate_gyro";
-            this.lbl_activate_gyro.Size = new System.Drawing.Size(71, 13);
+            this.lbl_activate_gyro.Size = new System.Drawing.Size(39, 13);
             this.lbl_activate_gyro.TabIndex = 17;
-            this.lbl_activate_gyro.Text = "Activate Gyro";
+            this.lbl_activate_gyro.Text = "Mouse";
             this.lbl_activate_gyro.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // btn_active_gyro
             // 
             this.btn_active_gyro.Location = new System.Drawing.Point(105, 247);
             this.btn_active_gyro.Name = "btn_active_gyro";
-            this.btn_active_gyro.Size = new System.Drawing.Size(75, 23);
+            this.btn_active_gyro.Size = new System.Drawing.Size(130, 23);
             this.btn_active_gyro.TabIndex = 18;
             this.btn_active_gyro.UseVisualStyleBackColor = true;
             // 
@@ -282,7 +355,7 @@ namespace BetterJoyForCemu {
             // 
             this.btn_shake.Location = new System.Drawing.Point(105, 186);
             this.btn_shake.Name = "btn_shake";
-            this.btn_shake.Size = new System.Drawing.Size(75, 23);
+            this.btn_shake.Size = new System.Drawing.Size(130, 23);
             this.btn_shake.TabIndex = 19;
             this.btn_shake.UseVisualStyleBackColor = true;
             // 
@@ -290,7 +363,7 @@ namespace BetterJoyForCemu {
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(192, 338);
+            this.ClientSize = new System.Drawing.Size(250, 338);
             this.Controls.Add(this.lbl_shake);
             this.Controls.Add(this.btn_shake);
             this.Controls.Add(this.btn_active_gyro);
@@ -316,7 +389,7 @@ namespace BetterJoyForCemu {
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Reassign";
-            this.Text = "Map Special Buttons";
+            this.Text = "Controller Profiles";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Reassign_FormClosing);
             this.Load += new System.EventHandler(this.Reassign_Load);
             this.ResumeLayout(false);

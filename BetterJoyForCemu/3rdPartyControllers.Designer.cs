@@ -38,6 +38,10 @@
             this.label1 = new System.Windows.Forms.Label();
             this.tip_device = new System.Windows.Forms.ToolTip(this.components);
             this.btn_refresh = new System.Windows.Forms.Button();
+            this.list_blacklistedControllers = new System.Windows.Forms.ListBox();
+            this.btn_blacklist = new System.Windows.Forms.Button();
+            this.btn_unblacklist = new System.Windows.Forms.Button();
+            this.lbl_blacklisted = new System.Windows.Forms.Label();
             this.group_props.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -157,12 +161,55 @@
             this.btn_refresh.Text = "Re-\r\nfresh";
             this.btn_refresh.UseVisualStyleBackColor = true;
             this.btn_refresh.Click += new System.EventHandler(this.btn_refresh_Click);
-            // 
+            //
+            // list_blacklistedControllers
+            //
+            this.list_blacklistedControllers.FormattingEnabled = true;
+            this.list_blacklistedControllers.Location = new System.Drawing.Point(350, 27);
+            this.list_blacklistedControllers.Name = "list_blacklistedControllers";
+            this.list_blacklistedControllers.Size = new System.Drawing.Size(103, 225);
+            this.list_blacklistedControllers.TabIndex = 10;
+            this.list_blacklistedControllers.SelectedValueChanged += new System.EventHandler(this.list_blacklistedControllers_SelectedValueChanged);
+            this.list_blacklistedControllers.MouseDown += new System.Windows.Forms.MouseEventHandler(this.list_blacklistedControllers_MouseDown);
+            //
+            // btn_blacklist
+            //
+            this.btn_blacklist.Location = new System.Drawing.Point(282, 27);
+            this.btn_blacklist.Name = "btn_blacklist";
+            this.btn_blacklist.Size = new System.Drawing.Size(60, 23);
+            this.btn_blacklist.TabIndex = 11;
+            this.btn_blacklist.Text = "Blacklist ->";
+            this.btn_blacklist.UseVisualStyleBackColor = true;
+            this.btn_blacklist.Click += new System.EventHandler(this.btn_blacklist_Click);
+            //
+            // btn_unblacklist
+            //
+            this.btn_unblacklist.Location = new System.Drawing.Point(282, 56);
+            this.btn_unblacklist.Name = "btn_unblacklist";
+            this.btn_unblacklist.Size = new System.Drawing.Size(60, 23);
+            this.btn_unblacklist.TabIndex = 12;
+            this.btn_unblacklist.Text = "<- Restore";
+            this.btn_unblacklist.UseVisualStyleBackColor = true;
+            this.btn_unblacklist.Click += new System.EventHandler(this.btn_unblacklist_Click);
+            //
+            // lbl_blacklisted
+            //
+            this.lbl_blacklisted.AutoSize = true;
+            this.lbl_blacklisted.Location = new System.Drawing.Point(347, 11);
+            this.lbl_blacklisted.Name = "lbl_blacklisted";
+            this.lbl_blacklisted.Size = new System.Drawing.Size(60, 13);
+            this.lbl_blacklisted.TabIndex = 13;
+            this.lbl_blacklisted.Text = "Blacklisted";
+            //
             // _3rdPartyControllers
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(465, 261);
+            this.Controls.Add(this.lbl_blacklisted);
+            this.Controls.Add(this.btn_unblacklist);
+            this.Controls.Add(this.btn_blacklist);
+            this.Controls.Add(this.list_blacklistedControllers);
             this.Controls.Add(this.btn_refresh);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.lbl_all);
@@ -202,5 +249,9 @@
         private System.Windows.Forms.Button btn_refresh;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox chooseType;
+        private System.Windows.Forms.ListBox list_blacklistedControllers;
+        private System.Windows.Forms.Button btn_blacklist;
+        private System.Windows.Forms.Button btn_unblacklist;
+        private System.Windows.Forms.Label lbl_blacklisted;
     }
 }

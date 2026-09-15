@@ -265,3 +265,14 @@ __pycache__/
 /title.pdn
 /Drivers
 /! Install the drivers in the Drivers folder
+
+# Locally downloaded build tools (nuget.exe, etc.)
+/.tools/
+
+# Compiled installer output
+/Installer/Output/
+
+# Retained upstream input-prompt source downloads
+*.zip
+/mrbreakfasts_free_prompts-main/
+/kenney_input-prompts_1.5/

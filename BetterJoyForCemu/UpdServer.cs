@@ -13,11 +13,11 @@ namespace BetterJoyForCemu {
         private bool running;
         private byte[] recvBuffer = new byte[1024];
 
-        IList<Joycon> controllers;
+        IList<Controller> controllers;
 
-        public MainForm form;
+        public IJoyconHost form;
 
-        public UdpServer(IList<Joycon> p) {
+        public UdpServer(IList<Controller> p) {
             controllers = p;
         }
 
@@ -105,7 +105,7 @@ namespace BetterJoyForCemu {
             Array.Copy(usefulData, 0, packetData, currIdx, usefulData.Length);
             FinishPacket(packetData);
 
-            try { udpSock.SendTo(packetData, clientEP); } catch (Exception e) { }
+            try { udpSock.SendTo(packetData, clientEP); } catch (Exception) { }
         }
 
         private void ProcessIncoming(byte[] localMsg, IPEndPoint clientEP) {
@@ -236,7 +236,7 @@ namespace BetterJoyForCemu {
                         }
                     }
                 }
-            } catch (Exception e) { }
+            } catch (Exception) { }
         }
 
         private void ReceiveCallback(IAsyncResult iar) {
@@ -250,7 +250,7 @@ namespace BetterJoyForCemu {
 
                 localMsg = new byte[msgLen];
                 Array.Copy(recvBuffer, localMsg, msgLen);
-            } catch (Exception e) { }
+            } catch (Exception) { }
 
             //Start another receive as soon as we copied the data
             StartReceive();
@@ -267,7 +267,7 @@ namespace BetterJoyForCemu {
                     EndPoint newClientEP = new IPEndPoint(IPAddress.Any, 0);
                     udpSock.BeginReceiveFrom(recvBuffer, 0, recvBuffer.Length, SocketFlags.None, ref newClientEP, ReceiveCallback, udpSock);
                 }
-            } catch (SocketException ex) {
+            } catch (SocketException) {
                 uint IOC_IN = 0x80000000;
                 uint IOC_VENDOR = 0x18000000;
                 uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
@@ -279,7 +279,7 @@ namespace BetterJoyForCemu {
 
         public void Start(IPAddress ip, int port = 26760) {
             if (!Boolean.Parse(ConfigurationManager.AppSettings["MotionServer"])) {
-                form.console.AppendText("Motion server is OFF.\r\n");
+                form.AppendTextBox("Motion server is OFF.\r\n");
                 return;
             }
 
@@ -292,11 +292,11 @@ namespace BetterJoyForCemu {
             }
 
             udpSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            try { udpSock.Bind(new IPEndPoint(ip, port)); } catch (SocketException ex) {
+            try { udpSock.Bind(new IPEndPoint(ip, port)); } catch (SocketException) {
                 udpSock.Close();
                 udpSock = null;
 
-                form.console.AppendText("Could not start server. Make sure that only one instance of the program is running at a time and no other CemuHook applications are running.\r\n");
+                form.AppendTextBox("Could not start server. Make sure that only one instance of the program is running at a time and no other CemuHook applications are running.\r\n");
                 return;
             }
 
@@ -305,7 +305,7 @@ namespace BetterJoyForCemu {
             serverId = BitConverter.ToUInt32(randomBuf, 0);
 
             running = true;
-            form.console.AppendText(String.Format("Starting server on {0}:{1}\r\n", ip.ToString(), port));
+            form.AppendTextBox(String.Format("Starting server on {0}:{1}\r\n", ip.ToString(), port));
             StartReceive();
         }
 
@@ -317,15 +317,15 @@ namespace BetterJoyForCemu {
             }
         }
 
-        private bool ReportToBuffer(Joycon hidReport, byte[] outputData, ref int outIdx) {
-            var ds4 = Joycon.MapToDualShock4Input(hidReport);
+        private bool ReportToBuffer(Controller hidReport, byte[] outputData, ref int outIdx) {
+            var ds4 = Controller.MapToDualShock4Input(hidReport);
 
             outputData[outIdx] = 0;
 
-            if (ds4.dPad == Controller.DpadDirection.West || ds4.dPad == Controller.DpadDirection.Northwest || ds4.dPad == Controller.DpadDirection.Southwest) outputData[outIdx] |= 0x80;
-            if (ds4.dPad == Controller.DpadDirection.South || ds4.dPad == Controller.DpadDirection.Southwest || ds4.dPad == Controller.DpadDirection.Southeast) outputData[outIdx] |= 0x40;
-            if (ds4.dPad == Controller.DpadDirection.East || ds4.dPad == Controller.DpadDirection.Northeast || ds4.dPad == Controller.DpadDirection.Southeast) outputData[outIdx] |= 0x20;
-            if (ds4.dPad == Controller.DpadDirection.North || ds4.dPad == Controller.DpadDirection.Northwest || ds4.dPad == Controller.DpadDirection.Northeast) outputData[outIdx] |= 0x10;
+            if (ds4.dPad == VirtualOutput.DpadDirection.West || ds4.dPad == VirtualOutput.DpadDirection.Northwest || ds4.dPad == VirtualOutput.DpadDirection.Southwest) outputData[outIdx] |= 0x80;
+            if (ds4.dPad == VirtualOutput.DpadDirection.South || ds4.dPad == VirtualOutput.DpadDirection.Southwest || ds4.dPad == VirtualOutput.DpadDirection.Southeast) outputData[outIdx] |= 0x40;
+            if (ds4.dPad == VirtualOutput.DpadDirection.East || ds4.dPad == VirtualOutput.DpadDirection.Northeast || ds4.dPad == VirtualOutput.DpadDirection.Southeast) outputData[outIdx] |= 0x20;
+            if (ds4.dPad == VirtualOutput.DpadDirection.North || ds4.dPad == VirtualOutput.DpadDirection.Northwest || ds4.dPad == VirtualOutput.DpadDirection.Northeast) outputData[outIdx] |= 0x10;
 
             if (ds4.options) outputData[outIdx] |= 0x08;
             if (ds4.thumb_right) outputData[outIdx] |= 0x04;
@@ -353,10 +353,10 @@ namespace BetterJoyForCemu {
             outputData[++outIdx] = ds4.thumb_right_y;
 
             //we don't have analog buttons so just use the Button enums (which give either 0 or 0xFF)
-            outputData[++outIdx] = (ds4.dPad == Controller.DpadDirection.West || ds4.dPad == Controller.DpadDirection.Northwest || ds4.dPad == Controller.DpadDirection.Southwest) ? (byte)0xFF : (byte)0;
-            outputData[++outIdx] = (ds4.dPad == Controller.DpadDirection.South || ds4.dPad == Controller.DpadDirection.Southwest || ds4.dPad == Controller.DpadDirection.Southeast) ? (byte)0xFF : (byte)0;
-            outputData[++outIdx] = (ds4.dPad == Controller.DpadDirection.East || ds4.dPad == Controller.DpadDirection.Northeast || ds4.dPad == Controller.DpadDirection.Southeast) ? (byte)0xFF : (byte)0;
-            outputData[++outIdx] = (ds4.dPad == Controller.DpadDirection.North || ds4.dPad == Controller.DpadDirection.Northwest || ds4.dPad == Controller.DpadDirection.Northeast) ? (byte)0xFF : (byte)0; ;
+            outputData[++outIdx] = (ds4.dPad == VirtualOutput.DpadDirection.West || ds4.dPad == VirtualOutput.DpadDirection.Northwest || ds4.dPad == VirtualOutput.DpadDirection.Southwest) ? (byte)0xFF : (byte)0;
+            outputData[++outIdx] = (ds4.dPad == VirtualOutput.DpadDirection.South || ds4.dPad == VirtualOutput.DpadDirection.Southwest || ds4.dPad == VirtualOutput.DpadDirection.Southeast) ? (byte)0xFF : (byte)0;
+            outputData[++outIdx] = (ds4.dPad == VirtualOutput.DpadDirection.East || ds4.dPad == VirtualOutput.DpadDirection.Northeast || ds4.dPad == VirtualOutput.DpadDirection.Southeast) ? (byte)0xFF : (byte)0;
+            outputData[++outIdx] = (ds4.dPad == VirtualOutput.DpadDirection.North || ds4.dPad == VirtualOutput.DpadDirection.Northwest || ds4.dPad == VirtualOutput.DpadDirection.Northeast) ? (byte)0xFF : (byte)0; ;
 
             outputData[++outIdx] = ds4.square ? (byte)0xFF : (byte)0;
             outputData[++outIdx] = ds4.cross ? (byte)0xFF : (byte)0;
@@ -415,7 +415,7 @@ namespace BetterJoyForCemu {
             return true;
         }
 
-        public void NewReportIncoming(Joycon hidReport) {
+        public void NewReportIncoming(Controller hidReport) {
             if (!running)
                 return;
 
@@ -501,7 +501,7 @@ namespace BetterJoyForCemu {
                 FinishPacket(outputData);
 
             foreach (var cl in clientsList) {
-                try { udpSock.SendTo(outputData, cl); } catch (SocketException ex) { }
+                try { udpSock.SendTo(outputData, cl); } catch (SocketException) { }
             }
             clientsList.Clear();
             clientsList = null;

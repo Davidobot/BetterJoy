@@ -42,16 +42,19 @@
     </application>
   </compatibility>
   <!-- Indicates that the application is DPI-aware and will not be automatically scaled by Windows at higher
-       DPIs. Windows Presentation Foundation (WPF) applications are automatically DPI-aware and do not need 
-       to opt in. Windows Forms applications targeting .NET Framework 4.6 that opt into this setting, should 
-       also set the 'EnableWindowsFormsHighDpiAutoResizing' setting to 'true' in their app.config. -->
-  <!--
+       DPIs. Windows Presentation Foundation (WPF) applications are automatically DPI-aware and do not need
+       to opt in. Windows Forms applications targeting .NET Framework 4.6 that opt into this setting, should
+       also set the 'EnableWindowsFormsHighDpiAutoResizing' setting to 'true' in their app.config.
+
+       Without this, Windows treats the whole process as DPI-unaware and bitmap-stretches every window to
+       match the display's actual scaling (e.g. 125%) instead of letting WinForms render each control/font
+       at its native size for that DPI - this is the actual source of "fuzzy at 125%" text throughout the
+       app, not a font-size issue in any one dialog. See App.config's matching runtime switch. -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
     </windowsSettings>
   </application>
-  -->
   <!-- Enable themes for Windows common controls and dialogs (Windows XP and later) -->
   <!--
   <dependency>
