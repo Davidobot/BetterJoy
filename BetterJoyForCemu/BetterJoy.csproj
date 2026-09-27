@@ -135,6 +135,7 @@
     <Compile Include="Controller\OutputControllerDualShock4.cs" />
     <Compile Include="Controller\OutputControllerXbox360.cs" />
     <Compile Include="HIDapi.cs" />
+    <Compile Include="InputReportGuard.cs" />
     <Compile Include="Joycon.cs" />
     <Compile Include="MadgwickAHRS.cs" />
     <Compile Include="MainForm.cs">

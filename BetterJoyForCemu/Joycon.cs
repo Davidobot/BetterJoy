@@ -556,6 +556,9 @@ namespace BetterJoyForCemu {
             byte[] raw_buf = new byte[report_len];
             int ret = HIDapi.hid_read_timeout(handle, raw_buf, new UIntPtr(report_len), 5);
 
+            if (ret > 0 && !InputReportGuard.IsInputReport(raw_buf, ret, !(isSnes || is64)))
+                return 0;
+
             if (ret > 0) {
                 // Process packets as soon as they come
                 for (int n = 0; n < 3; n++) {
